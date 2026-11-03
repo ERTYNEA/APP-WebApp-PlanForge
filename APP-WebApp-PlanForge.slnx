@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PlanForge.Application/PlanForge.Application.csproj" />
+    <Project Path="src/PlanForge.Contracts/PlanForge.Contracts.csproj" />
+    <Project Path="src/PlanForge.Domain/PlanForge.Domain.csproj" />
+    <Project Path="src/PlanForge.Infrastructure/PlanForge.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PlanForge.Domain.Tests/PlanForge.Domain.Tests.csproj" />
+    <Project Path="tests/PlanForge.Infrastructure.Tests/PlanForge.Infrastructure.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/PlanForge.DatabaseInspector/PlanForge.DatabaseInspector.csproj" />
+  </Folder>
+</Solution>

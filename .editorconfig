@@ -1,0 +1,20 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = tab
+indent_size = 4
+tab_width = 4
+trim_trailing_whitespace = true
+
+[*.{yml,yaml,json}]
+indent_style = space
+indent_size = 2
+
+[*.cs]
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_prefer_braces = when_multiline:warning
+dotnet_sort_system_directives_first = false
+csharp_using_directive_placement = inside_namespace:warning

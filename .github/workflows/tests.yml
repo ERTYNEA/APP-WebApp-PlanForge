@@ -1,0 +1,78 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: planforge-pipeline-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Reject credential files and embedded access tokens
+        shell: python
+        run: |
+          import pathlib, re, subprocess
+          paths = subprocess.check_output(['git', 'ls-files', '-z'], text=True).split('\0')
+          for path in filter(None, paths):
+              lower = path.lower()
+              assert not any(part in {'.secrets', 'publishprofiles'} for part in pathlib.PurePosixPath(path).parts), 'Private directory tracked'
+              assert not lower.endswith(('.publishsettings', '.pfx', '.pem', '.key')), 'Credential file tracked'
+              assert pathlib.PurePosixPath(path).name != 'local.settings.json', 'Private Functions settings tracked'
+              data = pathlib.Path(path).read_bytes()
+              assert not re.search(rb'gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----', data), 'Embedded access credential detected'
+      - run: dotnet restore APP-WebApp-PlanForge.slnx
+      - run: dotnet build APP-WebApp-PlanForge.slnx --configuration Release --no-restore
+      - run: dotnet test APP-WebApp-PlanForge.slnx --configuration Release --no-build --logger trx --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: TestResults/*.trx
+  changes:
+    name: Detect deployment scope
+    runs-on: ubuntu-latest
+    outputs:
+      database: ${{ steps.scope.outputs.database }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: scope
+        shell: python
+        env:
+          BEFORE: ${{ github.event.before }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          import os, subprocess
+          before = os.environ.get('BEFORE', '')
+          if os.environ['EVENT'] == 'workflow_dispatch':
+              changed = ['src/PlanForge.Infrastructure/Migrations/manual']
+          elif before and set(before) != {'0'}:
+              changed = subprocess.check_output(['git', 'diff', '--name-only', before, 'HEAD'], text=True).splitlines()
+          else:
+              changed = subprocess.check_output(['git', 'diff-tree', '--root', '--no-commit-id', '--name-only', '-r', 'HEAD'], text=True).splitlines()
+          database = any(p.startswith(('src/PlanForge.Infrastructure/Migrations/', 'src/PlanForge.Infrastructure/Database/')) or p == '.github/workflows/deploy-database.yml' for p in changed)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'database={str(database).lower()}\n')
+  database:
+    name: Deploy database
+    needs: [tests, changes]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.changes.outputs.database == 'true'
+    uses: ./.github/workflows/deploy-database.yml
+    secrets:
+      migration-connection: ${{ secrets.AZURE_SQL_MIGRATION_CONNECTION_STRING }}

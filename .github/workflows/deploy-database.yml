@@ -1,0 +1,49 @@
+name: Deploy database
+
+on:
+  workflow_call:
+    secrets:
+      migration-connection:
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: planforge-sql-migrations
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Apply additive migrations
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_ENVIRONMENT: Production
+      ASPNETCORE_ENVIRONMENT: Production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet tool restore
+      - run: dotnet restore src/PlanForge.Infrastructure
+      - run: dotnet build src/PlanForge.Infrastructure --configuration Release --no-restore
+      - name: Verify migrator permissions and inspect schema
+        env:
+          ConnectionStrings__PlanForgeDb: ${{ secrets.migration-connection }}
+        run: dotnet run --project tools/PlanForge.DatabaseInspector --configuration Release
+      - name: Inspect pending migration history
+        env:
+          ConnectionStrings__PlanForgeDb: ${{ secrets.migration-connection }}
+        run: dotnet ef migrations list --project src/PlanForge.Infrastructure --configuration Release --no-build
+      - name: Build migration bundle
+        run: dotnet ef migrations bundle --project src/PlanForge.Infrastructure --configuration Release --no-build --output artifacts/efbundle --self-contained --target-runtime linux-x64
+      - name: Apply pending migrations
+        env:
+          ConnectionStrings__PlanForgeDb: ${{ secrets.migration-connection }}
+        run: ./artifacts/efbundle
+      - name: Verify migration history
+        env:
+          ConnectionStrings__PlanForgeDb: ${{ secrets.migration-connection }}
+        run: dotnet ef migrations list --project src/PlanForge.Infrastructure --configuration Release --no-build

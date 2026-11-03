@@ -1,12 +1,12 @@
 # PlanForge
 
-PlanForge is an open-source web application in its initial planning stage, intended to help individuals and small groups organize, manage, and maintain hierarchical work plans within projects. It aims to keep structured work, progress, AI agent assignments, and related resources together rather than scattered across separate tools and documents.
+PlanForge is an open-source project work-plan application for individuals and a few colleagues. Its hierarchy is Phase → Subphase → Step, with decisions, agent assignments and a reusable resource library.
 
-No application functionality has been implemented yet. The full functional specification will be provided in a later phase; the capabilities and technology choices below are planned, not currently available.
+Version: `0.1.0-alpha.1`, implementation in progress, not a released application. Implemented foundations include test-driven workflow closure policies, a default subphase invariant, account registration/login/persisted hashed sessions in application services, relational account constraints, and additive SQL migration delivery. HTTP API and Blazor user interface are not available yet. Do not treat planned capabilities below as deployed functionality.
 
 ## Planned capabilities
 
-- Organize projects with hierarchical work plans made up of phases, tasks, and steps.
+- Organize projects with hierarchical work plans made up of phases, subphases, and steps.
 - Track work status and progress.
 - Assign AI agents to different parts of a plan.
 - Import and export plans using the `work-plan.csv` exchange file.
@@ -25,7 +25,19 @@ No application functionality has been implemented yet. The full functional speci
 
 ## Project status
 
-This repository currently contains only the initial project overview, MIT license, and Git ignore rules. Application development, automated workflows, and deployment configuration have not started.
+The first vertical slice establishes .NET 10 projects, domain and relational tests, authentication services and an additive accounts migration. See `docs/architecture.md`, `docs/deployment.md` and `docs/ui-design-system.md` for decisions and current delivery boundaries. The complete product remains under implementation.
+
+## Local checks
+
+Requires the .NET 10 SDK pinned by `global.json`. No local SQL Server is required for the default tests.
+
+```sh
+dotnet restore APP-WebApp-PlanForge.slnx
+dotnet build APP-WebApp-PlanForge.slnx --configuration Release
+dotnet test APP-WebApp-PlanForge.slnx --configuration Release
+```
+
+Tests use independent in-memory SQLite relational databases where appropriate; these are not SQL Server integration evidence and never touch the shared Azure database. Runtime credentials, publishing profiles and local settings must remain ignored. Only trusted-main GitHub Actions may migrate the shared database.
 
 ## License
 
