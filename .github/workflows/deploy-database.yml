@@ -22,8 +22,8 @@ jobs:
       DOTNET_ENVIRONMENT: Production
       ASPNETCORE_ENVIRONMENT: Production
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-dotnet@v6.1.0
         with:
           global-json-file: global.json
       - run: dotnet tool restore
@@ -42,7 +42,9 @@ jobs:
       - name: Apply pending migrations
         env:
           ConnectionStrings__PlanForgeDb: ${{ secrets.migration-connection }}
-        run: ./artifacts/efbundle
+        run: |
+          python3 -c 'import os,subprocess; observed=subprocess.check_output(["git","ls-remote","origin","refs/heads/main"],text=True).split()[0]; assert observed == os.environ["GITHUB_SHA"], "Superseded migration attempt rejected; run the latest main pipeline."'
+          ./artifacts/efbundle
       - name: Verify migration history
         env:
           ConnectionStrings__PlanForgeDb: ${{ secrets.migration-connection }}

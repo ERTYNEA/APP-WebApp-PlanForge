@@ -1,0 +1,109 @@
+name: Deploy API
+
+on:
+  workflow_call:
+    secrets:
+      publish-profile:
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: planforge-api-deployment
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish Functions API
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-dotnet@v6.1.0
+        with:
+          global-json-file: global.json
+      - name: Resolve public target without exporting profile credentials
+        id: target
+        shell: python
+        env:
+          PUBLISH_PROFILE: ${{ secrets.publish-profile }}
+        run: |
+          import os, urllib.parse, urllib.request, urllib.error, xml.etree.ElementTree as ET
+          profiles = ET.fromstring(os.environ['PUBLISH_PROFILE']).iter('publishProfile')
+          base_url = None
+          for profile in profiles:
+              candidate = profile.get('destinationAppUrl') or profile.get('publishUrl', '')
+              if not candidate:
+                  continue
+              parsed = urllib.parse.urlparse(candidate if '://' in candidate else 'https://' + candidate)
+              host = (parsed.hostname or '').replace('.scm.', '.')
+              if host.endswith('.azurewebsites.net'):
+                  base_url = 'https://' + host
+                  break
+          if not base_url:
+              raise RuntimeError('The publish profile does not identify a valid public Azure target.')
+          print('Public API target:', base_url)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('base-url=' + base_url + '\n')
+          try:
+              response = urllib.request.urlopen(base_url + '/api/v1/health', timeout=30)
+              print('Pre-deployment health status:', response.status)
+          except urllib.error.HTTPError as error:
+              print('Pre-deployment health status:', error.code)
+          except Exception as error:
+              print('Pre-deployment health unavailable:', type(error).__name__)
+      - run: dotnet restore src/PlanForge.Api
+      - run: dotnet publish src/PlanForge.Api --configuration Release --output artifacts/api -p:SourceRevisionId=${{ github.sha }}
+      - name: Verify Functions deployment payload
+        shell: python
+        run: |
+          import json, pathlib
+          root = pathlib.Path('artifacts/api')
+          assert (root / 'host.json').is_file()
+          worker = json.loads((root / 'worker.config.json').read_text())
+          assert worker['description']['workerIndexing'] == 'true'
+          assert (root / worker['description']['defaultWorkerPath']).is_file()
+          # The current SDK uses compiled, tested metadata-provider indexing rather than a legacy metadata file.
+          assert not list(root.rglob('local.settings.json'))
+          assert not list(root.rglob('*.PublishSettings'))
+          print('Verified Functions payload and endpoint metadata.')
+      - name: Reject superseded API publication
+        shell: python
+        run: |
+          import os, subprocess
+          observed = subprocess.check_output(['git', 'ls-remote', 'origin', 'refs/heads/main'], text=True).split()[0]
+          assert observed == os.environ['GITHUB_SHA'], 'Superseded API publication rejected; deploy the latest main commit instead.'
+      - name: Deploy existing Flex Consumption app
+        uses: Azure/functions-action@v1.5.7
+        with:
+          app-name: PlanForge-API
+          package: artifacts/api
+          sku: flexconsumption
+          publish-profile: ${{ secrets.publish-profile }}
+      - name: Verify HTTPS readiness and exact deployed commit
+        shell: python
+        env:
+          API_BASE_URL: ${{ steps.target.outputs.base-url }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          import json, os, time, urllib.request, urllib.error
+          base_url = os.environ['API_BASE_URL']
+          for attempt in range(18):
+              try:
+                  with urllib.request.urlopen(base_url + '/api/v1/ready', timeout=30) as response:
+                      readiness = json.load(response)
+                  assert readiness['status'] == 'ready'
+                  assert os.environ['EXPECTED_SHA'] in readiness['version']
+                  break
+              except Exception as error:
+                  print('Readiness attempt', attempt + 1, type(error).__name__)
+                  if attempt == 17:
+                      raise RuntimeError('API readiness/commit verification did not pass.') from None
+                  time.sleep(10)
+          try:
+              urllib.request.urlopen(base_url + '/api/v1/auth/session', timeout=30)
+              raise RuntimeError('Unauthenticated session unexpectedly succeeded.')
+          except urllib.error.HTTPError as error:
+              assert error.code == 401
+          print('Verified API readiness, real SQL query, exact commit and unauthenticated 401:', base_url)

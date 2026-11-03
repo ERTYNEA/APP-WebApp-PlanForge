@@ -21,6 +21,14 @@ public sealed class AccountService(IAccountStore accountStore, ISecretProtector 
 		return new AuthenticatedActor(user.Id, credential.Kind, credential.Id, credential.AgentId);
 	}
 
+	public async Task<UserProfile> GetProfileAsync(AuthenticatedActor actor, CancellationToken cancellationToken = default)
+	{
+		UserAccount? user = await accountStore.FindUserAsync(actor.UserId, cancellationToken);
+		if (user is null || !user.IsActive)
+			throw new PlanForgeException(401, "The account is unavailable.");
+		return new UserProfile(user.Id, user.Email, user.DisplayName, user.CreatedAt);
+	}
+
 	public async Task<AccessGrant> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
 	{
 		if (string.IsNullOrWhiteSpace(request.Email) || request.Email.Length > 256 || request.Password is null || request.Password.Length > 128)

@@ -1,0 +1,15 @@
+<Project Sdk="Azure.Functions.Sdk/1.0.1">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<OutputType>Exe</OutputType>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.52.0" />
+		<PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
+		<ProjectReference Include="../PlanForge.Infrastructure/PlanForge.Infrastructure.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Update="host.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+	</ItemGroup>
+</Project>

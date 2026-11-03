@@ -9,6 +9,8 @@ TestResults/
 coverage/
 .nuget/packages/
 node_modules/
+__pycache__/
+*.pyc
 
 # Local IDE state, user preferences, and temporary development files
 .vs/
