@@ -29,8 +29,8 @@ jobs:
         env:
           PUBLISH_PROFILE: ${{ secrets.publish-profile }}
         run: |
-          import os, urllib.parse, urllib.request, urllib.error, xml.etree.ElementTree as ET
-          profiles = ET.fromstring(os.environ['PUBLISH_PROFILE']).iter('publishProfile')
+          import base64, os, urllib.parse, urllib.request, urllib.error, xml.etree.ElementTree as ET
+          profiles = list(ET.fromstring(os.environ['PUBLISH_PROFILE']).iter('publishProfile'))
           base_url = None
           for profile in profiles:
               candidate = profile.get('destinationAppUrl') or profile.get('publishUrl', '')
@@ -53,6 +53,32 @@ jobs:
               print('Pre-deployment health status:', error.code)
           except Exception as error:
               print('Pre-deployment health unavailable:', type(error).__name__)
+          methods = sorted({p.get('publishMethod', 'unknown') for p in profiles})
+          print('Publish profile methods:', ', '.join(methods))
+          deployment_profiles = [p for p in profiles if p.get('publishMethod') == 'MSDeploy']
+          if not deployment_profiles:
+              raise RuntimeError('A current MSDeploy publishing profile is required for the action.')
+          profile = deployment_profiles[0]
+          target = profile.get('publishUrl', '')
+          parsed = urllib.parse.urlparse(target if '://' in target else 'https://' + target)
+          if parsed.scheme != 'https' or not (parsed.hostname or '').endswith('.azurewebsites.net') or '.scm.' not in (parsed.hostname or ''):
+              raise RuntimeError('The profile does not contain an allowed HTTPS SCM target.')
+          print('Profile credential target matches expected app:', 'planforge-api' in profile.get('userName', '').lower())
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, request, file, code, message, headers, new_url):
+                  return None
+          authorization = base64.b64encode((profile.get('userName', '') + ':' + profile.get('userPWD', '')).encode()).decode()
+          request = urllib.request.Request('https://' + parsed.netloc + '/api/settings', headers={'Authorization': 'Basic ' + authorization})
+          try:
+              with urllib.request.build_opener(NoRedirect()).open(request, timeout=30) as response:
+                  print('SCM credential preflight status:', response.status)
+                  # Never read, print or save app-setting values, even on success.
+          except urllib.error.HTTPError as error:
+              print('SCM credential preflight status:', error.code)
+              print('SCM Basic challenge present:', 'basic' in error.headers.get('WWW-Authenticate', '').lower())
+              if error.code == 401:
+                  raise RuntimeError('Existing publish credential rejected. Owner must verify SCM Basic Auth Publishing Credentials and refresh the existing GitHub publish-profile secret if necessary.') from None
+              raise RuntimeError('SCM credential preflight denied; no deployment was attempted.') from None
       - run: dotnet restore src/PlanForge.Api
       - run: dotnet publish src/PlanForge.Api --configuration Release --output artifacts/api -p:SourceRevisionId=${{ github.sha }}
       - name: Verify Functions deployment payload
