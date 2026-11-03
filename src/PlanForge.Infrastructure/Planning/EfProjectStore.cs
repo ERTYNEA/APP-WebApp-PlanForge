@@ -24,7 +24,10 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 		int locked = await database.Projects.Where(project => project.Id == projectId && project.OwnerUserId == ownerId && project.Revision == expectedRevision).ExecuteUpdateAsync(setters => setters.SetProperty(project => project.Revision, expectedRevision + 1), cancellationToken);
 		if (locked != 1)
 			throw new PlanForgeException(409, "The project changed. Reload before deleting.");
-		await RemoveItemsAsync(projectId, [], cancellationToken);
+		List<Guid> directResources = await database.ProjectResources.Where(link => link.ProjectId == projectId).Select(link => link.ResourceId).ToListAsync(cancellationToken);
+		await TouchResourcesAsync(ownerId, directResources, cancellationToken);
+		await database.ProjectResources.Where(link => link.ProjectId == projectId).ExecuteDeleteAsync(cancellationToken);
+		await RemoveItemsAsync(ownerId, projectId, [], cancellationToken);
 		await database.ProjectChanges.Where(change => change.ProjectId == projectId).ExecuteDeleteAsync(cancellationToken);
 		await database.Projects.Where(project => project.Id == projectId && project.OwnerUserId == ownerId).ExecuteDeleteAsync(cancellationToken);
 		await transaction.CommitAsync(cancellationToken);
@@ -67,7 +70,7 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 		try
 		{
 			await database.SaveChangesAsync(cancellationToken);
-			await RemoveItemsAsync(project.Id, aggregate.Items.Select(item => item.Id).ToList(), cancellationToken);
+			await RemoveItemsAsync(project.OwnerUserId, project.Id, aggregate.Items.Select(item => item.Id).ToList(), cancellationToken);
 			List<long> expired = await database.ProjectChanges.Where(entry => entry.ProjectId == project.Id).OrderByDescending(entry => entry.Id).Skip(100).Select(entry => entry.Id).ToListAsync(cancellationToken);
 			await database.ProjectChanges.Where(entry => expired.Contains(entry.Id)).ExecuteDeleteAsync(cancellationToken);
 			await transaction.CommitAsync(cancellationToken);
@@ -97,9 +100,19 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 		database.Entry(change).State = EntityState.Detached;
 	}
 
-	private async Task RemoveItemsAsync(Guid projectId, List<Guid> retained, CancellationToken cancellationToken)
+	private async Task RemoveItemsAsync(Guid ownerId, Guid projectId, List<Guid> retained, CancellationToken cancellationToken)
 	{
+		List<Guid> removedPhases = await database.WorkItems.Where(item => item.ProjectId == projectId && !retained.Contains(item.Id) && item.Kind == WorkItemKind.Phase).Select(item => item.Id).ToListAsync(cancellationToken);
+		List<Guid> resources = await database.PhaseResources.Where(link => removedPhases.Contains(link.PhaseId)).Select(link => link.ResourceId).Distinct().ToListAsync(cancellationToken);
+		await TouchResourcesAsync(ownerId, resources, cancellationToken);
+		await database.PhaseResources.Where(link => removedPhases.Contains(link.PhaseId)).ExecuteDeleteAsync(cancellationToken);
 		foreach (WorkItemKind kind in new[] { WorkItemKind.Decision, WorkItemKind.Step, WorkItemKind.Subphase, WorkItemKind.Phase })
 			await database.WorkItems.Where(item => item.ProjectId == projectId && !retained.Contains(item.Id) && item.Kind == kind).ExecuteDeleteAsync(cancellationToken);
+	}
+	private async Task TouchResourcesAsync(Guid ownerId, List<Guid> ids, CancellationToken cancellationToken)
+	{
+		DateTimeOffset now = DateTimeOffset.UtcNow;
+		foreach (Guid id in ids.Order())
+			await database.Resources.Where(resource => resource.Id == id && resource.OwnerUserId == ownerId).ExecuteUpdateAsync(setters => setters.SetProperty(resource => resource.Revision, resource => resource.Revision + 1).SetProperty(resource => resource.UpdatedAt, now), cancellationToken);
 	}
 }

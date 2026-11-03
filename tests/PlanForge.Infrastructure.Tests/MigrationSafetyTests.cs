@@ -22,6 +22,14 @@ public sealed class MigrationSafetyTests
 	}
 
 	[Fact]
+	public void ResourceLibrary_WhenApplied_PreservesExistingDataAndRefusesDestructiveDowngrade()
+	{
+		var migration = new ResourceLibrary();
+		Assert.Throws<NotSupportedException>(() => migration.DownOperations);
+		Assert.All(migration.UpOperations, operation => Assert.True(operation is CreateTableOperation or CreateIndexOperation));
+	}
+
+	[Fact]
 	public void InitialAccounts_WhenDowngradeRequested_RefusesDestructiveRollback()
 	{
 		var migration = new InitialAccounts();

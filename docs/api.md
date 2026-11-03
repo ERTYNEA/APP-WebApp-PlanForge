@@ -1,6 +1,6 @@
 # REST API
 
-Status: alpha.2 business handlers are implemented and tested in-process. Authentication and the initial project schema are cloud-verified; the new business HTTP tranche awaits its exact-commit deployment and real HTTP acceptance. The resource library, ZIP export, account editing/avatars, change polling and Web UI are not yet available. This is not full product acceptance.
+Status: alpha.2 business API and three additive SQL migrations are cloud-verified, including controlled ownership/workflow/token/CSV/concurrency scenarios. Alpha.3 Library/ZIP handlers are implemented and tested in-process but await exact-commit deployment and real acceptance. Account editing/avatars, change polling and Web UI remain pending. This is not full product acceptance.
 
 One .NET 10 isolated Functions app is the authorizing backend. Anonymous platform triggers still require application Bearer authorization. Clients never submit an OwnerUserId. Known IDs belonging to another owner return the same safe 404 as missing records. HTTPS is mandatory outside loopback development.
 
@@ -23,6 +23,22 @@ All paths below start with `/api/v1`. Bodies are JSON except raw CSV import. Aut
 - POST `/projects/{projectId}/work-plan/import`: raw UTF-8 CSV, at most 1 MiB. Set `X-PlanForge-Replace: true` explicitly to permit omitted-record deletion. Ownership is checked before reading/parsing content. See `work-plan-csv.md`.
 
 A plan mutation command has revision, title, parentId, optional zero-based sortOrder, description, status, assignmentMode, assignedAgentId, resolution and evidence. New Phases receive a real editable Default subphase. Subphases belong to Phases, Steps to Subphases, Decisions to one of those three types. Moving/reordering preserves IDs and checks the complete resulting hierarchy. Omitted sortOrder appends a new record or preserves an edited sibling position.
+
+## Resource library and project archives
+
+- GET `/resources`: owner metadata only, never binary Content. Search with `search`, filter `assignment=all|assigned|orphan`, and page using `skip` and `take` (default 50, maximum 100). Returns items, total, skip, take, hasMore from the actual filtered set.
+- POST `/resources`: raw bytes and an allowed Content-Type. Supply `X-File-Name` as a percent-encoded UTF-8 filename and optional percent-encoded `X-Resource-Title`. Optional `X-Project-Id` and/or `X-Phase-Id` attach atomically; phase-only does not imply a direct project link. Targets are authorized before body reading.
+- GET/PUT/DELETE `/resources/{resourceId}`: metadata, title update with current resource revision, or permanent deletion with revision and confirmed=true. Deletion removes all links deliberately; normal project/phase deletion never deletes the binary.
+- GET `/resources/{resourceId}/download`: exact bytes, safe attachment filename and nosniff.
+- POST `/resources/{resourceId}/links`: resource revision, attach boolean and exactly one projectId or phaseId. Owner membership, record type and revision are checked transactionally.
+- GET `/resources/usage`: owner bytes, owner budget, maximum file bytes and near-limit warning; never another user's metadata.
+- POST `/resources/orphans/clean`: `{ "confirmed": true, "resourceIds": [...] }` from the preview, at most 1000 unique IDs. Returns deletedCount/skippedCount. Only owner-local zero-link resources are physically removed after a concurrent-attachment-safe recheck; no scheduled cleanup.
+- GET `/projects/{projectId}/resources`: effective direct-plus-phase union without duplicates, with each association identified. GET `/projects/{projectId}/phases/{phaseId}/resources`: only that Phase's links.
+- GET `/projects/{projectId}/export`: ZIP with work-plan.csv, README.md, manifest.json and resources/{resourceId}/{safe-filename}. Includes phase-only files, excludes unrelated Library orphans and verifies a coherent project revision. Another archive in progress can return 429; a changed revision returns 409 rather than a mixed snapshot.
+
+Defaults: 8 MiB per file, 100 MiB per owner, 1 GiB global Library reserve and 1000 files per owner. Scoped configuration keys are `ResourceLimits__MaximumFileBytes`, `ResourceLimits__OwnerBudgetBytes`, `ResourceLimits__GlobalBudgetBytes`; the global hard ceiling is 1.5 GiB to preserve headroom in SQL Basic 2 GiB. These keys require no new identity or secret and are optional. HTML, scripts and SVG MIME types are not accepted; text/Markdown/CSV, PDF, common raster images, ZIP, JSON, Office OpenXML and generic binary attachments are supported. Upload bytes are immutable; title and independent links are editable. SHA-256 and size are checked on download. Original base filenames up to 180 characters are preserved after removing path/control components; longer names are rejected, never silently truncated.
+
+Project/phase deletion removes associations only. Resource cleanup never sees avatar storage. Linked-library mutations touch affected project revisions/events without overwriting plan data. Metadata listing explicitly excludes SQL binary columns; downloads and archives fetch only authorized selected resources. ZIP manifests give exact project/phase associations, MIME, hash and byte size; archives do not execute or automatically import resources.
 
 ## Workflow, decisions and concurrency
 

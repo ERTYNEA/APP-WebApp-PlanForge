@@ -2,7 +2,7 @@
 
 PlanForge is an open-source project work-plan application for individuals and a few colleagues. Its hierarchy is Phase → Subphase → Step, with decisions, agent assignments and a reusable resource library.
 
-Version: `0.1.0-alpha.2`, implementation in progress, not a finished product. Implemented API services and handlers cover authentication, owner-isolated projects and hierarchical work plans, four workflow closure policies, logical agents and hashed 30-day tokens, and transactional CSV exchange. SQL and API publication use exact-commit gated GitHub Actions. The Blazor UI, resource library, ZIP exports and complete integrated acceptance remain pending. See the API and deployment documents for the boundary between implemented code and cloud-verified behavior.
+Version: `0.1.0-alpha.3`, implementation in progress, not a finished product. Implemented API services and handlers cover authentication, owner-isolated projects and hierarchical work plans, four workflow closure policies, logical agents and hashed 30-day tokens, transactional CSV exchange, SQL-backed resource libraries and complete project ZIP exports. SQL and API publication use exact-commit gated GitHub Actions. The alpha.2 business API has passed controlled real HTTP acceptance. The new Library/ZIP tranche awaits its ordered cloud verification; Blazor/account-management/change-polling and complete integrated acceptance remain pending. See the API and deployment documents for the boundary between implemented code and cloud-verified behavior.
 
 ## Planned capabilities
 

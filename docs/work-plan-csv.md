@@ -21,7 +21,7 @@ The CSV is bounded to 1 MiB including a supplied BOM, and at most 5000 plan item
 1. GET the exact project by GUID and download its current export.
 2. Edit permitted metadata, records, order, assignments, states or decisions without changing identity/version/base revision.
 3. POST the raw CSV to the same project's work-plan/import endpoint. A different ProjectId is rejected, never inferred by name.
-4. Missing existing records fail unless `X-PlanForge-Replace: true` explicitly authorizes a full replacement. This is an intentional deletion contract, not a patch format. Protected resource survival is part of the subsequent Library tranche.
+4. Missing existing records fail unless `X-PlanForge-Replace: true` explicitly authorizes a full replacement. This is an intentional deletion contract, not a patch format. Removing Phases removes only their links; physical Library resources survive and remain assigned elsewhere or become orphaned.
 5. A successful atomic import increments revision once and emits the actor-correct event. A stale revision returns 409 with no partial changes; reload, compare and reconcile instead of automatically retrying an overwrite.
 
 The pure codec preserves all supported snapshot fields and never authorizes, persists, rewrites closure evidence or generates IDs. The application layer owns authorization, safe replacement, concurrency and workflow policy. CSV fields are untrusted user text, not spreadsheet formulas to execute; the Web must escape their display.

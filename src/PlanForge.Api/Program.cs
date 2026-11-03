@@ -3,14 +3,17 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PlanForge.Api.Http;
+using PlanForge.Api.Library;
 using PlanForge.Application.Accounts;
 using PlanForge.Application.Agents;
 using PlanForge.Application.Exchange;
+using PlanForge.Application.Library;
 using PlanForge.Application.Planning;
 using PlanForge.Infrastructure.Accounts;
 using PlanForge.Infrastructure.Agents;
 using PlanForge.Infrastructure.Database;
 using PlanForge.Infrastructure.Planning;
+using PlanForge.Infrastructure.Library;
 
 var host = new HostBuilder()
 	.ConfigureFunctionsWorkerDefaults()
@@ -29,6 +32,10 @@ var host = new HostBuilder()
 		services.AddScoped<IAgentStore, EfAgentStore>();
 		services.AddScoped<AgentService>();
 		services.AddScoped<WorkPlanExchange>();
+		services.AddSingleton(ResourceLimitConfiguration.Read(context.Configuration));
+		services.AddScoped<ILibraryStore, EfLibraryStore>();
+		services.AddScoped<LibraryService>();
+		services.AddScoped<ProjectArchiveExporter>();
 		services.AddSingleton<HttpEndpointRunner>();
 	})
 	.Build();

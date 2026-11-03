@@ -1,6 +1,6 @@
 # Deployment
 
-Status: additive SQL accounts/project schema and the initial Functions authentication API are published and verified. The alpha.2 business API tranche is being deployed through the same gates; Web implementation/deployment is still pending. Do not equate a successful pipeline with full product acceptance.
+Status: additive SQL accounts/project schema and the initial Functions authentication API are published and verified. The alpha.2 business API is real-HTTP verified; alpha.3 Library/ZIP and its additive migration use the same gates. Web implementation/deployment is still pending. Do not equate a successful pipeline with full product acceptance.
 
 Only GitHub Actions applies migrations or publishes Azure apps. `tests.yml` runs hermetic Release restore/build/tests on main and external PRs without Azure secrets. Its trusted-main database job calls `deploy-database.yml` only after the same SHA passes tests, when schema/database paths change or an API deployment requires reconciliation. The pipeline serializes main runs, and the database workflow serializes migrations without cancellation. Readme-only pushes do not migrate. Manual Tests dispatch requests migration reconciliation after tests.
 

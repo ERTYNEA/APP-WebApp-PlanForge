@@ -149,6 +149,90 @@ namespace PlanForge.Infrastructure.Migrations
                     b.ToTable("Agents");
                 });
 
+            modelBuilder.Entity("PlanForge.Domain.Library.PhaseResource", b =>
+                {
+                    b.Property<Guid>("PhaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("PhaseId", "ResourceId");
+
+                    b.HasIndex("ResourceId");
+
+                    b.ToTable("PhaseResources");
+                });
+
+            modelBuilder.Entity("PlanForge.Domain.Library.ProjectResource", b =>
+                {
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ProjectId", "ResourceId");
+
+                    b.HasIndex("ResourceId");
+
+                    b.ToTable("ProjectResources");
+                });
+
+            modelBuilder.Entity("PlanForge.Domain.Library.Resource", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(180)
+                        .HasColumnType("nvarchar(180)");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(240)
+                        .HasColumnType("nvarchar(240)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserId", "Sha256");
+
+                    b.ToTable("Resources");
+                });
+
             modelBuilder.Entity("PlanForge.Domain.Planning.Project", b =>
                 {
                     b.Property<Guid>("Id")
@@ -310,6 +394,45 @@ namespace PlanForge.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("PlanForge.Domain.Agents.Agent", b =>
+                {
+                    b.HasOne("PlanForge.Domain.Accounts.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PlanForge.Domain.Library.PhaseResource", b =>
+                {
+                    b.HasOne("PlanForge.Domain.Planning.WorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("PhaseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PlanForge.Domain.Library.Resource", null)
+                        .WithMany()
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PlanForge.Domain.Library.ProjectResource", b =>
+                {
+                    b.HasOne("PlanForge.Domain.Planning.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PlanForge.Domain.Library.Resource", null)
+                        .WithMany()
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PlanForge.Domain.Library.Resource", b =>
                 {
                     b.HasOne("PlanForge.Domain.Accounts.UserAccount", null)
                         .WithMany()

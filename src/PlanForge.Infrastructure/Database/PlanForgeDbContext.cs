@@ -4,11 +4,16 @@ using Microsoft.EntityFrameworkCore;
 using PlanForge.Domain.Accounts;
 using PlanForge.Domain.Agents;
 using PlanForge.Domain.Planning;
+using PlanForge.Domain.Library;
+using PlanForge.Infrastructure.Library;
 
 public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> options) : DbContext(options)
 {
 	public DbSet<AccessCredential> AccessCredentials => Set<AccessCredential>();
 	public DbSet<Agent> Agents => Set<Agent>();
+	public DbSet<Resource> Resources => Set<Resource>();
+	public DbSet<ProjectResource> ProjectResources => Set<ProjectResource>();
+	public DbSet<PhaseResource> PhaseResources => Set<PhaseResource>();
 	public DbSet<UserAccount> Users => Set<UserAccount>();
 	public DbSet<Project> Projects => Set<Project>();
 	public DbSet<ProjectChange> ProjectChanges => Set<ProjectChange>();
@@ -16,6 +21,7 @@ public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> opti
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
+		LibraryModelConfiguration.Configure(modelBuilder);
 		modelBuilder.Entity<Agent>(entity =>
 		{
 			entity.HasKey(agent => agent.Id);
