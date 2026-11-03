@@ -18,6 +18,14 @@ SQL project revisions and lightweight persisted actor/action events bridge Funct
 
 One existing Azure SQL Basic database, additive EF migrations through GitHub Actions only. Resource binaries live in SQL; independent project and phase links do not cascade-delete resources. Avatars are separate. Quotas protect the 2 GB database budget. Relational SQLite tests cover portable behavior, never substitute for SQL Server compatibility/integration evidence.
 
+## Work-plan persistence
+
+Projects use immutable GUIDs, owner-scoped queries and integer revision compare-and-swap inside an explicit SQL transaction. The new additive schema represents Phase, Subphase, Step and Decision as typed WorkItems with a composite project/parent foreign key. This is a normalized hierarchy, not a flat task list. Application validation requires Phase → Subphase → Step, at least one real Subphase per Phase, correct decision parents, stable record types and unique sibling order. DTOs are separate from EF entities.
+
+A full snapshot save increments revision exactly once and retains stable IDs. Omitted records require explicit replacement. Invalid hierarchy and unauthorized ownership are rejected before writes; database collisions roll back metadata, records and events together. Short serializable read transactions keep revisions and trees consistent. Aggregate completion cannot bypass child completion or unresolved decisions; Step closure validates the project's workflow and human-only approval and stamps the authenticated actor/time. Only completed-step closure evidence is authoritative.
+
+ProjectChanges retain the latest 100 events per project. The event and new revision are committed atomically. This is groundwork for the observing Web view, not a claim that Web polling already exists. Business HTTP adapters and agents/resources are subsequent tranches.
+
 ## Delivery boundary
 
 Exact-SHA tests must succeed before ordered SQL → Functions API → Blazor deployment. Only existing GitHub repository secrets are consumed by trusted deployment jobs. Public PR tests never receive Azure credentials. No Azure CLI, new identities, storage services or local SQL Server are required.
