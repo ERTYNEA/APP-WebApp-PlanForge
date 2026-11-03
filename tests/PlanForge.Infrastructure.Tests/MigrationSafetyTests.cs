@@ -14,6 +14,14 @@ public sealed class MigrationSafetyTests
 	}
 
 	[Fact]
+	public void LogicalAgents_WhenApplied_IsAdditiveAndRefusesDestructiveDowngrade()
+	{
+		var migration = new LogicalAgents();
+		Assert.Throws<NotSupportedException>(() => migration.DownOperations);
+		Assert.All(migration.UpOperations, operation => Assert.True(operation is CreateTableOperation or CreateIndexOperation or AddForeignKeyOperation));
+	}
+
+	[Fact]
 	public void InitialAccounts_WhenDowngradeRequested_RefusesDestructiveRollback()
 	{
 		var migration = new InitialAccounts();

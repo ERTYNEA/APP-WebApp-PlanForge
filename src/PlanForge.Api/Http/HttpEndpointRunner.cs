@@ -3,6 +3,7 @@ namespace PlanForge.Api.Http;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using PlanForge.Application.Common;
+using PlanForge.Contracts;
 using System.Net;
 using System.Text.Json;
 
@@ -40,30 +41,39 @@ public sealed class HttpEndpointRunner(ILogger<HttpEndpointRunner>? logger = nul
 	/// <summary>Reads a bounded JSON payload without trusting caller-supplied length headers.</summary>
 	public async Task<T> ReadJsonAsync<T>(HttpRequestData request)
 	{
+		byte[] payload = await ReadBytesAsync(request, 65_536);
+		return JsonSerializer.Deserialize<T>(payload, jsonOptions) ?? throw new JsonException("A JSON body is required.");
+	}
+
+	public async Task<byte[]> ReadBytesAsync(HttpRequestData request, int maximumBytes)
+	{
 		using var payload = new MemoryStream();
 		var buffer = new byte[4096];
 		int count;
 		while ((count = await request.Body.ReadAsync(buffer, request.FunctionContext.CancellationToken)) > 0)
 		{
-			if (payload.Length + count > 65_536)
-				throw new PlanForgeException(413, "The JSON request exceeds the 64 KB limit.");
+			if (payload.Length + count > maximumBytes)
+				throw new PlanForgeException(413, "The request body exceeds its allowed size limit.");
 			await payload.WriteAsync(buffer.AsMemory(0, count), request.FunctionContext.CancellationToken);
 		}
-		payload.Position = 0;
-		return await JsonSerializer.DeserializeAsync<T>(payload, jsonOptions, request.FunctionContext.CancellationToken)
-			?? throw new JsonException("A JSON body is required.");
+		return payload.ToArray();
 	}
 
 	private static async Task<HttpResponseData> WriteAsync(HttpRequestData request, int status, object? result, string correlationId)
 	{
 		HttpResponseData response = request.CreateResponse((HttpStatusCode)status);
 		response.Headers.Add("Cache-Control", "no-store");
-		response.Headers.Add("Content-Type", status >= 400 ? "application/problem+json; charset=utf-8" : "application/json; charset=utf-8");
+		response.Headers.Add("Content-Type", result is DownloadFile download ? download.ContentType : status >= 400 ? "application/problem+json; charset=utf-8" : "application/json; charset=utf-8");
 		response.Headers.Add("X-Content-Type-Options", "nosniff");
 		response.Headers.Add("X-Correlation-ID", correlationId);
 		if (status == 429)
 			response.Headers.Add("Retry-After", "60");
-		if (status != 204)
+		if (result is DownloadFile file)
+		{
+			response.Headers.Add("Content-Disposition", (file.Inline ? "inline" : "attachment") + "; filename*=UTF-8''" + Uri.EscapeDataString(file.FileName));
+			await response.Body.WriteAsync(file.Content, request.FunctionContext.CancellationToken);
+		}
+		else if (status != 204)
 			await JsonSerializer.SerializeAsync(response.Body, result, jsonOptions, request.FunctionContext.CancellationToken);
 		return response;
 	}

@@ -24,7 +24,7 @@ Projects use immutable GUIDs, owner-scoped queries and integer revision compare-
 
 A full snapshot save increments revision exactly once and retains stable IDs. Omitted records require explicit replacement. Invalid hierarchy and unauthorized ownership are rejected before writes; database collisions roll back metadata, records and events together. Short serializable read transactions keep revisions and trees consistent. Aggregate completion cannot bypass child completion or unresolved decisions; Step closure validates the project's workflow and human-only approval and stamps the authenticated actor/time. Only completed-step closure evidence is authoritative.
 
-ProjectChanges retain the latest 100 events per project. The event and new revision are committed atomically. This is groundwork for the observing Web view, not a claim that Web polling already exists. Business HTTP adapters and agents/resources are subsequent tranches.
+ProjectChanges retain the latest 100 events per project. The event and new revision are committed atomically. This is groundwork for the observing Web view, not a claim that Web polling already exists. Business HTTP adapters, agent lifecycle and CSV exchange now consume this model; resource storage and the observing Web remain subsequent tranches.
 
 ## Delivery boundary
 

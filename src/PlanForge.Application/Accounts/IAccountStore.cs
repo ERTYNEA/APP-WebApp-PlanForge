@@ -10,5 +10,6 @@ public interface IAccountStore
 	Task<AccessCredential?> FindCredentialAsync(string tokenHash, CancellationToken cancellationToken);
 	Task<AccessCredential?> FindCredentialByIdAsync(Guid credentialId, Guid ownerUserId, CancellationToken cancellationToken);
 	Task<UserAccount?> FindUserAsync(Guid userId, CancellationToken cancellationToken);
+	Task<bool> IsAgentActiveAsync(Guid ownerId, Guid agentId, CancellationToken cancellationToken);
 	Task SaveAsync(CancellationToken cancellationToken);
 }

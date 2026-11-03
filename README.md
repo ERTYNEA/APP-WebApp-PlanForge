@@ -2,7 +2,7 @@
 
 PlanForge is an open-source project work-plan application for individuals and a few colleagues. Its hierarchy is Phase → Subphase → Step, with decisions, agent assignments and a reusable resource library.
 
-Version: `0.1.0-alpha.1`, implementation in progress, not a released application. Implemented foundations include test-driven workflow closure policies, a default subphase invariant, account registration/login/persisted hashed sessions in application services, relational account constraints, and additive SQL migration delivery. HTTP API and Blazor user interface are not available yet. Do not treat planned capabilities below as deployed functionality.
+Version: `0.1.0-alpha.2`, implementation in progress, not a finished product. Implemented API services and handlers cover authentication, owner-isolated projects and hierarchical work plans, four workflow closure policies, logical agents and hashed 30-day tokens, and transactional CSV exchange. SQL and API publication use exact-commit gated GitHub Actions. The Blazor UI, resource library, ZIP exports and complete integrated acceptance remain pending. See the API and deployment documents for the boundary between implemented code and cloud-verified behavior.
 
 ## Planned capabilities
 
@@ -25,7 +25,7 @@ Version: `0.1.0-alpha.1`, implementation in progress, not a released application
 
 ## Project status
 
-The first vertical slice establishes .NET 10 projects, domain and relational tests, authentication services and an additive accounts migration. See `docs/architecture.md`, `docs/deployment.md` and `docs/ui-design-system.md` for decisions and current delivery boundaries. The complete product remains under implementation.
+The current slices establish .NET 10 domain/application/relational/handler tests, persistent authentication, owner-scoped hierarchy and concurrency, agent lifecycle and strict CSV exchange. See `docs/architecture.md`, `docs/deployment.md` and `docs/ui-design-system.md` for decisions and current delivery boundaries. The complete product remains under implementation.
 
 ## Local checks
 

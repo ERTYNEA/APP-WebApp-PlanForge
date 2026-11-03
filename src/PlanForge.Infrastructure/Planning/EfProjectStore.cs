@@ -8,6 +8,9 @@ using PlanForge.Infrastructure.Database;
 
 public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 {
+	public Task<bool> IsValidAgentAsync(Guid ownerId, Guid agentId, bool requireActive, CancellationToken cancellationToken)
+		=> database.Agents.AnyAsync(agent => agent.OwnerUserId == ownerId && agent.Id == agentId && (!requireActive || agent.IsActive), cancellationToken);
+
 	public async Task CreateAsync(Project project, CancellationToken cancellationToken)
 	{
 		database.Projects.Add(project);
@@ -80,6 +83,20 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 				database.Entry(item).State = EntityState.Detached;
 		}
 	}
+	public async Task RecordEventAsync(Guid ownerId, Guid projectId, long revision, Guid actorId, string actorKind, string action, CancellationToken cancellationToken)
+	{
+		await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
+		if (!await database.Projects.AnyAsync(project => project.Id == projectId && project.OwnerUserId == ownerId, cancellationToken))
+			throw new PlanForgeException(404, "Project not found.");
+		var change = new ProjectChange { ProjectId = projectId, Revision = revision, ActorId = actorId, ActorKind = actorKind, Action = action, CreatedAt = DateTime.UtcNow };
+		database.ProjectChanges.Add(change);
+		await database.SaveChangesAsync(cancellationToken);
+		List<long> expired = await database.ProjectChanges.Where(entry => entry.ProjectId == projectId).OrderByDescending(entry => entry.Id).Skip(100).Select(entry => entry.Id).ToListAsync(cancellationToken);
+		await database.ProjectChanges.Where(entry => expired.Contains(entry.Id)).ExecuteDeleteAsync(cancellationToken);
+		await transaction.CommitAsync(cancellationToken);
+		database.Entry(change).State = EntityState.Detached;
+	}
+
 	private async Task RemoveItemsAsync(Guid projectId, List<Guid> retained, CancellationToken cancellationToken)
 	{
 		foreach (WorkItemKind kind in new[] { WorkItemKind.Decision, WorkItemKind.Step, WorkItemKind.Subphase, WorkItemKind.Phase })

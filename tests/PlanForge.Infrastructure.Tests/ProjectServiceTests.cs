@@ -41,5 +41,6 @@ public sealed class ProjectServiceTests
 		Assert.Equal(1, project.Revision);
 		Assert.Equal(actor.UserId, (await fixture.Database.Projects.FindAsync(project.Id))!.OwnerUserId);
 		Assert.Empty(project.Items);
+		Assert.Equal(project.UpdatedAt, (await service.GetAsync(actor, project.Id)).UpdatedAt);
 	}
 }

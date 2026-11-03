@@ -19,18 +19,21 @@ public static class PlanSnapshotValidator
 		foreach (PlanItem item in snapshot.Items)
 		{
 			WorkItemKind kind = ParseEnum<WorkItemKind>(item.Kind);
-			ParseEnum<WorkStatus>(item.Status);
+			if (kind != WorkItemKind.Decision)
+				ParseEnum<WorkStatus>(item.Status);
+			if (item.Evidence is not null)
+				ParseEnum<CompletionEvidence>(item.Evidence);
 			AssignmentMode assignment = ParseEnum<AssignmentMode>(item.AssignmentMode);
 			if (string.IsNullOrWhiteSpace(item.Title) || item.Title.Length > 240 || item.Description is null || item.Description.Length > 16000 || item.Resolution is null || item.Resolution.Length > 8000 || item.SortOrder < 0)
 				throw Invalid("Plan titles, descriptions, resolutions and order must be valid and within limits.");
 			if ((assignment == AssignmentMode.Override) != item.AssignedAgentId.HasValue)
 				throw Invalid("Only an explicit agent override may contain an agent ID.");
-			if (kind == WorkItemKind.Decision && (item.Status is not ("Pending" or "Completed") || (item.Status == "Completed" && string.IsNullOrWhiteSpace(item.Resolution))))
-				throw Invalid("A decision is Pending or Decided (Completed), and a decided record requires a resolution.");
+			if (kind == WorkItemKind.Decision && (item.Status is not ("Pending" or "Decided") || (item.Status == "Decided" && string.IsNullOrWhiteSpace(item.Resolution))))
+				throw Invalid("A decision is Pending or Decided, and a decided record requires a resolution.");
 			if (item.Status == "Completed" && kind is WorkItemKind.Phase or WorkItemKind.Subphase)
 			{
 				List<PlanItem> children = snapshot.Items.Where(child => child.ParentId == item.Id).ToList();
-				if (!children.Any(child => child.Kind != "Decision") || children.Any(child => child.Status != "Completed"))
+				if (!children.Any(child => child.Kind != "Decision") || children.Any(child => child.Status != (child.Kind == "Decision" ? "Decided" : "Completed")))
 					throw Invalid("A Phase or Subphase cannot complete before its children and decisions.");
 			}
 			if (kind == WorkItemKind.Phase)

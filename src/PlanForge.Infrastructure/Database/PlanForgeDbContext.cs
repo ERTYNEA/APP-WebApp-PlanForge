@@ -2,11 +2,13 @@ namespace PlanForge.Infrastructure.Database;
 
 using Microsoft.EntityFrameworkCore;
 using PlanForge.Domain.Accounts;
+using PlanForge.Domain.Agents;
 using PlanForge.Domain.Planning;
 
 public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> options) : DbContext(options)
 {
 	public DbSet<AccessCredential> AccessCredentials => Set<AccessCredential>();
+	public DbSet<Agent> Agents => Set<Agent>();
 	public DbSet<UserAccount> Users => Set<UserAccount>();
 	public DbSet<Project> Projects => Set<Project>();
 	public DbSet<ProjectChange> ProjectChanges => Set<ProjectChange>();
@@ -14,6 +16,15 @@ public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> opti
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
+		modelBuilder.Entity<Agent>(entity =>
+		{
+			entity.HasKey(agent => agent.Id);
+			entity.HasAlternateKey(agent => new { agent.OwnerUserId, agent.Id });
+			entity.Property(agent => agent.Name).HasMaxLength(80).IsRequired();
+			entity.Property(agent => agent.Description).HasMaxLength(2000).IsRequired();
+			entity.Property(agent => agent.AvatarContentType).HasMaxLength(80);
+			entity.HasOne<UserAccount>().WithMany().HasForeignKey(agent => agent.OwnerUserId).OnDelete(DeleteBehavior.Restrict);
+		});
 		modelBuilder.Entity<ProjectChange>(entity =>
 		{
 			entity.HasKey(change => change.Id);
@@ -38,6 +49,7 @@ public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> opti
 			entity.Property(item => item.Title).HasMaxLength(240).IsRequired();
 			entity.Property(item => item.Description).HasMaxLength(16000).IsRequired();
 			entity.Property(item => item.Resolution).HasMaxLength(8000).IsRequired();
+			entity.HasOne<Agent>().WithMany().HasForeignKey(item => item.AssignedAgentId).OnDelete(DeleteBehavior.Restrict);
 			entity.HasOne<Project>().WithMany().HasForeignKey(item => item.ProjectId).OnDelete(DeleteBehavior.Restrict);
 			entity.HasOne<WorkItem>().WithMany().HasForeignKey(item => new { item.ProjectId, item.ParentId }).HasPrincipalKey(item => new { item.ProjectId, item.Id }).OnDelete(DeleteBehavior.Restrict);
 		});
@@ -57,6 +69,7 @@ public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> opti
 			entity.Property(credential => credential.Name).HasMaxLength(80).IsRequired();
 			entity.HasIndex(credential => credential.TokenHash).IsUnique();
 			entity.HasIndex(credential => new { credential.OwnerUserId, credential.Kind });
+			entity.HasOne<Agent>().WithMany().HasForeignKey(credential => new { credential.OwnerUserId, credential.AgentId }).HasPrincipalKey(agent => new { agent.OwnerUserId, agent.Id }).OnDelete(DeleteBehavior.Restrict);
 			entity.HasOne<UserAccount>().WithMany().HasForeignKey(credential => credential.OwnerUserId).OnDelete(DeleteBehavior.Restrict);
 		});
 	}

@@ -65,6 +65,8 @@ namespace PlanForge.Infrastructure.Migrations
                     b.HasIndex("TokenHash")
                         .IsUnique();
 
+                    b.HasIndex("OwnerUserId", "AgentId");
+
                     b.HasIndex("OwnerUserId", "Kind");
 
                     b.ToTable("AccessCredentials");
@@ -108,6 +110,43 @@ namespace PlanForge.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("PlanForge.Domain.Agents.Agent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("AvatarBytes")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("AvatarContentType")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Agents");
                 });
 
             modelBuilder.Entity("PlanForge.Domain.Planning.Project", b =>
@@ -248,12 +287,29 @@ namespace PlanForge.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AssignedAgentId");
+
                     b.HasIndex("ProjectId", "ParentId");
 
                     b.ToTable("WorkItems");
                 });
 
             modelBuilder.Entity("PlanForge.Domain.Accounts.AccessCredential", b =>
+                {
+                    b.HasOne("PlanForge.Domain.Accounts.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PlanForge.Domain.Agents.Agent", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId", "AgentId")
+                        .HasPrincipalKey("OwnerUserId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("PlanForge.Domain.Agents.Agent", b =>
                 {
                     b.HasOne("PlanForge.Domain.Accounts.UserAccount", null)
                         .WithMany()
@@ -282,6 +338,11 @@ namespace PlanForge.Infrastructure.Migrations
 
             modelBuilder.Entity("PlanForge.Domain.Planning.WorkItem", b =>
                 {
+                    b.HasOne("PlanForge.Domain.Agents.Agent", null)
+                        .WithMany()
+                        .HasForeignKey("AssignedAgentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("PlanForge.Domain.Planning.Project", null)
                         .WithMany()
                         .HasForeignKey("ProjectId")

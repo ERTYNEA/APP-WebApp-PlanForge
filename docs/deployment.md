@@ -1,6 +1,6 @@
 # Deployment
 
-Status: initial database delivery under development. API and Web deployments are not available yet.
+Status: additive SQL accounts/project schema and the initial Functions authentication API are published and verified. The alpha.2 business API tranche is being deployed through the same gates; Web implementation/deployment is still pending. Do not equate a successful pipeline with full product acceptance.
 
 Only GitHub Actions applies migrations or publishes Azure apps. `tests.yml` runs hermetic Release restore/build/tests on main and external PRs without Azure secrets. Its trusted-main database job calls `deploy-database.yml` only after the same SHA passes tests, when schema/database paths change or an API deployment requires reconciliation. The pipeline serializes main runs, and the database workflow serializes migrations without cancellation. Readme-only pushes do not migrate. Manual Tests dispatch requests migration reconciliation after tests.
 
@@ -8,7 +8,7 @@ The database job builds a self-contained EF migration bundle in Production, read
 
 The connection stays in the runner environment, not a repository file or artifact. API runtime uses a different least-privilege SQL identity. No Azure login/OIDC or IP firewall updater is used.
 
-Future API and Web jobs must be explicitly gated after database/API success or legitimate no-change skips; simultaneous push triggers are not a deployment gate. Existing secret names for publication are `AZURE_FUNCTIONAPP_PUBLISH_PROFILE` and `AZURE_WEBAPP_PUBLISH_PROFILE`. Flex publication requires `sku: flexconsumption`; never create new identities to work around authentication failure.
+The API reusable job requires successful same-SHA tests and SQL reconciliation. The forthcoming Web job must be explicitly gated after API success or a proven legitimate no-change skip; simultaneous push triggers are not a deployment gate. Existing secret names for publication are `AZURE_FUNCTIONAPP_PUBLISH_PROFILE` and `AZURE_WEBAPP_PUBLISH_PROFILE`. Flex publication requires `sku: flexconsumption`; never create new identities to work around authentication failure.
 
 ## Data protection and recovery
 

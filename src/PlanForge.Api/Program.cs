@@ -4,8 +4,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PlanForge.Api.Http;
 using PlanForge.Application.Accounts;
+using PlanForge.Application.Agents;
+using PlanForge.Application.Exchange;
+using PlanForge.Application.Planning;
 using PlanForge.Infrastructure.Accounts;
+using PlanForge.Infrastructure.Agents;
 using PlanForge.Infrastructure.Database;
+using PlanForge.Infrastructure.Planning;
 
 var host = new HostBuilder()
 	.ConfigureFunctionsWorkerDefaults()
@@ -18,6 +23,12 @@ var host = new HostBuilder()
 		services.AddSingleton<ISecretProtector, SecretProtector>();
 		services.AddSingleton(TimeProvider.System);
 		services.AddScoped<AccountService>();
+		services.AddScoped<IProjectStore, EfProjectStore>();
+		services.AddScoped<ProjectService>();
+		services.AddScoped<PlanEditor>();
+		services.AddScoped<IAgentStore, EfAgentStore>();
+		services.AddScoped<AgentService>();
+		services.AddScoped<WorkPlanExchange>();
 		services.AddSingleton<HttpEndpointRunner>();
 	})
 	.Build();

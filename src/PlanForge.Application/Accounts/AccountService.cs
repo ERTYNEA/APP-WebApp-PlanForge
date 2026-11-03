@@ -18,6 +18,8 @@ public sealed class AccountService(IAccountStore accountStore, ISecretProtector 
 		UserAccount? user = await accountStore.FindUserAsync(credential.OwnerUserId, cancellationToken);
 		if (user is null || !user.IsActive || (credential.Kind == CredentialKind.HumanSession) != token.StartsWith("pf_h_", StringComparison.Ordinal))
 			throw new PlanForgeException(401, "The access token is invalid or revoked.");
+		if (credential.Kind == CredentialKind.AgentToken && credential.AgentId is Guid agentId && !await accountStore.IsAgentActiveAsync(user.Id, agentId, cancellationToken))
+			throw new PlanForgeException(401, "The agent is inactive or unavailable. Renew an authorized agent token.");
 		return new AuthenticatedActor(user.Id, credential.Kind, credential.Id, credential.AgentId);
 	}
 

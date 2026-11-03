@@ -10,6 +10,21 @@ using PlanForge.Infrastructure.Planning;
 
 public sealed class WorkflowTransitionTests
 {
+	[Fact]
+	public async Task SaveAsync_WhenWorkReportedWithoutApproval_RemainsInProgressAndNotCompleteAsync()
+	{
+		await using var fixture = new AccountDatabaseFixture();
+		var grant = await fixture.Service.RegisterAsync(new RegisterRequest("a@example.test", "CorrectPassword123!", "test"));
+		AuthenticatedActor actor = await fixture.Service.AuthenticateAsync(grant.Token);
+		var service = new ProjectService(new EfProjectStore(fixture.Database), TimeProvider.System);
+		ProjectSnapshot project = await service.CreateAsync(actor, new CreateProjectRequest("Plan", Workflow: "LocalChangesManualApproval"));
+		Guid phase = Guid.NewGuid();
+		Guid subphase = Guid.NewGuid();
+		project = await service.SaveAsync(actor, project.Id, project with { Items = [new(phase, "Phase", null, 0, "Phase"), new(subphase, "Subphase", phase, 0, "Subphase"), new(Guid.NewGuid(), "Step", subphase, 0, "Work done", Evidence: "WorkDone")] });
+		Assert.All(project.Items, item => Assert.Equal("InProgress", item.Status));
+		Assert.Equal(0, project.Progress);
+	}
+
 	[Theory]
 	[InlineData("PlanningOnly", "WorkDone", true, true)]
 	[InlineData("LocalChangesManualApproval", "WorkDone", true, false)]

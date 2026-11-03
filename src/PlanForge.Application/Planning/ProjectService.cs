@@ -22,16 +22,29 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 	public async Task<IReadOnlyList<ProjectSnapshot>> ListAsync(AuthenticatedActor actor, CancellationToken cancellationToken = default)
 		=> (await store.ListAsync(actor.UserId, cancellationToken)).Select(ToSnapshot).ToList();
 
-	public async Task<ProjectSnapshot> SaveAsync(AuthenticatedActor actor, Guid projectId, ProjectSnapshot snapshot, bool replace = false, CancellationToken cancellationToken = default)
+	public async Task<ProjectSnapshot> SaveAsync(AuthenticatedActor actor, Guid projectId, ProjectSnapshot snapshot, bool replace = false, CancellationToken cancellationToken = default, string action = "Project updated")
 	{
 		ProjectAggregate aggregate = await store.GetAsync(actor.UserId, projectId, cancellationToken) ?? throw new PlanForgeException(404, "Project not found.");
 		if (snapshot.Id != projectId)
 			throw new PlanForgeException(400, "Project ID must match the target.");
 		if (aggregate.Project.Revision != snapshot.Revision)
 			throw new PlanForgeException(409, "The project changed. Reload the current revision before retrying.");
+		snapshot = snapshot with
+		{
+			Status = aggregate.Project.Status == WorkStatus.Completed && snapshot.Status == "Completed" ? "Pending" : snapshot.Status,
+			Items = snapshot.Items?.Select(item => item is not null && item.Kind is "Phase" or "Subphase" && item.Status == "Completed" && aggregate.Items.Any(previous => previous.Id == item.Id && previous.Status == WorkStatus.Completed)
+				? item with { Status = "Pending" } : item!).ToList()!
+		};
 		PlanSnapshotValidator.Validate(snapshot);
+		snapshot = PlanProgress.Recalculate(snapshot with
+		{
+			Items = snapshot.Items.Select(item => item.Kind == "Step" && item.Status == "Pending" && item.Evidence == "WorkDone" ? item with { Status = "InProgress" } : item).ToList()
+		});
 		if (!replace && aggregate.Items.Any(existing => !snapshot.Items.Any(item => item.Id == existing.Id)))
 			throw new PlanForgeException(400, "Records are missing. Explicit replace confirmation is required to remove plan records.");
+		foreach (Guid agentId in snapshot.Items.Where(item => item.AssignedAgentId.HasValue).Select(item => item.AssignedAgentId!.Value).Distinct())
+			if (!await store.IsValidAgentAsync(actor.UserId, agentId, !aggregate.Items.Any(item => item.AssignedAgentId == agentId), cancellationToken))
+				throw new PlanForgeException(400, "An assigned agent is unavailable in this account.");
 		DateTimeOffset now = timeProvider.GetUtcNow();
 		DevelopmentWorkflow workflow = PlanSnapshotValidator.ParseEnum<DevelopmentWorkflow>(snapshot.Workflow);
 		if (workflow != aggregate.Project.Workflow && (!actor.IsHuman || snapshot.Items.Any(item => item.Kind == "Step" && item.Status == "Completed" && !aggregate.Items.Any(old => old.Id == item.Id && old.Status == WorkStatus.Completed))))
@@ -50,7 +63,7 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 			SortOrder = item.SortOrder,
 			Title = item.Title,
 			Description = item.Description,
-			Status = Enum.Parse<WorkStatus>(item.Status),
+			Status = item.Kind == "Decision" && item.Status == "Decided" ? WorkStatus.Completed : Enum.Parse<WorkStatus>(item.Status),
 			AssignmentMode = Enum.Parse<AssignmentMode>(item.AssignmentMode),
 			AssignedAgentId = item.AssignedAgentId,
 			Resolution = item.Resolution,
@@ -77,7 +90,7 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 						throw new PlanForgeException(400, "This workflow requires owner approval, confirmed merge or confirmed push before completion.");
 					item.Evidence = evidence;
 					item.CompletedAt = now;
-					item.CompletedBy = actor.UserId;
+					item.CompletedBy = actor.AgentId ?? actor.UserId;
 				}
 			}
 			else if (input.Evidence is not null)
@@ -86,13 +99,13 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 				if (item.Evidence != CompletionEvidence.WorkDone)
 					throw new PlanForgeException(400, "Closure evidence is recorded only by a valid completion transition.");
 			}
-			if (item.Kind == WorkItemKind.Decision && item.Status == WorkStatus.Completed)
+			if (item.Kind is WorkItemKind.Decision or WorkItemKind.Phase or WorkItemKind.Subphase && item.Status == WorkStatus.Completed)
 			{
 				item.CompletedAt = previous?.Status == WorkStatus.Completed ? previous.CompletedAt : now;
-				item.CompletedBy = previous?.Status == WorkStatus.Completed ? previous.CompletedBy : actor.UserId;
+				item.CompletedBy = previous?.Status == WorkStatus.Completed ? previous.CompletedBy : actor.AgentId ?? actor.UserId;
 			}
 		}
-		await store.SaveAsync(new ProjectAggregate(aggregate.Project, items), snapshot.Revision, actor.UserId, actor.IsHuman ? "Human" : "Agent", "Project updated", cancellationToken);
+		await store.SaveAsync(new ProjectAggregate(aggregate.Project, items), snapshot.Revision, actor.AgentId ?? actor.UserId, actor.IsHuman ? "Human" : "Agent", action, cancellationToken);
 		aggregate.Project.Revision++;
 		return ToSnapshot(new ProjectAggregate(aggregate.Project, items));
 	}
@@ -108,6 +121,6 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 	}
 
 	private static ProjectSnapshot ToSnapshot(ProjectAggregate aggregate)
-		=> new(aggregate.Project.Id, aggregate.Project.Revision, aggregate.Project.Name, aggregate.Project.Description, aggregate.Project.Status.ToString(), aggregate.Project.Workflow.ToString(), aggregate.Project.UpdatedAt,
-			aggregate.Items.Select(item => new PlanItem(item.Id, item.Kind.ToString(), item.ParentId, item.SortOrder, item.Title, item.Description, item.Status.ToString(), item.AssignmentMode.ToString(), item.AssignedAgentId, item.Resolution, item.Evidence?.ToString(), item.CompletedBy, item.CompletedAt)).ToList());
+		=> new(aggregate.Project.Id, aggregate.Project.Revision, aggregate.Project.Name, aggregate.Project.Description, aggregate.Project.Status.ToString(), aggregate.Project.Workflow.ToString(), new DateTimeOffset(DateTime.SpecifyKind(aggregate.Project.UpdatedAt, DateTimeKind.Utc)),
+			aggregate.Items.Select(item => new PlanItem(item.Id, item.Kind.ToString(), item.ParentId, item.SortOrder, item.Title, item.Description, item.Kind == WorkItemKind.Decision && item.Status == WorkStatus.Completed ? "Decided" : item.Status.ToString(), item.AssignmentMode.ToString(), item.AssignedAgentId, item.Resolution, item.Evidence?.ToString(), item.CompletedBy, item.CompletedAt)).ToList());
 }

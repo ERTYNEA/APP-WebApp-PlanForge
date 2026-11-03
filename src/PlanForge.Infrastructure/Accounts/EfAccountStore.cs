@@ -31,6 +31,9 @@ public sealed class EfAccountStore(PlanForgeDbContext database) : IAccountStore
 	public Task<UserAccount?> FindUserAsync(Guid userId, CancellationToken cancellationToken)
 		=> database.Users.SingleOrDefaultAsync(user => user.Id == userId, cancellationToken);
 
+	public Task<bool> IsAgentActiveAsync(Guid ownerId, Guid agentId, CancellationToken cancellationToken)
+		=> database.Agents.AnyAsync(agent => agent.OwnerUserId == ownerId && agent.Id == agentId && agent.IsActive, cancellationToken);
+
 	public async Task SaveAsync(CancellationToken cancellationToken)
 		=> await database.SaveChangesAsync(cancellationToken);
 }
