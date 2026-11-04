@@ -35,6 +35,6 @@ public static class PlanProgress
 			return "Blocked";
 		if (!hasPendingDecision && children.Any(item => item.Kind != "Decision") && children.All(item => item.Status == (item.Kind == "Decision" ? "Decided" : "Completed")))
 			return "Completed";
-		return children.Any(item => item.Status is "Completed" or "Decided" or "InProgress") ? "InProgress" : "Pending";
+		return requested == "InProgress" || children.Any(item => item.Status is "Completed" or "Decided" or "InProgress") ? "InProgress" : "Pending";
 	}
 }

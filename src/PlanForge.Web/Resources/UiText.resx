@@ -564,4 +564,100 @@
 	<data name="↻ Reload" xml:space="preserve">
 		<value>↻ Reload</value>
 	</data>
+  <data name="A clear view of what matters now, and what comes next." xml:space="preserve">
+    <value>A clear view of what matters now, and what comes next.</value>
+  </data>
+  <data name="Account settings ↗" xml:space="preserve">
+    <value>Account settings ↗</value>
+  </data>
+  <data name="Current avatar" xml:space="preserve">
+    <value>Current avatar</value>
+  </data>
+  <data name="Direct project: {0}" xml:space="preserve">
+    <value>Direct project: {0}</value>
+  </data>
+  <data name="Expires {0}" xml:space="preserve">
+    <value>Expires {0}</value>
+  </data>
+  <data name="Grid view" xml:space="preserve">
+    <value>Grid view</value>
+  </data>
+  <data name="Import work-plan.csv" xml:space="preserve">
+    <value>Import work-plan.csv</value>
+  </data>
+  <data name="Last used: {0}" xml:space="preserve">
+    <value>Last used: {0}</value>
+  </data>
+  <data name="List view" xml:space="preserve">
+    <value>List view</value>
+  </data>
+  <data name="Manage project settings, execution modes and linked resources." xml:space="preserve">
+    <value>Manage project settings, execution modes and linked resources.</value>
+  </data>
+  <data name="Maximum file: {0}" xml:space="preserve">
+    <value>Maximum file: {0}</value>
+  </data>
+  <data name="Never" xml:space="preserve">
+    <value>Never</value>
+  </data>
+  <data name="Open work plan" xml:space="preserve">
+    <value>Open work plan</value>
+  </data>
+  <data name="Orphan" xml:space="preserve">
+    <value>Orphan</value>
+  </data>
+  <data name="Phase: {0} · {1}" xml:space="preserve">
+    <value>Phase: {0} · {1}</value>
+  </data>
+  <data name="Phases → Subphases → Steps · Updates automatically" xml:space="preserve">
+    <value>Phases → Subphases → Steps · Updates automatically</value>
+  </data>
+  <data name="Project resources" xml:space="preserve">
+    <value>Project resources</value>
+  </data>
+  <data name="Project settings" xml:space="preserve">
+    <value>Project settings</value>
+  </data>
+  <data name="Revision {0}" xml:space="preserve">
+    <value>Revision {0}</value>
+  </data>
+  <data name="Save {0}" xml:space="preserve">
+    <value>Save {0}</value>
+  </data>
+  <data name="Work in focus" xml:space="preserve">
+    <value>Work in focus</value>
+  </data>
+  <data name="decision" xml:space="preserve">
+    <value>decision</value>
+  </data>
+  <data name="phase" xml:space="preserve">
+    <value>phase</value>
+  </data>
+  <data name="step" xml:space="preserve">
+    <value>step</value>
+  </data>
+  <data name="subphase" xml:space="preserve">
+    <value>subphase</value>
+  </data>
+  <data name="{0} / {1} steps" xml:space="preserve">
+    <value>{0} / {1} steps</value>
+  </data>
+  <data name="{0} is enforced by the API. Record only evidence you have actually verified." xml:space="preserve">
+    <value>{0} is enforced by the API. Record only evidence you have actually verified.</value>
+  </data>
+  <data name="{0} project" xml:space="preserve">
+    <value>{0} project</value>
+  </data>
+  <data name="{0} projects" xml:space="preserve">
+    <value>{0} projects</value>
+  </data>
+  <data name="{0}% complete" xml:space="preserve">
+    <value>{0}% complete</value>
+  </data>
+  <data name="{0}–{1} of {2}" xml:space="preserve">
+    <value>{0}–{1} of {2}</value>
+  </data>
+  <data name="Your password was changed. Sign in again." xml:space="preserve">
+    <value>Your password was changed. Sign in again.</value>
+  </data>
 </root>

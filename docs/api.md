@@ -1,6 +1,6 @@
 # REST API
 
-Status: alpha.4 API and six additive migrations are cloud-verified, including accounts/password/avatar, credential-security-version races, summaries/change cursors, business ownership/workflows, CSV, Library/ZIP integrity and real attachment/cleanup races. Alpha.5 adds a locally tested Blazor BFF/UI and ordered Web publication; first Web cloud deployment and complete integrated acceptance remain pending.
+The initial API and Blazor BFF/UI are cloud-published. Six additive SQL migrations support accounts/password/avatar, credential-security-version races, summaries/change cursors, owner-isolated business workflows, CSV and Library/ZIP integrity. Controlled acceptance includes real SQL attachment/cleanup races and real browser forms/notifications.
 
 One .NET 10 isolated Functions app is the authorizing backend. Anonymous platform triggers still require application Bearer authorization. Clients never submit an OwnerUserId. Known IDs belonging to another owner return the same safe 404 as missing records. HTTPS is mandatory outside loopback development.
 
@@ -8,7 +8,7 @@ One .NET 10 isolated Functions app is the authorizing backend. Anonymous platfor
 
 All paths below start with `/api/v1`. Bodies are JSON except raw CSV import. Authentication, parsing and ownership checks happen server-side.
 
-- GET `/health`, GET `/ready`: liveness/version and real SQL schema readiness.
+- GET `/health`, GET `/ready`: liveness/version and real SQL schema readiness. Readiness also returns processStartedAtUtc from the actual OS process for non-secret restart/continuity verification.
 - POST `/auth/register`: email, password, displayName; returns 201 with a human session grant.
 - POST `/auth/login`: email and password; returns a new human session grant.
 - GET `/auth/session`: human session profile. POST `/auth/logout`: revoke that session, 204.
@@ -51,9 +51,9 @@ Project/phase deletion removes associations only. Resource cleanup never sees av
 
 Workflow values are `PlanningOnly`, `LocalChangesManualApproval`, `BranchPullRequest`, `DirectToMain`, displayed in that order. Step completion requires respectively `WorkDone`, human `OwnerApproved`, `MergeConfirmed`, `PushConfirmed` evidence. Reporting WorkDone under another mode keeps the step InProgress; it cannot be completed prematurely. Agents cannot forge human approval. Changing workflow is human-only and cannot simultaneously close pending work under a more permissive mode. This records an authenticated confirmation, not automatic GitHub verification.
 
-Phase/Subphase/Step statuses: Pending, InProgress, Blocked, Completed. Decisions use Pending or Decided and require a resolution when decided. Aggregate status/progress derive from actual children and closed steps; no fake progress counters. Agent assignment modes: Inherit, Override with a valid owner-local agent, or explicit Unassigned. Inactive agent references remain historical but cannot be newly assigned.
+Phase/Subphase/Step statuses: Pending, InProgress, Blocked, Completed. Decisions use Pending or Decided and require a resolution when decided. Aggregate completion/progress derive from actual children and closed steps; an explicitly started Phase/Subphase may remain InProgress before its children start, without counting any pending Step as complete. No fake progress counters. Agent assignment modes: Inherit, Override with a valid owner-local agent, or explicit Unassigned. Inactive agent references remain historical but cannot be newly assigned.
 
-Every mutation supplies the current revision; one successful logical operation increments it once. Stale or concurrently superseded revisions return 409. Reload and reconcile; never automatically overwrite the winner. Snapshot and child changes/events share a transaction. Export events do not increment revision. Stored events distinguish Human and Agent and use the exact action strings documented in the specification; the bounded change endpoint exposes these events; the implemented observing Web polls this bounded cursor while active; its complete real-browser/cloud acceptance remains pending.
+Every mutation supplies the current revision; one successful logical operation increments it once. Stale or concurrently superseded revisions return 409. Reload and reconcile; never automatically overwrite the winner. Snapshot and child changes/events share a transaction. Export events do not increment revision. Stored events distinguish Human and Agent and use the exact action strings documented in the specification; the bounded change endpoint exposes these events; the observing Web polls this bounded cursor while active, and human observers receive actor-correct toasts without manual reload.
 
 ## Authentication and safety
 

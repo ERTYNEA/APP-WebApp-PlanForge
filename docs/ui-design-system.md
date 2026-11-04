@@ -1,6 +1,6 @@
 # UI design system
 
-Implemented as a functional Blazor Interactive Server dark developer control panel, not a static mockup. Login/empty Home and active-plan desktop/mobile screenshots were inspected during local integration. Complete populated/collapsed/Library/mobile and cloud visual acceptance remain pending.
+Implemented as a functional Blazor Interactive Server dark developer control panel, not a static mockup. Real local and cloud screenshots cover login, empty/populated Home, a twenty-project collection, expanded/collapsed plans, Assigned/Orphan Library, Account and narrow navigation. Visual acceptance checks readable title geometry as well as absence of horizontal overflow; narrow plans place metadata beneath the full-width title.
 
 Tokens: background #0B1017; surface #121923; raised #17212D; border #293847; text #E8F1F6; muted #A4B6C5; action/focus cyan #3DD6E5/#75E6F0; verified success #35D89C; pending #F3B74A; blocked/destructive #FF8290. Muted/error text is slightly lighter than the initial target to improve dark-surface contrast.
 

@@ -1,3 +1,4 @@
+@inject IJSRuntime JavaScript
 <div class="work-plan-tree" aria-label="@T["Hierarchical work plan"]">
 	@foreach (PlanItem phase in Snapshot.Items.Where(item => item.Kind == "Phase").OrderBy(item => item.SortOrder))
 	{
@@ -16,13 +17,21 @@
 	private readonly HashSet<Guid> expanded = [];
 	private Guid initializedProject;
 	private Guid? activeId;
+	private bool revealCurrent;
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (!revealCurrent || !activeId.HasValue) return;
+		revealCurrent = false;
+		await JavaScript.InvokeVoidAsync("planForge.revealCurrentWork", activeId.Value.ToString());
+	}
 	protected override void OnParametersSet()
 	{
 		if (initializedProject != Snapshot.Id) { expanded.Clear(); initializedProject = Snapshot.Id; activeId = null; }
-		PlanItem? active = Snapshot.Items.FirstOrDefault(item => item.Kind == "Step" && item.Status is "InProgress" or "Blocked");
+		PlanItem? active = PlanLabels.CurrentWork(Snapshot);
 		if (active is not null && activeId != active.Id)
 		{
 			activeId = active.Id;
+			revealCurrent = true;
 			Guid? id = active.Id;
 			for (int depth=0; depth<Snapshot.Items.Count && id.HasValue; depth++)
 			{

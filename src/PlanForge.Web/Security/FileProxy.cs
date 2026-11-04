@@ -23,21 +23,21 @@ public static class FileProxy
 			return;
 		}
 		using HttpClient client = clients.CreateClient("PlanForgeApi");
-		using var request = new HttpRequestMessage(HttpMethod.Get,path);
-		request.Headers.Authorization = new AuthenticationHeaderValue("Bearer",token);
+		using var request = new HttpRequestMessage(HttpMethod.Get, path);
+		request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 		try
 		{
-			using HttpResponseMessage response = await client.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,context.RequestAborted);
-			await ApiTransport.EnsureSuccessAsync(response,context.RequestAborted);
+			using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
+			await ApiTransport.EnsureSuccessAsync(response, context.RequestAborted);
 			context.Response.ContentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
 			if (response.Content.Headers.ContentDisposition is not null)
 				context.Response.Headers.ContentDisposition = response.Content.Headers.ContentDisposition.ToString();
-			await response.Content.CopyToAsync(context.Response.Body,context.RequestAborted);
+			await response.Content.CopyToAsync(context.Response.Body, context.RequestAborted);
 		}
 		catch (ApiException exception)
 		{
 			context.Response.StatusCode = exception.StatusCode;
-			await context.Response.WriteAsJsonAsync(new { detail = exception.Message, correlationId = exception.CorrelationId },context.RequestAborted);
+			await context.Response.WriteAsJsonAsync(new { detail = exception.Message, correlationId = exception.CorrelationId }, context.RequestAborted);
 		}
 	}
 }

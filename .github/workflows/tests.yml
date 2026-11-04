@@ -38,6 +38,7 @@ jobs:
       - run: dotnet restore APP-WebApp-PlanForge.slnx
       - run: dotnet restore src/PlanForge.Api
       - run: python3 -m unittest discover -s tests/pipeline -v
+      - run: node --test tests/browser/ui.test.cjs
       - run: dotnet build APP-WebApp-PlanForge.slnx --configuration Release --no-restore
       - run: dotnet test APP-WebApp-PlanForge.slnx --configuration Release --no-build --logger trx --results-directory TestResults
       - uses: actions/upload-artifact@v7.0.2

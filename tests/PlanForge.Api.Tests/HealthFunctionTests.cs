@@ -1,7 +1,7 @@
 namespace PlanForge.Api.Tests;
 
-using PlanForge.Api.Health;
 using Microsoft.EntityFrameworkCore;
+using PlanForge.Api.Health;
 using System.Net;
 using System.Text.Json;
 
@@ -30,7 +30,7 @@ public sealed class HealthFunctionTests
 		using JsonDocument body = await JsonDocument.ParseAsync(response.Body);
 
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-		Assert.StartsWith("0.1.0-alpha.5", body.RootElement.GetProperty("version").GetString());
+		Assert.StartsWith("0.1.0", body.RootElement.GetProperty("version").GetString());
 	}
 
 	[Fact]
@@ -45,5 +45,7 @@ public sealed class HealthFunctionTests
 
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 		Assert.Equal("ready", body.RootElement.GetProperty("status").GetString());
+		Assert.True(body.RootElement.TryGetProperty("processStartedAtUtc", out JsonElement started));
+		Assert.InRange(started.GetDateTimeOffset(), DateTimeOffset.UtcNow.AddDays(-7), DateTimeOffset.UtcNow);
 	}
 }

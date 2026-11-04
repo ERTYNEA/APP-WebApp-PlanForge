@@ -6,6 +6,9 @@ using PlanForge.Web.Api;
 using PlanForge.Web.Components;
 using PlanForge.Web.Security;
 
+DateTimeOffset processStartedAtUtc;
+using (System.Diagnostics.Process process = System.Diagnostics.Process.GetCurrentProcess())
+	processStartedAtUtc = new DateTimeOffset(process.StartTime.ToUniversalTime());
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddCascadingAuthenticationState();
@@ -65,7 +68,7 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 WebSession.MapAccountEndpoints(app);
 FileProxy.MapFileEndpoints(app);
-app.MapGet("/health", () => Results.Json(new { status = "ready", version = ProductVersion.Informational }));
+app.MapGet("/health", () => Results.Json(new { status = "ready", version = ProductVersion.Informational, processStartedAtUtc }));
 app.MapGet("/error", () => Results.Problem("The page could not be loaded. Please try again.", statusCode: 500));
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 app.Run();

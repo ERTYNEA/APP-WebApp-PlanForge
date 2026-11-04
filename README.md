@@ -2,7 +2,7 @@
 
 PlanForge is an MIT-licensed work-plan application for individuals and a few colleagues. Projects contain Phase → Subphase → Step hierarchies, decisions, inherited agent assignments and a reusable resource library.
 
-Version: `0.1.0-alpha.5` — implementation and integrated acceptance in progress, not a completed release. The alpha.4 SQL/API account, business, Library/ZIP and change-query tranches are deployed and controlled-HTTP verified. The alpha.5 Blazor BFF/UI and fourth deployment workflow are implemented and locally tested; their first cloud publication and complete browser/security acceptance remain pending. A passing build alone is not product acceptance.
+Version: `0.1.0` — functional initial release. SQL, Functions API and Blazor Web are delivered through the existing ordered GitHub Actions pipeline. Controlled real HTTP/browser acceptance covers workflows, ownership, CSV, binary resources, notifications and responsive UI; every release also requires exact-SHA cloud readiness and persisted-session/data continuity, not merely a passing build. See [acceptance and limitations](docs/acceptance.md).
 
 ## Implemented capabilities
 
@@ -27,12 +27,14 @@ Use the .NET 10 SDK pinned by `global.json`:
 
 ```sh
 dotnet restore APP-WebApp-PlanForge.slnx
+dotnet restore src/PlanForge.Api
 dotnet build APP-WebApp-PlanForge.slnx --configuration Release
 dotnet test APP-WebApp-PlanForge.slnx --configuration Release
 python3 -m unittest discover -s tests/pipeline -v
+node --test tests/browser/ui.test.cjs
 ```
 
-Default tests are hermetic and use SQLite relational fixtures, handler transport, bUnit and ASP.NET TestServer where appropriate. They do not touch shared Azure SQL and are not substitutes for SQL Server/cloud/browser evidence. No local SQL Server, Docker, Azurite or global Functions tools are needed.
+The small JavaScript regression suite uses the built-in Node.js test runner (Node 22+), with no npm dependencies. Default tests are hermetic and use SQLite relational fixtures, handler transport, bUnit and ASP.NET TestServer where appropriate. They do not touch shared Azure SQL and are not substitutes for SQL Server/cloud/browser evidence. No local SQL Server, Docker, Azurite or global Functions tools are needed.
 
 ## Run the Web locally
 

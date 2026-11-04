@@ -9,5 +9,8 @@ public static class PlanLabels
 	public static string Status(PlanItem item, string workflow) => item.Status == "InProgress" && item.Evidence == "WorkDone" ? workflow switch { "LocalChangesManualApproval" => "Awaiting approval", "BranchPullRequest" => "Awaiting merge", "DirectToMain" => "Awaiting push confirmation", _ => "In progress" } : item.Status == "InProgress" ? "In progress" : item.Status;
 	public static string StatusClass(string status) => status switch { "Completed" or "Decided" => "success", "Blocked" => "error", "InProgress" => "active", _ => "warning" };
 	public static string RouteKind(string kind) => kind switch { "Phase" => "phases", "Subphase" => "subphases", "Step" => "steps", "Decision" => "decisions", _ => throw new ArgumentOutOfRangeException(nameof(kind)) };
+	public static PlanItem? CurrentWork(ProjectSnapshot snapshot) => snapshot.Items.FirstOrDefault(item => item.Kind == "Step" && item.Status is "InProgress" or "Blocked")
+		?? snapshot.Items.FirstOrDefault(item => item.Kind == "Subphase" && item.Status is "InProgress" or "Blocked")
+		?? snapshot.Items.FirstOrDefault(item => item.Kind == "Phase" && item.Status is "InProgress" or "Blocked");
 	public static string Bytes(long bytes) => bytes >= 1024 * 1024 ? $"{bytes / (1024d * 1024):0.#} MiB" : bytes >= 1024 ? $"{bytes / 1024d:0.#} KiB" : $"{bytes} B";
 }

@@ -34,15 +34,15 @@ public static class WebSession
 			return Results.LocalRedirect("/login");
 		}
 		IFormCollection form = await context.Request.ReadFormAsync(context.RequestAborted);
-		string errorPath=operation=="password" ? "settings" : operation;
+		string errorPath = operation == "password" ? "settings" : operation;
 		try
 		{
-			if(operation=="password")
+			if (operation == "password")
 			{
-				string? token=context.User.FindFirst(TokenClaim)?.Value;
-				if(token is null) return Results.Unauthorized();
-				if(form["newPassword"].ToString()!=form["confirmPassword"].ToString()) return Results.LocalRedirect("/settings?error="+Uri.EscapeDataString("The new passwords do not match."));
-				await api.SendAsync<object>(HttpMethod.Post,"users/me/password",token,new ChangePasswordRequest(form["currentPassword"].ToString(),form["newPassword"].ToString()),cancellationToken:context.RequestAborted);
+				string? token = context.User.FindFirst(TokenClaim)?.Value;
+				if (token is null) return Results.Unauthorized();
+				if (form["newPassword"].ToString() != form["confirmPassword"].ToString()) return Results.LocalRedirect("/settings?error=" + Uri.EscapeDataString("The new passwords do not match."));
+				await api.SendAsync<object>(HttpMethod.Post, "users/me/password", token, new ChangePasswordRequest(form["currentPassword"].ToString(), form["newPassword"].ToString()), cancellationToken: context.RequestAborted);
 				await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 				return Results.LocalRedirect("/login?notice=password-changed");
 			}

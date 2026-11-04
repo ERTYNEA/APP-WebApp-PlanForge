@@ -27,7 +27,7 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 button:hover:not(:disabled) { border-color: var(--pf-cyan); }
 .primary { background: var(--pf-cyan); color: #07141a; border-color: var(--pf-cyan); }
 .primary:hover:not(:disabled) { background: #8be9f1; }
-.quiet { background: var(--pf-surface-raised); color: var(--pf-text); }
+.quiet { background: var(--pf-surface-raised); color: var(--pf-text); border-color: #61788d; }
 .danger { background: #4c222e; border-color: #965263; color: #ffdbe0; }
 .danger:hover:not(:disabled) { background: #652c3c; border-color: var(--pf-red); }
 .danger-text { color: var(--pf-red); }
@@ -35,7 +35,7 @@ button:hover:not(:disabled) { border-color: var(--pf-cyan); }
 .full { width: 100%; }
 :focus-visible { outline: 2px solid var(--pf-focus); outline-offset: 4px; }
 h1:focus { outline: none; }
-input, select, textarea { width: 100%; min-width: 0; border: 1px solid #3a4d60; border-radius: 7px; padding: 10px 12px; background: #0c131c; color: var(--pf-text); }
+input, select, textarea { width: 100%; min-width: 0; border: 1px solid #61788d; border-radius: 7px; padding: 10px 12px; background: #0c131c; color: var(--pf-text); }
 input::placeholder, textarea::placeholder { color: #8397a8; }
 input:focus, select:focus, textarea:focus { border-color: var(--pf-focus); }
 textarea { resize: vertical; }
@@ -117,7 +117,8 @@ progress::-moz-progress-bar { background: var(--pf-cyan); border-radius: 8px; }
 .current-work { margin-top: 20px; padding: 14px; border-left: 2px solid #3b8194; background: #111e29; border-radius: 0 6px 6px 0; display: grid; gap: 5px; font-size: 12px; }
 .current-work .eyebrow { font-size: 8px; margin: 0; }
 .current-work small { font-size: 10px; color: var(--pf-muted); overflow-wrap: anywhere; }
-.agent-tag { color: #b5cfdf; font-size: 11px; white-space: nowrap; }
+.agent-tag { display: inline-flex; align-items: center; gap: 5px; color: #b5cfdf; font-size: 11px; white-space: nowrap; }
+.agent-tag img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .card-footer { border-top: 1px solid var(--pf-border); display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 16px; margin-top: auto; font-size: 11px; color: var(--pf-muted); }
 .project-card .card-footer { margin-top: 20px; }
 .badge { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #3f4e5d; border-radius: 5px; padding: 3px 7px; font-size: 10px; font-weight: 650; white-space: nowrap; }
@@ -210,7 +211,7 @@ progress::-moz-progress-bar { background: var(--pf-cyan); border-radius: 8px; }
 .skip-link:focus { top: 15px; }
 @media(min-width:1600px) { .project-grid, .resource-grid { grid-template-columns: repeat(4,minmax(0,1fr)); } }
 @media(max-width:1200px) { .project-grid, .resource-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .agent-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .page-heading { flex-wrap: wrap; } }
-@media(max-width:900px) { .sidebar { width: 204px; padding: 24px 12px; } .main-shell { margin-left: 204px; width: calc(100% - 204px); } #main-content { padding: 24px; } .topbar { padding: 16px 24px; } .settings-grid { grid-template-columns: 1fr; } .node-heading { flex-wrap: wrap; } .node-meta { margin-left: 25px; } .section-heading { flex-wrap: wrap; } .project-overview .progress-summary { margin-left: 0; } }
+@media(max-width:900px) { .sidebar { width: 204px; padding: 24px 12px; } .main-shell { margin-left: 204px; width: calc(100% - 204px); } #main-content { padding: 24px; } .topbar { padding: 16px 24px; } .settings-grid { grid-template-columns: 1fr; } .node-heading { flex-wrap: wrap; } .node-title { flex-basis: 100%; } .node-meta { margin-left: 25px; max-width: calc(100% - 25px); } .node-meta .agent-tag { white-space: normal; overflow-wrap: anywhere; } .section-heading { flex-wrap: wrap; } .project-overview .progress-summary { margin-left: 0; } }
 @media(max-width:700px) {
 	.sidebar { width: 240px; transform: translateX(-100%); transition: transform 250ms; box-shadow: 12px 0 40px #0008; }
 	.sidebar.is-open { transform: translateX(0); }

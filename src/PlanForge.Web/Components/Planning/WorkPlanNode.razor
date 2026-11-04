@@ -4,7 +4,7 @@
 			<span class="node-chevron">@(Expanded.Contains(Item.Id) ? "⌄" : "›")</span><span class="node-kind">@(Item.Kind == "Decision" ? Item.Status == "Decided" ? "✓" : "⚠" : Item.Kind == "Phase" ? (Item.SortOrder + 1).ToString("00") : Item.Kind == "Subphase" ? "◈" : Item.Status == "Completed" ? "✓" : "○")</span><span>@Item.Title</span>
 		</button>
 		<div class="node-meta"><span class="badge @PlanLabels.StatusClass(Item.Status)">@PlanLabels.Status(Item, Snapshot.Workflow)</span>
-			@if (Snapshot.GetEffectiveAgentId(Item.Id) is Guid agentId) { <span class="agent-tag">◇ @AgentName(agentId)</span> }
+			@if (Snapshot.GetEffectiveAgentId(Item.Id) is Guid agentId) { <span class="agent-tag">@if (Agents.FirstOrDefault(agent => agent.Id == agentId)?.HasAvatar == true) { <img src="@($"/files/agent-avatars/{agentId}")" alt="" /> } else { <span aria-hidden="true">◇</span> } @AgentName(agentId)</span> }
 			<button class="quiet compact" @onclick="() => Edit.InvokeAsync(Item)" disabled="@Disabled" aria-label="@($"Edit {Item.Kind.ToLowerInvariant()} {Item.Title}")">@T["Edit"]</button>
 		</div>
 	</div>

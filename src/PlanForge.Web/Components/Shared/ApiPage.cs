@@ -9,8 +9,8 @@ public abstract class ApiPage : ComponentBase, IAsyncDisposable
 {
 	private readonly CancellationTokenSource lifetime = new();
 	private Task? polling;
-	private readonly List<Task> toastTasks=[];
-	protected ApiPage() => Token=lifetime.Token;
+	private readonly List<Task> toastTasks = [];
+	protected ApiPage() => Token = lifetime.Token;
 	[Inject] protected PlanForgeClient Api { get; set; } = default!;
 	[Inject] protected NavigationManager Navigation { get; set; } = default!;
 	[Inject] protected IJSRuntime JavaScript { get; set; } = default!;
@@ -37,35 +37,35 @@ public abstract class ApiPage : ComponentBase, IAsyncDisposable
 		catch (OperationCanceledException) { Error = "The request timed out. Reload to check its result before retrying."; }
 		finally { Busy = false; }
 	}
-	private readonly Dictionary<string,long> toastVersions=[];
+	private readonly Dictionary<string, long> toastVersions = [];
 	private long toastSequence;
 	protected void Notify(string message)
 	{
-		long sequence=++toastSequence;
-		toastVersions[message]=sequence;
+		long sequence = ++toastSequence;
+		toastVersions[message] = sequence;
 		Toasts.Remove(message);
 		Toasts.Add(message);
-		if(Toasts.Count>4) { toastVersions.Remove(Toasts[0]); Toasts.RemoveAt(0); }
-		toastTasks.RemoveAll(task=>task.IsCompleted);
-		toastTasks.Add(ExpireToastAsync(message,sequence));
+		if (Toasts.Count > 4) { toastVersions.Remove(Toasts[0]); Toasts.RemoveAt(0); }
+		toastTasks.RemoveAll(task => task.IsCompleted);
+		toastTasks.Add(ExpireToastAsync(message, sequence));
 	}
-	private async Task ExpireToastAsync(string message,long sequence)
+	private async Task ExpireToastAsync(string message, long sequence)
 	{
 		try
 		{
-			await Task.Delay(TimeSpan.FromSeconds(6),Token);
+			await Task.Delay(TimeSpan.FromSeconds(6), Token);
 			await InvokeAsync(() =>
 			{
-				if(!Token.IsCancellationRequested && toastVersions.TryGetValue(message,out long current) && current==sequence) { toastVersions.Remove(message); Toasts.Remove(message); StateHasChanged(); }
+				if (!Token.IsCancellationRequested && toastVersions.TryGetValue(message, out long current) && current == sequence) { toastVersions.Remove(message); Toasts.Remove(message); StateHasChanged(); }
 			});
 		}
-		catch(OperationCanceledException) when(Token.IsCancellationRequested) { /* View closed before toast expiry. */ }
+		catch (OperationCanceledException) when (Token.IsCancellationRequested) { /* View closed before toast expiry. */ }
 	}
 	protected static async Task<byte[]> ReadFileAsync(IBrowserFile file, int maximumBytes, CancellationToken token)
 	{
-		await using Stream stream = file.OpenReadStream(maximumBytes,token);
+		await using Stream stream = file.OpenReadStream(maximumBytes, token);
 		using var content = new MemoryStream();
-		await stream.CopyToAsync(content,token);
+		await stream.CopyToAsync(content, token);
 		return content.ToArray();
 	}
 	protected void StartPolling(Func<Task> refresh)

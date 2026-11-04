@@ -5,7 +5,7 @@ using PlanForge.Web.Security;
 
 public sealed class PlanForgeClient(ApiTransport transport, AuthenticationStateProvider authentication)
 {
-	public async Task<T> SendAsync<T>(HttpMethod method, string path, object? body = null, byte[]? bytes = null, string? contentType = null, IReadOnlyDictionary<string,string>? headers = null, CancellationToken cancellationToken = default)
+	public async Task<T> SendAsync<T>(HttpMethod method, string path, object? body = null, byte[]? bytes = null, string? contentType = null, IReadOnlyDictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
 	{
 		var user = (await authentication.GetAuthenticationStateAsync()).User;
 		string token = user.FindFirst(WebSession.TokenClaim)?.Value ?? throw new ApiException(401, "Sign in to continue.");

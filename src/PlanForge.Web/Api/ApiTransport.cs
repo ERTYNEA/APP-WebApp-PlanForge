@@ -6,7 +6,7 @@ using System.Text.Json;
 
 public sealed class ApiTransport(IHttpClientFactory clients)
 {
-	public async Task<T> SendAsync<T>(HttpMethod method, string path, string? token = null, object? body = null, byte[]? bytes = null, string? contentType = null, IReadOnlyDictionary<string,string>? headers = null, CancellationToken cancellationToken = default)
+	public async Task<T> SendAsync<T>(HttpMethod method, string path, string? token = null, object? body = null, byte[]? bytes = null, string? contentType = null, IReadOnlyDictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
 	{
 		using var request = new HttpRequestMessage(method, path);
 		if (token is not null)

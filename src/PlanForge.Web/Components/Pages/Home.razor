@@ -3,32 +3,32 @@
 @attribute [Authorize]
 @inherits ApiPage
 @using PlanForge.Web.State
-<PageTitle>@(IsManagement ? "Projects" : "Home") · PlanForge</PageTitle>
-<div class="page-heading"><div><div class="eyebrow">@T["YOUR WORKSPACE"]</div><h1>@(IsManagement ? "Projects" : "Work in focus")<span class="accent">.</span></h1><p class="muted">@(IsManagement ? "Manage project settings, execution modes and linked resources." : "A clear view of what matters now, and what comes next.")</p></div><button class="primary" @onclick="() => showCreate = true" disabled="@Busy">+ @T["New project"]</button></div>
+<PageTitle>@T[IsManagement ? "Projects" : "Home"] · PlanForge</PageTitle>
+<div class="page-heading"><div><div class="eyebrow">@T["YOUR WORKSPACE"]</div><h1>@T[IsManagement ? "Projects" : "Work in focus"]<span class="accent">.</span></h1><p class="muted">@T[IsManagement ? "Manage project settings, execution modes and linked resources." : "A clear view of what matters now, and what comes next."]</p></div><button class="primary" @onclick="() => showCreate = true" disabled="@Busy">+ @T["New project"]</button></div>
 <Feedback Error="@Error" Conflict="Conflict" Toasts="Toasts" />
 <div class="filter-bar"><input aria-label="@T["Search projects"]" placeholder="@T["Search projects…"]" @bind="search" @bind:event="oninput" /><select aria-label="@T["Filter projects by status"]" @bind="status"><option value="">@T["All statuses"]</option><option>@T["Pending"]</option><option>@T["InProgress"]</option><option>@T["Blocked"]</option><option>@T["Completed"]</option></select><select aria-label="@T["Sort projects"]" @bind="sort"><option value="updated">@T["Recently updated"]</option><option value="progress">@T["Progress"]</option><option value="name">@T["Name"]</option></select><button class="quiet" @onclick="() => ExecuteAsync(LoadAsync)" disabled="@Busy">@T["↻ Refresh"]</button></div>
 @if (projects is null) { <p class="loading" role="status">@T["Loading your workspace…"]</p> }
 else if (projects.Count == 0) { <section class="empty-state"><span class="empty-icon">▦</span><h2>@T["No projects yet"]</h2><p class="muted">@T["Start with a project. Build a plan. Keep the next step clear."]</p><button class="primary" @onclick="() => showCreate = true">@T["Create your first project →"]</button></section> }
 else
 {
-	<div class="section-heading"><span>@Filtered.Count() projects</span><span class="muted small">@T["Updates automatically every 10 seconds"]</span></div>
+	<div class="section-heading"><span>@T[Filtered.Count() == 1 ? "{0} project" : "{0} projects", Filtered.Count()]</span><span class="muted small">@T["Updates automatically every 10 seconds"]</span></div>
 	<div class="project-grid">
 	@foreach (ProjectSummary project in Filtered)
 	{
-		<article class="project-card" @key="project.Id"><div class="card-top"><span class="project-icon">▦</span><span class="badge @PlanLabels.StatusClass(project.Status)">@project.Status</span></div><h2><a href="@($"/projects/{project.Id}")">@project.Name</a></h2><p class="project-description">@project.Description</p><div class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</div><div class="progress-caption"><span>@project.CompletedSteps / @project.StepCount steps</span><strong>@project.Progress%</strong></div><progress value="@project.Progress" max="100" aria-label="@T["Project progress"]"></progress>
+		<article class="project-card" @key="project.Id"><div class="card-top"><span class="project-icon">▦</span><span class="badge @PlanLabels.StatusClass(project.Status)">@project.Status</span></div><h2><a href="@($"/projects/{project.Id}")">@project.Name</a></h2><p class="project-description">@project.Description</p><div class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</div><div class="progress-caption"><span>@T["{0} / {1} steps", project.CompletedSteps, project.StepCount]</span><strong>@project.Progress%</strong></div><progress value="@project.Progress" max="100" aria-label="@T["Project progress"]"></progress>
 		@if (snapshots.TryGetValue(project.Id,out ProjectSnapshot? snapshot))
 		{
-			PlanItem? active = snapshot.Items.FirstOrDefault(item => item.Kind == "Step" && item.Status is "InProgress" or "Blocked") ?? snapshot.Items.FirstOrDefault(item => item.Kind == "Step" && item.Status == "Pending");
-			@if (active is not null) { <div class="current-work"><span class="eyebrow">@T["NEXT IN FOCUS"]</span><strong>@active.Title</strong><small>@Path(snapshot,active)</small>@if(snapshot.GetEffectiveAgentId(active.Id) is Guid id) { <span class="agent-tag">◇ @agents.FirstOrDefault(agent=>agent.Id==id)?.Name</span> }</div> }
+			PlanItem? active = PlanLabels.CurrentWork(snapshot) ?? snapshot.Items.FirstOrDefault(item => item.Kind == "Step" && item.Status == "Pending");
+			@if (active is not null) { <div class="current-work"><span class="eyebrow">@T["NEXT IN FOCUS"]</span><strong>@active.Title</strong><small>@Path(snapshot,active)</small>@if(snapshot.GetEffectiveAgentId(active.Id) is Guid id) { <span class="agent-tag">@if (agents.FirstOrDefault(agent=>agent.Id==id)?.HasAvatar == true) { <img src="@($"/files/agent-avatars/{id}")" alt="" /> } else { <span aria-hidden="true">◇</span> } @agents.FirstOrDefault(agent=>agent.Id==id)?.Name</span> }</div> }
 		}
-		<div class="card-footer"><small>@project.UpdatedAt.ToLocalTime().ToString("MMM d, HH:mm")</small><a href="@($"/projects/{project.Id}" + (IsManagement ? "?settings=true" : ""))">@(IsManagement ? "Settings" : "Open work plan") →</a></div></article>
+		<div class="card-footer"><small>@project.UpdatedAt.ToLocalTime().ToString("MMM d, HH:mm")</small><a href="@($"/projects/{project.Id}" + (IsManagement ? "?settings=true" : ""))">@T[IsManagement ? "Settings" : "Open work plan"] →</a></div></article>
 	}
 	</div>
 	@if (!Filtered.Any()) { <p class="empty-state">@T["No projects match these filters."]</p> }
 }
 @if (showCreate)
 {
-	<Modal Title="New project" Error="@Error" Close="() => showCreate = false"><form @onsubmit="OnCreateAsync" @onsubmit:preventDefault><label>@T["Name"]<input @bind="name" required maxlength="160" autofocus /></label><label>@T["Purpose"]<textarea @bind="description" maxlength="8000" rows="3"></textarea></label><label>@T["Development workflow"]<select @bind="workflow">@foreach(string value in PlanLabels.Workflows) { <option value="@value">@PlanLabels.Workflow(value)</option> }</select></label><p class="muted small">@T["This mode defines what evidence closes a step. You can change it later without silently completing pending work."]</p><div class="form-actions"><button type="button" class="quiet" @onclick="() => showCreate = false">@T["Cancel"]</button><button class="primary" disabled="@Busy">@T["Create project"]</button></div></form></Modal>
+	<Modal Title='@T["New project"]' Error="@Error" Close="() => showCreate = false"><form @onsubmit="OnCreateAsync" @onsubmit:preventDefault><label>@T["Name"]<input @bind="name" required maxlength="160" autofocus /></label><label>@T["Purpose"]<textarea @bind="description" maxlength="8000" rows="3"></textarea></label><label>@T["Development workflow"]<select @bind="workflow">@foreach(string value in PlanLabels.Workflows) { <option value="@value">@PlanLabels.Workflow(value)</option> }</select></label><p class="muted small">@T["This mode defines what evidence closes a step. You can change it later without silently completing pending work."]</p><div class="form-actions"><button type="button" class="quiet" @onclick="() => showCreate = false">@T["Cancel"]</button><button class="primary" disabled="@Busy">@T["Create project"]</button></div></form></Modal>
 }
 @code {
 	private List<ProjectSummary>? projects;
@@ -61,7 +61,9 @@ else
 	private Task OnCreateAsync() => ExecuteAsync(async () => { var project=await Api.SendAsync<ProjectSnapshot>(HttpMethod.Post,"projects",new CreateProjectRequest(name,description,workflow),cancellationToken:Token); showCreate=false; Navigation.NavigateTo($"/projects/{project.Id}"); });
 	private static string Path(ProjectSnapshot project, PlanItem item)
 	{
+		if (item.Kind == "Phase") return item.Title;
 		var sub=project.Items.FirstOrDefault(parent=>parent.Id==item.ParentId);
+		if (item.Kind == "Subphase") return sub?.Title ?? "";
 		var phase=project.Items.FirstOrDefault(parent=>parent.Id==sub?.ParentId);
 		return $"{phase?.Title} / {sub?.Title}";
 	}

@@ -7,6 +7,7 @@
 	<div class="eyebrow">@T["YOUR NEXT STEP STARTS HERE"]</div>
 	<h1>@T[IsRegister ? "Create your workspace" : "Welcome back"]<span class="accent">.</span></h1>
 	<p class="muted">@T[IsRegister ? "One place for projects, agents and the work ahead." : "Pick up where you left off. Your plans are waiting."]</p>
+	@if (Notice == "password-changed") { <div class="notice" role="status">@T["Your password was changed. Sign in again."]</div> }
 	@if (!string.IsNullOrEmpty(Error)) { <div class="notice error" role="alert">@Error</div> }
 	<form method="post" action="@(IsRegister ? "/account/register" : "/account/login")" data-enhance="false">
 		<AntiforgeryToken />
@@ -21,5 +22,6 @@
 <div class="auth-caption"><span class="status-dot"></span> @T["Clear plans. Real progress. No lost context."]</div>
 @code {
 	[SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+	[SupplyParameterFromQuery(Name = "notice")] public string? Notice { get; set; }
 	private bool IsRegister => new Uri(Navigation.Uri).AbsolutePath == "/register";
 }

@@ -1,7 +1,7 @@
 @inherits ApiPage
 <Feedback Error="@Error" Toasts="Toasts" />
 <div class="avatar-editor">
-	@if(HasAvatar) { <img class="avatar large" src="@(ImageUrl+"?v="+version)" alt="Current avatar" /> }
+	@if(HasAvatar) { <img class="avatar large" src="@(ImageUrl+"?v="+version)" alt='@T["Current avatar"]' /> }
 	<form @onsubmit="OnUploadAsync" @onsubmit:preventDefault><label>@T["Avatar (PNG, JPEG or WebP, maximum 256 KiB)"]<InputFile OnChange="args=>file=args.File" accept="image/png,image/jpeg,image/webp" /></label><div class="form-actions"><button class="quiet" disabled="@(Busy || file is null)">@T["Upload avatar"]</button>@if(HasAvatar) { <button type="button" class="quiet danger-text" @onclick="OnRemoveAsync" disabled="@Busy" aria-label="@T["Remove avatar"]">@T["Remove avatar"]</button> }</div></form>
 </div>
 @code {
