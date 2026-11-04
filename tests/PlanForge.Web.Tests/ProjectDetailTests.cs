@@ -50,5 +50,6 @@ public sealed class ProjectDetailTests
 		Assert.Contains("Export project", page.Markup);
 		Assert.Contains("Import CSV", page.Markup);
 		Assert.Contains("Revision 7", page.Markup);
+		Assert.Contains("of steps complete", page.Markup);
 	}
 }

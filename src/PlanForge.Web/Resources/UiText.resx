@@ -652,7 +652,7 @@
     <value>{0} projects</value>
   </data>
   <data name="{0}% complete" xml:space="preserve">
-    <value>{0}% complete</value>
+    <value>{0}% of steps complete</value>
   </data>
   <data name="{0}–{1} of {2}" xml:space="preserve">
     <value>{0}–{1} of {2}</value>

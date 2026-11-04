@@ -14,7 +14,7 @@ public sealed class ComponentTestContext : BunitContext
 	public ComponentTestContext(Func<HttpRequestMessage, Task<HttpResponseMessage>> responder)
 	{
 		JSInterop.Mode = JSRuntimeMode.Loose;
-		Services.AddLocalization();
+		Services.AddLocalization(options => options.ResourcesPath = "Resources");
 		Services.AddSingleton<AuthenticationStateProvider, TestAuthentication>();
 		Services.AddHttpClient("PlanForgeApi", client => client.BaseAddress = new Uri("https://api.example.test/api/v1/")).ConfigurePrimaryHttpMessageHandler(() => new Responder(responder));
 		Services.AddScoped<ApiTransport>();
