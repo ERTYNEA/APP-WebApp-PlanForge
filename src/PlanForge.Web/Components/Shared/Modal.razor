@@ -1,0 +1,15 @@
+@inject Microsoft.JSInterop.IJSRuntime JavaScript
+<dialog @ref="dialog" class="modal" aria-label="@Title" @oncancel="OnCancelAsync">
+	<div class="modal-heading"><h2>@Title</h2><button type="button" class="quiet" @onclick="Close" aria-label="@T["Close dialog"]">×</button></div>
+	@if (Error is not null) { <div class="notice error" role="alert">@Error</div> }
+	@ChildContent
+</dialog>
+@code {
+	[Parameter] public string Title { get; set; } = "";
+	[Parameter] public string? Error { get; set; }
+	[Parameter] public EventCallback Close { get; set; }
+	[Parameter] public RenderFragment? ChildContent { get; set; }
+	private ElementReference dialog;
+	protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender) await JavaScript.InvokeVoidAsync("planForge.openDialog",dialog); }
+	private Task OnCancelAsync(EventArgs args) => Close.InvokeAsync();
+}

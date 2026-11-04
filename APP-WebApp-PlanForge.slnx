@@ -5,11 +5,13 @@
     <Project Path="src/PlanForge.Contracts/PlanForge.Contracts.csproj" />
     <Project Path="src/PlanForge.Domain/PlanForge.Domain.csproj" />
     <Project Path="src/PlanForge.Infrastructure/PlanForge.Infrastructure.csproj" />
+    <Project Path="src/PlanForge.Web/PlanForge.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/PlanForge.Api.Tests/PlanForge.Api.Tests.csproj" />
     <Project Path="tests/PlanForge.Domain.Tests/PlanForge.Domain.Tests.csproj" />
     <Project Path="tests/PlanForge.Infrastructure.Tests/PlanForge.Infrastructure.Tests.csproj" />
+    <Project Path="tests/PlanForge.Web.Tests/PlanForge.Web.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/PlanForge.DatabaseInspector/PlanForge.DatabaseInspector.csproj" />

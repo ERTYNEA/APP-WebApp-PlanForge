@@ -1,0 +1,116 @@
+name: Deploy Web
+
+on:
+  workflow_call:
+    inputs:
+      test-result:
+        type: string
+        required: true
+      scope-result:
+        type: string
+        required: true
+      database-required:
+        type: boolean
+        required: true
+      database-result:
+        type: string
+        required: true
+      api-required:
+        type: boolean
+        required: true
+      api-result:
+        type: string
+        required: true
+    secrets:
+      publish-profile:
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: planforge-web-deployment
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish Blazor Web
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Verify exact-SHA deployment prerequisites
+        env:
+          TEST_RESULT: ${{ inputs.test-result }}
+          SCOPE_RESULT: ${{ inputs.scope-result }}
+          DATABASE_REQUIRED: ${{ inputs.database-required }}
+          DATABASE_RESULT: ${{ inputs.database-result }}
+          API_REQUIRED: ${{ inputs.api-required }}
+          API_RESULT: ${{ inputs.api-result }}
+        run: python3 scripts/deployment-gates.py
+      - uses: actions/setup-dotnet@v6.1.0
+        with:
+          global-json-file: global.json
+      - name: Resolve and verify the existing Web publishing target
+        id: target
+        env:
+          PUBLISH_PROFILE: ${{ secrets.publish-profile }}
+        run: python3 scripts/resolve-web-target.py
+      - run: dotnet restore src/PlanForge.Web
+      - run: dotnet publish src/PlanForge.Web --configuration Release --output artifacts/web -p:SourceRevisionId=${{ github.sha }}
+      - name: Inspect Web publication payload
+        shell: python
+        run: |
+          import pathlib
+          root = pathlib.Path('artifacts/web')
+          assert (root / 'PlanForge.Web.dll').is_file()
+          assert (root / 'wwwroot' / 'app.css').is_file()
+          assert not (root / 'PlanForge.Infrastructure.dll').exists(), 'Web must never include SQL infrastructure.'
+          assert not any(p.name.lower() in {'local.settings.json', '.env', '.secrets'} or p.suffix.lower() in {'.pfx', '.pem', '.publishsettings'} for p in root.rglob('*'))
+          print('Verified Blazor payload, design assets and no SQL/private credential files.')
+      - name: Reject superseded Web publication
+        shell: python
+        run: |
+          import os, subprocess
+          observed = subprocess.check_output(['git', 'ls-remote', 'origin', 'refs/heads/main'], text=True).split()[0]
+          assert observed == os.environ['GITHUB_SHA'], 'Superseded Web publication rejected; publish the latest main commit.'
+      - name: Publish existing App Service
+        uses: Azure/webapps-deploy@v3.0.8
+        with:
+          app-name: PlanForge-Web
+          package: artifacts/web
+          publish-profile: ${{ secrets.publish-profile }}
+      - name: Verify HTTPS Web version, login, design and authorization
+        shell: python
+        env:
+          WEB_BASE_URL: ${{ steps.target.outputs.base-url }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          import json, os, time, urllib.error, urllib.request
+          base = os.environ['WEB_BASE_URL']
+          for attempt in range(24):
+              try:
+                  with urllib.request.urlopen(base + '/health', timeout=30) as response:
+                      health = json.load(response)
+                  assert health['status'] == 'ready' and os.environ['EXPECTED_SHA'] in health['version']
+                  with urllib.request.urlopen(base + '/login', timeout=30) as response:
+                      html = response.read().decode()
+                      assert response.headers.get('X-Content-Type-Options') == 'nosniff'
+                  assert 'PlanForge' in html and '/account/login' in html and '__RequestVerificationToken' in html
+                  with urllib.request.urlopen(base + '/app.css', timeout=30) as response:
+                      assert '--pf-bg' in response.read().decode()
+                  break
+              except Exception as error:
+                  print('Web readiness attempt', attempt + 1, type(error).__name__)
+                  if attempt == 23:
+                      raise RuntimeError('Web readiness/exact-SHA/login/design verification did not pass.') from None
+                  time.sleep(10)
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+          try:
+              urllib.request.build_opener(NoRedirect()).open(base + '/', timeout=30)
+              raise RuntimeError('Anonymous workspace access unexpectedly succeeded.')
+          except urllib.error.HTTPError as error:
+              assert error.code == 302 and '/login' in error.headers.get('Location', '')
+          print('Verified HTTPS Web exact-SHA version, real login/CSRF form, CSS and anonymous challenge:', base)

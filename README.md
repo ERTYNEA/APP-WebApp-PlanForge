@@ -1,44 +1,53 @@
 # PlanForge
 
-PlanForge is an open-source project work-plan application for individuals and a few colleagues. Its hierarchy is Phase → Subphase → Step, with decisions, agent assignments and a reusable resource library.
+PlanForge is an MIT-licensed work-plan application for individuals and a few colleagues. Projects contain Phase → Subphase → Step hierarchies, decisions, inherited agent assignments and a reusable resource library.
 
-Version: `0.1.0-alpha.4`, implementation in progress, not a finished product. Implemented API services and handlers cover authentication, owner-isolated projects and hierarchical work plans, four workflow closure policies, logical agents and hashed 30-day tokens, transactional CSV exchange, SQL-backed resource libraries and complete project ZIP exports. SQL and API publication use exact-commit gated GitHub Actions. The alpha.3 business and Library/ZIP APIs have passed controlled real HTTP acceptance, including real SQL races and exact archived binary integrity. The new alpha.4 account/avatar/password and lightweight change-query tranche awaits ordered cloud verification. Blazor and complete integrated acceptance remain pending. See the API and deployment documents for the boundary between implemented code and cloud-verified behavior.
+Version: `0.1.0-alpha.5` — implementation and integrated acceptance in progress, not a completed release. The alpha.4 SQL/API account, business, Library/ZIP and change-query tranches are deployed and controlled-HTTP verified. The alpha.5 Blazor BFF/UI and fourth deployment workflow are implemented and locally tested; their first cloud publication and complete browser/security acceptance remain pending. A passing build alone is not product acceptance.
 
-## Planned capabilities
+## Implemented capabilities
 
-- Organize projects with hierarchical work plans made up of phases, subphases, and steps.
-- Track work status and progress.
-- Assign AI agents to different parts of a plan.
-- Import and export plans using the `work-plan.csv` exchange file.
-- Maintain a reusable resource library, including documents and images associated with projects or specific phases.
-- Provide a web interface for managing projects, viewing plans, and administering resources.
-- Expose an authenticated REST API so external agents can query and update information within their projects.
+- Public registration, persisted human sessions, account names/raster avatars and verified password changes that invalidate only that owner's sessions and agent tokens.
+- Owner-isolated projects with stable IDs/revisions, nested work plans, decisions, ordering/moves and inherit/override/explicitly-unassigned agent semantics.
+- Four closure workflows, in order: Planning Only; Local Changes + Manual Approval; Branch + Pull Request; Direct to Main. Work done is not human approval, merge or confirmed push.
+- Logical agents and revocable, renewable, hashed API tokens with a 30-day expiry. Newly issued values are shown once, never retrieved from SQL.
+- UTF-8 semicolon `work-plan.csv` snapshot exchange, stable IDs, atomic validation, explicit replacement for omissions and stale-revision 409 protection.
+- SQL resource binaries, independent project/phase-only links, Assigned/Orphan metadata, bounded uploads, safe downloads and confirmed manual cleanup. Plan deletion preserves Library files.
+- Complete project ZIPs with CSV, readable README, exact resource bytes and association manifest, including phase-only attachments without duplicates.
+- Blazor Interactive Server Home, Projects/Work Plan, Library, Agents and Account screens, cancellable persisted-event polling and actor-correct notifications. No fake agent-online indicators or external AI execution.
 
-## Planned technology
+## Architecture
 
-- .NET 10 LTS.
-- Blazor for the web interface, hosted on Azure App Service.
-- Azure Functions with the .NET 10 Isolated Worker model for the REST API.
-- Azure SQL Database with Entity Framework Core.
-- GitHub Actions for automated testing and deployments.
-- Test-Driven Development (TDD).
+One .NET 10 solution separates Domain, Application, Contracts, Infrastructure, isolated Functions API and Blazor Web. Web consumes the API server-side and never references SQL infrastructure. Existing Azure SQL Basic, Functions Flex and App Service resources are reused; no additional cloud identity or paid service is required.
 
-## Project status
-
-The current slices establish .NET 10 domain/application/relational/handler tests, persistent authentication, owner-scoped hierarchy and concurrency, agent lifecycle and strict CSV exchange. See `docs/architecture.md`, `docs/deployment.md` and `docs/ui-design-system.md` for decisions and current delivery boundaries. The complete product remains under implementation.
+See [architecture](docs/architecture.md), [API](docs/api.md), [CSV contract](docs/work-plan-csv.md), [design system](docs/ui-design-system.md) and [deployment/recovery](docs/deployment.md).
 
 ## Local checks
 
-Requires the .NET 10 SDK pinned by `global.json`. No local SQL Server is required for the default tests.
+Use the .NET 10 SDK pinned by `global.json`:
 
 ```sh
 dotnet restore APP-WebApp-PlanForge.slnx
 dotnet build APP-WebApp-PlanForge.slnx --configuration Release
 dotnet test APP-WebApp-PlanForge.slnx --configuration Release
+python3 -m unittest discover -s tests/pipeline -v
 ```
 
-Tests use independent in-memory SQLite relational databases where appropriate; these are not SQL Server integration evidence and never touch the shared Azure database. Runtime credentials, publishing profiles and local settings must remain ignored. Only trusted-main GitHub Actions may migrate the shared database.
+Default tests are hermetic and use SQLite relational fixtures, handler transport, bUnit and ASP.NET TestServer where appropriate. They do not touch shared Azure SQL and are not substitutes for SQL Server/cloud/browser evidence. No local SQL Server, Docker, Azurite or global Functions tools are needed.
+
+## Run the Web locally
+
+Point Web at a configured API root, normally the already deployed HTTPS API, and use a free loopback port:
+
+```sh
+export ASPNETCORE_ENVIRONMENT=Development
+export PlanForgeApi__BaseUrl=https://your-existing-api.azurewebsites.net
+dotnet run --project src/PlanForge.Web --configuration Release --urls http://127.0.0.1:7600
+```
+
+The placeholder API hostname must be replaced with the actual existing API URL. HTTP is allowed only for loopback development. Production cookies are Secure, HttpOnly and SameSite=Lax; browser forms use antiforgery. The opaque API session is protected inside the cookie, never placed in localStorage. Local key files are ignored under `.secrets/web-keys`; App Service uses its existing persistent HOME key directory. Never delete the key ring to deploy or restart.
+
+Only trusted-main GitHub Actions may migrate shared SQL or publish Azure apps. Four workflows enforce exact-SHA tests → SQL reconciliation → API → Web, with path-aware no-change skips and superseded-publication guards. Publishing profiles and migration credentials remain existing repository secrets, not files/artifacts. Runtime credentials, private settings, test passwords and API tokens must never be committed.
 
 ## License
 
-PlanForge is licensed under the MIT License. See `LICENSE` for the full text.
+MIT. See [LICENSE](LICENSE).

@@ -1,0 +1,34 @@
+@page "/agents"
+@attribute [Authorize]
+@inherits ApiPage
+<PageTitle>Agents · PlanForge</PageTitle>
+<div class="page-heading"><div><div class="eyebrow">@T["YOUR COLLABORATORS"]</div><h1>@T["Agents"]<span class="accent">.</span></h1><p class="muted">@T["Logical identities for your work. No hosted execution, no invented online status."]</p></div><button class="primary" @onclick="() => OnEdit(null)" disabled="@Busy">@T["+ New agent"]</button></div>
+<Feedback Error="@Error" Conflict="Conflict" Toasts="Toasts" />
+@if(agents is null) { <p role="status">@T["Loading agents…"]</p> }
+else if(agents.Count==0) { <section class="empty-state"><h2>@T["No agents yet"]</h2><p>@T["Create a logical identity to assign work and issue a personal API token."]</p></section> }
+else
+{
+	<div class="agent-grid">@foreach(AgentProfile agent in agents) { <article class="agent-card" @key="agent.Id"><div class="card-top"><span class="avatar large">@if(agent.HasAvatar) { <img src="@($"/files/agent-avatars/{agent.Id}")" alt="" /> } else { @agent.Name[..1] }</span><span class="badge @(agent.IsActive ? "success" : "warning")">@(agent.IsActive ? "Active" : "Inactive")</span></div><h2>@agent.Name</h2><p class="muted user-text">@agent.Description</p><div class="card-footer"><span class="mono small">@agent.Id.ToString()[..8]</span><button class="quiet" @onclick="() => OnEdit(agent)" disabled="@Busy">@T["Edit"]</button></div></article> }</div>
+}
+@if(agents is not null) { <AgentTokenPanel Agents="agents" @ref="tokenPanel" /> }
+@if(deactivateId.HasValue) { <ConfirmDialog Title="Deactivate agent" Description="Disable this agent and invalidate its tokens. Historical plan assignments are preserved." Busy="Busy" Error="@Error" Close="() => deactivateId=null" Confirm="OnDeactivateAsync" /> }
+@if(showEditor)
+{
+	<Modal Title="@(editingId.HasValue ? "Edit agent" : "New agent")" Error="@Error" Close="() => showEditor=false"><form id="agent-form" @onsubmit="OnSaveAsync" @onsubmit:preventDefault><label>@T["Name"]<input id="agent-name" @bind="name" required maxlength="80" /></label><label>@T["Description / role"]<textarea id="agent-description" @bind="description" maxlength="1000" rows="3"></textarea></label><label class="check-label"><input id="agent-active" type="checkbox" @bind="active" /> @T["Active (inactive agents cannot authenticate)"]</label><div class="form-actions"><button type="button" class="quiet" @onclick="() => showEditor=false">@T["Cancel"]</button><button class="primary" disabled="@Busy">@T["Save agent"]</button></div></form>
+	@if(editingId.HasValue) { <AvatarEditor ApiPath="@($"agents/{editingId}/avatar")" ImageUrl="@($"/files/agent-avatars/{editingId}")" HasAvatar="@(agents?.FirstOrDefault(agent=>agent.Id==editingId)?.HasAvatar ?? false)" Changed="LoadAsync" /><div class="danger-zone"><button class="danger" @onclick="OnDeactivate">@T["Deactivate agent"]</button></div> }
+	</Modal>
+}
+@code {
+	private List<AgentProfile>? agents;
+	private Guid? editingId;
+	private string name="",description="";
+	private bool active=true,showEditor;
+	private AgentTokenPanel? tokenPanel;
+	private Guid? deactivateId;
+	private void OnDeactivate() { deactivateId=editingId; showEditor=false; }
+	private Task OnDeactivateAsync() => ExecuteAsync(async () => { if(!deactivateId.HasValue) return; await Api.SendAsync<object>(HttpMethod.Delete,$"agents/{deactivateId}",cancellationToken:Token); deactivateId=null; await LoadAsync(); if(tokenPanel is not null) await tokenPanel.RefreshAsync(); },"Agent deactivated");
+	protected override Task OnInitializedAsync() => ExecuteAsync(LoadAsync);
+	private async Task LoadAsync() => agents=await Api.GetAsync<List<AgentProfile>>("agents",Token);
+	private void OnEdit(AgentProfile? agent) { editingId=agent?.Id; name=agent?.Name ?? ""; description=agent?.Description ?? ""; active=agent?.IsActive ?? true; showEditor=true; }
+	private Task OnSaveAsync() => ExecuteAsync(async () => { await Api.SendAsync<AgentProfile>(editingId.HasValue ? HttpMethod.Put : HttpMethod.Post,"agents"+(editingId.HasValue ? $"/{editingId}" : ""),new AgentRequest(name,description,active),cancellationToken:Token); showEditor=false; await LoadAsync(); },"Agent saved");
+}

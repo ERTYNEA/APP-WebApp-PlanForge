@@ -1,0 +1,7 @@
+@if (Error is not null) { <div class="notice error" role="alert">@Error @if (Conflict) { <strong>@T["Reload and reconcile. No changes were overwritten."]</strong> }</div> }
+<div class="toast-stack" aria-live="polite" aria-atomic="false">@foreach (string toast in Toasts) { <div class="toast" role="status">✓ @toast</div> }</div>
+@code {
+	[Parameter] public string? Error { get; set; }
+	[Parameter] public bool Conflict { get; set; }
+	[Parameter] public IEnumerable<string> Toasts { get; set; } = [];
+}

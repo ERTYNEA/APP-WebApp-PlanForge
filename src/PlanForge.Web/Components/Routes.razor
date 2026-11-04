@@ -1,0 +1,9 @@
+<Router AppAssembly="typeof(Program).Assembly">
+	<Found Context="routeData">
+		<AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)">
+			<NotAuthorized><a href="/login" data-enhance-nav="false">@T["Sign in to continue"]</a></NotAuthorized>
+		</AuthorizeRouteView>
+		<FocusOnNavigate RouteData="routeData" Selector="h1" />
+	</Found>
+	<NotFound><LayoutView Layout="typeof(AuthLayout)"><h1>@T["Page not found"]</h1><a href="/">@T["Return home"]</a></LayoutView></NotFound>
+</Router>

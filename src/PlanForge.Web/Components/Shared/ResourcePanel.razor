@@ -1,0 +1,50 @@
+@inherits ApiPage
+@if(managed is not null)
+{
+	<Modal Title="Manage resource" Error="@Error" Close="() => managed=null"><form id="resource-metadata-form" @onsubmit="OnSaveTitleAsync" @onsubmit:preventDefault><label>@T["Title"]<input id="resource-title" @bind="resourceTitle" required maxlength="240" /></label><p class="mono small wrap">@managed.FileName · @managed.Sha256</p><div class="form-actions"><button class="primary" disabled="@Busy">@T["Save title"]</button></div></form>
+		<div class="resource-associations"><h3>@T["Current associations"]</h3>
+		@foreach(ProjectResourceAssociation link in managed.Projects) { <div class="association-row"><span>Direct project: @link.ProjectName</span><button class="quiet compact" aria-label="@T["Unlink association"]" @onclick="() => OnAssociationAsync(false,link.ProjectId,null)" disabled="@Busy">@T["Unlink"]</button></div> }
+		@foreach(PhaseResourceAssociation link in managed.Phases) { <div class="association-row"><span>Phase: @link.PhaseTitle · @link.ProjectName</span><button class="quiet compact" aria-label="@T["Unlink association"]" @onclick="() => OnAssociationAsync(false,null,link.PhaseId)" disabled="@Busy">@T["Unlink"]</button></div> }
+		</div>
+		<form id="resource-link-form" @onsubmit="OnAddAssociationAsync" @onsubmit:preventDefault><label>@T["Project"]<select id="link-project" @bind="linkProject" @bind:after="OnLinkProjectChangedAsync" required><option value="">@T["Choose project"]</option>@foreach(ProjectSummary option in projectOptions) { <option value="@option.Id">@option.Name · @option.Id.ToString()[..8]</option> }</select></label><label>@T["Association"]<select id="link-phase" @bind="linkPhase"><option value="">@T["Direct project link"]</option>@foreach(PlanItem phase in phaseOptions) { <option value="@phase.Id">Phase only: @phase.Title</option> }</select></label><div class="form-actions"><button class="primary" disabled="@(Busy || linkProject.Length==0)">@T["Add association"]</button></div></form>
+		<div class="danger-zone"><button class="danger" @onclick="OnPreviewDelete" disabled="@Busy">@T["Delete resource"]</button></div>
+	</Modal>
+}
+@if(deleteTitle is not null)
+{
+	<ConfirmDialog Title="@deleteTitle" Description="@deleteDescription" Busy="Busy" Error="@Error" Close="() => deleteTitle=null" Confirm="OnConfirmDeleteAsync" />
+}
+@if(showAttach)
+{
+	<Modal Title="Attach existing resource" Error="@Error" Close="() => showAttach=false"><form id="attach-resource-form" @onsubmit="OnAttachExistingAsync" @onsubmit:preventDefault><label>@T["Library resource"]<select id="existing-resource" @bind="selectedResource" required><option value="">@T["Choose resource"]</option>@foreach(ResourceProfile candidate in candidates) { <option value="@candidate.Id">@candidate.Title · @candidate.FileName</option> }</select></label><p class="muted">@(PhaseId.HasValue ? "Independent phase-only association; no direct project link is added." : "Direct project association; existing phase links remain unchanged.")</p><div class="form-actions"><button class="primary" disabled="@(Busy || selectedResource.Length==0)">@T["Attach resource"]</button></div></form></Modal>
+}
+@if(showUpload)
+{
+	<Modal Title="Upload resource" Error="@Error" Close="() => showUpload=false"><form id="upload-resource-form" @onsubmit="OnUploadAsync" @onsubmit:preventDefault><label>@T["File"]<InputFile OnChange="OnFileSelected" /></label><label>@T["Title"]<input @bind="uploadTitle" maxlength="240" required /></label><p class="muted small">@(PhaseId.HasValue ? "Only this phase receives a link." : ProjectId.HasValue ? "Automatically linked directly to this project." : "Added to your Library without a link. You can assign it later.")</p><div class="form-actions"><button type="button" class="quiet" @onclick="() => showUpload=false">@T["Cancel"]</button><button class="primary" disabled="@(Busy || uploadFile is null)">@T["Upload file"]</button></div></form></Modal>
+}
+<Feedback Error="@Error" Conflict="Conflict" Toasts="Toasts" />
+<div class="section-heading"><div><h2>@(PhaseId.HasValue ? "Phase resources" : ProjectId.HasValue ? "Direct project resources" : "Resource library")</h2><p class="muted small">@T["One library. Independent project and phase links. Files survive plan deletion."]</p></div><div class="toolbar"><button class="quiet" @onclick="() => ExecuteAsync(LoadAsync)" disabled="@Busy">@T["↻ Reload"]</button><button class="primary" @onclick="() => showUpload=true" disabled="@Busy">@T["Upload file"]</button>@if(ProjectId.HasValue) { <button class="quiet" @onclick="OnChooseExistingAsync" disabled="@Busy">@T["Attach existing"]</button> }</div></div>
+@if(usage is not null)
+{
+	<div class="usage-strip"><span>@PlanLabels.Bytes(usage.OwnerBytes) / @PlanLabels.Bytes(usage.OwnerBudgetBytes)</span><progress value="@usage.OwnerBytes" max="@usage.OwnerBudgetBytes" aria-label="@T["Library storage usage"]"></progress><small>Maximum file: @PlanLabels.Bytes(usage.MaximumFileBytes)</small></div>
+	@if(usage.NearLimit) { <div class="notice warning">@T["Library storage is nearing its limit. Review unused files before uploading."]</div> }
+}
+@if(!ProjectId.HasValue)
+{
+	<div class="filter-bar"><input aria-label="@T["Search resources"]" placeholder="@T["Search resources…"]" @bind="search" /><select aria-label="@T["Filter resource assignment"]" @bind="assignment"><option value="all">@T["All resources"]</option><option value="assigned">@T["Assigned"]</option><option value="orphan">@T["Unassigned / Orphan"]</option></select><button class="quiet" @onclick="OnSearchAsync" disabled="@Busy">@T["Apply filters"]</button><button class="quiet" @onclick="() => listView=!listView" aria-pressed="@listView.ToString().ToLowerInvariant()">@(listView ? "Grid view" : "List view")</button><button class="danger" @onclick="OnPreviewCleanupAsync" disabled="@Busy">@T["Clean orphan resources"]</button></div>
+}
+@if(resources is null) { <p role="status">@T["Loading resources…"]</p> }
+else if(resources.Count==0) { <div class="empty-state"><h3>@T["No resources here yet"]</h3><p class="muted">@T["Upload a file or attach an existing Library resource."]</p></div> }
+else
+{
+	<div class="resource-grid @(listView ? "list-view" : "")">
+	@foreach(ResourceProfile resource in resources)
+	{
+		<article class="resource-card @(resource.IsAssigned ? "assigned" : "orphan")" @key="resource.Id"><div class="card-top"><span class="file-icon">▤</span><span class="badge @(resource.IsAssigned ? "success" : "warning")">@(resource.IsAssigned ? "Assigned" : "Orphan")</span></div><h3>@resource.Title</h3><div class="mono small wrap">@resource.FileName</div><small class="muted">@resource.ContentType · @PlanLabels.Bytes(resource.Size) · @resource.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</small><div class="resource-associations">
+		@foreach(ProjectResourceAssociation link in resource.Projects) { <span class="resource-chip">Direct project: @link.ProjectName</span> }
+		@foreach(PhaseResourceAssociation link in resource.Phases) { <span class="resource-chip">Phase: @link.PhaseTitle · @link.ProjectName</span> }
+		</div><div class="card-footer"><a href="@($"/files/resources/{resource.Id}")" data-enhance-nav="false">@T["↧ Download"]</a><button class="quiet compact" @onclick="() => OnManageAsync(resource)" disabled="@Busy">@T["Manage"]</button></div></article>
+	}
+	</div>
+	@if(!ProjectId.HasValue) { <div class="pagination"><button class="quiet" @onclick="OnPreviousAsync" disabled="@(Busy || skip==0)">@T["Previous"]</button><span>@(skip+1)–@(skip+resources.Count) of @total</span><button class="quiet" @onclick="OnNextAsync" disabled="@(Busy || skip+resources.Count>=total)">@T["Next"]</button></div> }
+}

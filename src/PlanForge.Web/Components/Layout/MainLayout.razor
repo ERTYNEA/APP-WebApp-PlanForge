@@ -1,0 +1,28 @@
+@inherits LayoutComponentBase
+<a class="skip-link" href="#main-content">@T["Skip to main content"]</a>
+<div class="app-shell">
+	<aside class="sidebar @(menuOpen ? "is-open" : "")" aria-label="@T["Main navigation"]" @onkeydown="OnMenuKeyDown">
+		<button class="sidebar-close quiet" @onclick="() => menuOpen=false" aria-label="@T["Close navigation"]">×</button>
+		<a class="brand" href="/"><span class="brand-mark">P</span> PlanForge</a>
+		<div class="sidebar-label">@T["Workspace"]</div>
+		<nav @onclick="() => menuOpen=false">
+			<NavLink href="/" Match="NavLinkMatch.All">◈ <span>@T["Home"]</span></NavLink>
+			<NavLink href="/projects">▦ <span>@T["Projects"]</span></NavLink>
+			<NavLink href="/library">▤ <span>@T["Library"]</span></NavLink>
+			<NavLink href="/agents">◇ <span>@T["Agents"]</span></NavLink>
+			<NavLink href="/settings">⚙ <span>@T["Settings"]</span></NavLink>
+		</nav>
+		<div class="sidebar-bottom">
+			<AuthorizeView><Authorized Context="auth"><a class="account-link" href="/settings"><span class="avatar">@auth.User.Identity?.Name?[..1]</span><span>@auth.User.Identity?.Name<small>@T["Personal workspace"]</small></span></a></Authorized></AuthorizeView>
+			<form method="post" action="/account/logout" data-enhance="false"><AntiforgeryToken /><button class="quiet full">@T["Sign out"]</button></form>
+			<span class="version mono" title="@ProductVersion.Informational">v@(ProductVersion.Informational.Split('+')[0])</span>
+		</div>
+	</aside>
+	@if(menuOpen) { <button class="nav-backdrop" aria-label="@T["Close navigation"]" @onclick="() => menuOpen=false"></button> }
+	<div class="main-shell">
+		<header class="topbar"><button class="mobile-menu quiet" @onclick="() => menuOpen = !menuOpen" aria-label="@T["Toggle navigation"]" aria-expanded="@menuOpen.ToString().ToLowerInvariant()">☰</button><span class="breadcrumb">@T["Workspace"] <span>/</span> <strong>PlanForge</strong></span><a class="quiet profile-link" href="/settings">Account settings ↗</a></header>
+		<main id="main-content">@Body</main>
+		<div id="blazor-error-ui" role="alert">@T["The connection was interrupted."] <a href="" class="reload">@T["Reload"]</a><button class="dismiss" aria-label="@T["Dismiss"]">×</button></div>
+	</div>
+</div>
+@code { private bool menuOpen; private void OnMenuKeyDown(KeyboardEventArgs args) { if(args.Key=="Escape") menuOpen=false; } }

@@ -8,13 +8,14 @@ def detect_scope(changed):
 	database = any(path.startswith(("src/PlanForge.Infrastructure/Migrations/", "src/PlanForge.Infrastructure/Database/")) or path == ".github/workflows/deploy-database.yml" for path in changed)
 	api = any(path.startswith(("src/PlanForge.Api/", "src/PlanForge.Application/", "src/PlanForge.Contracts/", "src/PlanForge.Domain/", "src/PlanForge.Infrastructure/")) or path in {"global.json", "Directory.Build.props", ".github/workflows/deploy-api.yml"} for path in changed)
 	# Every API publication reconciles pending migrations, including those from earlier failed pushes.
-	return {"database": database or api, "api": api}
+	web = any(path.startswith(("src/PlanForge.Web/", "src/PlanForge.Contracts/")) or path in {"global.json", "Directory.Build.props", ".github/workflows/deploy-web.yml"} for path in changed)
+	return {"database": database or api, "api": api, "web": web}
 
 
 if __name__ == "__main__":
 	before = os.environ.get("BEFORE", "")
 	if os.environ.get("EVENT") == "workflow_dispatch":
-		changed = ["src/PlanForge.Infrastructure/Migrations/manual", "src/PlanForge.Api/manual"]
+		changed = ["src/PlanForge.Infrastructure/Migrations/manual", "src/PlanForge.Api/manual", "src/PlanForge.Web/manual"]
 	elif before and set(before) != {"0"}:
 		changed = subprocess.check_output(["git", "diff", "--name-only", before, "HEAD"], text=True).splitlines()
 	else:

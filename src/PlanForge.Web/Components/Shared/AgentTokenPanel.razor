@@ -1,0 +1,36 @@
+@inherits ApiPage
+<Feedback Error="@Error" Toasts="Toasts" />
+<div class="section-heading"><div><h2>@T["Personal API tokens"]</h2><p class="muted small">@T["30-day credentials, scoped to your account. Renewal immediately invalidates the old token."]</p></div><button class="primary" @onclick="() => showCreate=true" disabled="@Busy">@T["+ Create token"]</button></div>
+@if(tokens is null) { <p role="status">@T["Loading token metadata…"]</p> }
+else if(tokens.Count==0) { <p class="empty-state">@T["No agent tokens. Create one when you are ready to connect an external agent."]</p> }
+else
+{
+	<div class="token-list">@foreach(AgentTokenProfile credential in tokens.OrderByDescending(item=>item.CreatedAt)) { <article class="token-row"><div><strong>@credential.Name</strong><small class="muted">@(credential.AgentId is Guid agentId ? Agents.FirstOrDefault(agent=>agent.Id==agentId)?.Name ?? "Inactive agent" : "Unlinked personal token") · <span class="mono">@credential.Id.ToString()[..8]</span></small></div><div><span class="badge @(credential.RevokedAt.HasValue || credential.ExpiresAt<=DateTimeOffset.UtcNow ? "warning" : "success")">@(credential.RevokedAt.HasValue ? "Revoked" : credential.ExpiresAt<=DateTimeOffset.UtcNow ? "Expired" : "Valid")</span><small>Expires @credential.ExpiresAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm 'UTC'")</small><small class="muted">Last used: @(credential.LastUsedAt?.ToUniversalTime().ToString("yyyy-MM-dd HH:mm 'UTC'") ?? "Never")</small></div>@if(!credential.RevokedAt.HasValue) { <div class="toolbar"><button class="quiet" @onclick="() => OnRenewAsync(credential.Id)" disabled="@Busy">@T["Renew"]</button><button class="quiet danger-text" @onclick="() => revokeId=credential.Id" disabled="@Busy">@T["Revoke"]</button></div> }</article> }</div>
+}
+@if(revokeId.HasValue)
+{
+	<ConfirmDialog Title="Revoke token" Description="Immediately invalidate this API credential. Its current value will stop working." Error="@Error" Busy="Busy" Close="() => revokeId=null" Confirm="OnRevokeAsync" />
+}
+@if(showCreate)
+{
+	<Modal Title="Create API token" Error="@Error" Close="() => showCreate=false"><form id="token-form" @onsubmit="OnCreateAsync" @onsubmit:preventDefault><label>@T["Token name"]<input id="token-name" @bind="name" required maxlength="80" /></label><label>@T["Agent identity"]<select @bind="agent"><option value="">@T["Unlinked personal token"]</option>@foreach(AgentProfile option in Agents.Where(option=>option.IsActive)) { <option value="@option.Id">@option.Name</option> }</select></label><p class="muted">@T["Expires 30 days after issuance. Only a hash is stored. Keep the new value private."]</p><div class="form-actions"><button class="primary" disabled="@Busy">@T["Create token"]</button></div></form></Modal>
+}
+@if(grant is not null)
+{
+	<Modal Title="Save your new token" Close="OnDismiss"><p class="warning">@T["This secret is shown only once. Copy it to a private credential store before closing. Never commit it or paste it into public logs."]</p><label>@T["New API token"]<textarea class="mono token-secret" readonly rows="4" spellcheck="false" autocomplete="off">@grant.Token</textarea></label><p class="muted small">Expires @grant.Credential.ExpiresAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm 'UTC'")</p><div class="form-actions"><button id="dismiss-token" class="primary" @onclick="OnDismiss">@T["I saved it — close"]</button></div></Modal>
+}
+@code {
+	[Parameter] public IReadOnlyList<AgentProfile> Agents { get; set; }=[];
+	public Task RefreshAsync() => ExecuteAsync(LoadAsync);
+	private List<AgentTokenProfile>? tokens;
+	private AgentTokenGrant? grant;
+	private string name="",agent="";
+	private bool showCreate;
+	private Guid? revokeId;
+	private Task OnRevokeAsync() => ExecuteAsync(async () => { if(!revokeId.HasValue) return; await Api.SendAsync<object>(HttpMethod.Delete,$"agent-tokens/{revokeId}",cancellationToken:Token); revokeId=null; await LoadAsync(); },"Token revoked");
+	protected override Task OnInitializedAsync() => ExecuteAsync(LoadAsync);
+	private async Task LoadAsync() => tokens=await Api.GetAsync<List<AgentTokenProfile>>("agent-tokens",Token);
+	private Task OnCreateAsync() => ExecuteAsync(async () => { grant=await Api.SendAsync<AgentTokenGrant>(HttpMethod.Post,"agent-tokens",new CreateAgentTokenRequest(name,Guid.TryParse(agent,out Guid id) ? id : null),cancellationToken:Token); showCreate=false; name=""; agent=""; await LoadAsync(); });
+	private void OnDismiss() => grant=null;
+	private Task OnRenewAsync(Guid id) => ExecuteAsync(async () => { grant=await Api.SendAsync<AgentTokenGrant>(HttpMethod.Post,$"agent-tokens/{id}/renew",cancellationToken:Token); await LoadAsync(); });
+}

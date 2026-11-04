@@ -1,0 +1,16 @@
+@inherits ApiPage
+<Feedback Error="@Error" Toasts="Toasts" />
+<div class="avatar-editor">
+	@if(HasAvatar) { <img class="avatar large" src="@(ImageUrl+"?v="+version)" alt="Current avatar" /> }
+	<form @onsubmit="OnUploadAsync" @onsubmit:preventDefault><label>@T["Avatar (PNG, JPEG or WebP, maximum 256 KiB)"]<InputFile OnChange="args=>file=args.File" accept="image/png,image/jpeg,image/webp" /></label><div class="form-actions"><button class="quiet" disabled="@(Busy || file is null)">@T["Upload avatar"]</button>@if(HasAvatar) { <button type="button" class="quiet danger-text" @onclick="OnRemoveAsync" disabled="@Busy" aria-label="@T["Remove avatar"]">@T["Remove avatar"]</button> }</div></form>
+</div>
+@code {
+	[Parameter] public string ApiPath { get; set; }="";
+	[Parameter] public string ImageUrl { get; set; }="";
+	[Parameter] public bool HasAvatar { get; set; }
+	[Parameter] public EventCallback Changed { get; set; }
+	private IBrowserFile? file;
+	private int version;
+	private Task OnUploadAsync() => ExecuteAsync(async () => { if(file is null) return; byte[] bytes=await ReadFileAsync(file,256*1024,Token); await Api.SendAsync<object>(HttpMethod.Put,ApiPath,bytes:bytes,contentType:file.ContentType,cancellationToken:Token); file=null; version++; await Changed.InvokeAsync(); },"Avatar updated");
+	private Task OnRemoveAsync() => ExecuteAsync(async () => { await Api.SendAsync<object>(HttpMethod.Delete,ApiPath,cancellationToken:Token); version++; await Changed.InvokeAsync(); },"Avatar removed");
+}

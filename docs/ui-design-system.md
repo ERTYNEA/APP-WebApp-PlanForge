@@ -1,10 +1,10 @@
 # UI design system
 
-Implementation target: accessible dark developer control panel, not a static mockup. Functional screens and real screenshot review remain pending.
+Implemented as a functional Blazor Interactive Server dark developer control panel, not a static mockup. Login/empty Home and active-plan desktop/mobile screenshots were inspected during local integration. Complete populated/collapsed/Library/mobile and cloud visual acceptance remain pending.
 
-Tokens: background #0B1017; surface #121923; raised #17212D; border #293847; text #E8F1F6; muted #98AAB9; action/focus cyan #3DD6E5/#75E6F0; verified success #35D89C; pending #F3B74A; blocked/destructive #ED6572.
+Tokens: background #0B1017; surface #121923; raised #17212D; border #293847; text #E8F1F6; muted #A4B6C5; action/focus cyan #3DD6E5/#75E6F0; verified success #35D89C; pending #F3B74A; blocked/destructive #FF8290. Muted/error text is slightly lighter than the initial target to improve dark-surface contrast.
 
-System sans for text; system monospace only technical identifiers/events. Spacing 4/8/12/16/24px, radius 8–12px, restrained borders/shadows, semantic SVG icons. Text labels supplement color, visible keyboard focus and WCAG AA contrast. Reduced motion disables nonessential 200–400ms transitions.
+System sans for text; system monospace only technical identifiers/events. Spacing 4/8/12/16/24px, radius 8–12px, restrained borders/shadows, compact symbolic icons with semantic text labels. Text labels supplement color, visible keyboard focus and WCAG AA contrast. Reduced motion disables nonessential 200–400ms transitions.
 
 Desktop fixed sidebar: Home, Projects, Library, Agents, Settings, account and central product version. Mobile collapsible navigation and single-column plan without global horizontal scrolling. Topbar has breadcrumbs, contextual search and real actions. No fictional teams, agent online indicators or token metrics.
 

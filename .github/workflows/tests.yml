@@ -51,6 +51,7 @@ jobs:
     outputs:
       database: ${{ steps.scope.outputs.database }}
       api: ${{ steps.scope.outputs.api }}
+      web: ${{ steps.scope.outputs.web }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -74,3 +75,17 @@ jobs:
     uses: ./.github/workflows/deploy-api.yml
     secrets:
       publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+  web:
+    name: Deploy Web
+    needs: [tests, changes, database, api]
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.tests.result == 'success' && needs.changes.result == 'success' && needs.changes.outputs.web == 'true' }}
+    uses: ./.github/workflows/deploy-web.yml
+    with:
+      test-result: ${{ needs.tests.result }}
+      scope-result: ${{ needs.changes.result }}
+      database-required: ${{ needs.changes.outputs.database == 'true' }}
+      database-result: ${{ needs.database.result }}
+      api-required: ${{ needs.changes.outputs.api == 'true' }}
+      api-result: ${{ needs.api.result }}
+    secrets:
+      publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}

@@ -1,0 +1,567 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<resheader name="resmimetype">
+		<value>text/microsoft-resx</value>
+	</resheader>
+	<resheader name="version">
+		<value>2.0</value>
+	</resheader>
+	<resheader name="reader">
+		<value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+	</resheader>
+	<resheader name="writer">
+		<value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+	</resheader>
+	<data name="+ Add phase" xml:space="preserve">
+		<value>+ Add phase</value>
+	</data>
+	<data name="+ Create token" xml:space="preserve">
+		<value>+ Create token</value>
+	</data>
+	<data name="+ New agent" xml:space="preserve">
+		<value>+ New agent</value>
+	</data>
+	<data name="30-day credentials, scoped to your account. Renewal immediately invalidates the old token." xml:space="preserve">
+		<value>30-day credentials, scoped to your account. Renewal immediately invalidates the old token.</value>
+	</data>
+	<data name="A clear start" xml:space="preserve">
+		<value>A clear start</value>
+	</data>
+	<data name="About PlanForge" xml:space="preserve">
+		<value>About PlanForge</value>
+	</data>
+	<data name="Account settings" xml:space="preserve">
+		<value>Account settings</value>
+	</data>
+	<data name="Active (inactive agents cannot authenticate)" xml:space="preserve">
+		<value>Active (inactive agents cannot authenticate)</value>
+	</data>
+	<data name="Add a phase to build your work plan. Every phase includes a real subphase." xml:space="preserve">
+		<value>Add a phase to build your work plan. Every phase includes a real subphase.</value>
+	</data>
+	<data name="Add association" xml:space="preserve">
+		<value>Add association</value>
+	</data>
+	<data name="Add decision" xml:space="preserve">
+		<value>Add decision</value>
+	</data>
+	<data name="Agent" xml:space="preserve">
+		<value>Agent</value>
+	</data>
+	<data name="Agent assignment" xml:space="preserve">
+		<value>Agent assignment</value>
+	</data>
+	<data name="Agent identity" xml:space="preserve">
+		<value>Agent identity</value>
+	</data>
+	<data name="Agents" xml:space="preserve">
+		<value>Agents</value>
+	</data>
+	<data name="All resources" xml:space="preserve">
+		<value>All resources</value>
+	</data>
+	<data name="All statuses" xml:space="preserve">
+		<value>All statuses</value>
+	</data>
+	<data name="Apply filters" xml:space="preserve">
+		<value>Apply filters</value>
+	</data>
+	<data name="Assigned" xml:space="preserve">
+		<value>Assigned</value>
+	</data>
+	<data name="Association" xml:space="preserve">
+		<value>Association</value>
+	</data>
+	<data name="Attach existing" xml:space="preserve">
+		<value>Attach existing</value>
+	</data>
+	<data name="Attach resource" xml:space="preserve">
+		<value>Attach resource</value>
+	</data>
+	<data name="Attach resources" xml:space="preserve">
+		<value>Attach resources</value>
+	</data>
+	<data name="Avatar (PNG, JPEG or WebP, maximum 256 KiB)" xml:space="preserve">
+		<value>Avatar (PNG, JPEG or WebP, maximum 256 KiB)</value>
+	</data>
+	<data name="Blocked" xml:space="preserve">
+		<value>Blocked</value>
+	</data>
+	<data name="CSV file" xml:space="preserve">
+		<value>CSV file</value>
+	</data>
+	<data name="CSV imported successfully" xml:space="preserve">
+		<value>CSV imported successfully</value>
+	</data>
+	<data name="CSV imported successfully by agent" xml:space="preserve">
+		<value>CSV imported successfully by agent</value>
+	</data>
+	<data name="Cancel" xml:space="preserve">
+		<value>Cancel</value>
+	</data>
+	<data name="Change password &amp; sign out" xml:space="preserve">
+		<value>Change password &amp; sign out</value>
+	</data>
+	<data name="Changing workflow never silently closes pending steps. Library resources survive project and phase deletion." xml:space="preserve">
+		<value>Changing workflow never silently closes pending steps. Library resources survive project and phase deletion.</value>
+	</data>
+	<data name="Changing your password signs out every human session and revokes all your agent tokens. Other accounts are unaffected." xml:space="preserve">
+		<value>Changing your password signs out every human session and revokes all your agent tokens. Other accounts are unaffected.</value>
+	</data>
+	<data name="Choose agent" xml:space="preserve">
+		<value>Choose agent</value>
+	</data>
+	<data name="Choose project" xml:space="preserve">
+		<value>Choose project</value>
+	</data>
+	<data name="Choose resource" xml:space="preserve">
+		<value>Choose resource</value>
+	</data>
+	<data name="Clean completed phases" xml:space="preserve">
+		<value>Clean completed phases</value>
+	</data>
+	<data name="Clean orphan resources" xml:space="preserve">
+		<value>Clean orphan resources</value>
+	</data>
+	<data name="Clear plans. Real progress. No lost context." xml:space="preserve">
+		<value>Clear plans. Real progress. No lost context.</value>
+	</data>
+	<data name="Close dialog" xml:space="preserve">
+		<value>Close dialog</value>
+	</data>
+	<data name="Closure evidence" xml:space="preserve">
+		<value>Closure evidence</value>
+	</data>
+	<data name="Completed" xml:space="preserve">
+		<value>Completed</value>
+	</data>
+	<data name="Confirm new password" xml:space="preserve">
+		<value>Confirm new password</value>
+	</data>
+	<data name="Create a logical identity to assign work and issue a personal API token." xml:space="preserve">
+		<value>Create a logical identity to assign work and issue a personal API token.</value>
+	</data>
+	<data name="Create project" xml:space="preserve">
+		<value>Create project</value>
+	</data>
+	<data name="Create token" xml:space="preserve">
+		<value>Create token</value>
+	</data>
+	<data name="Create your first project →" xml:space="preserve">
+		<value>Create your first project →</value>
+	</data>
+	<data name="Current associations" xml:space="preserve">
+		<value>Current associations</value>
+	</data>
+	<data name="Current password" xml:space="preserve">
+		<value>Current password</value>
+	</data>
+	<data name="Deactivate agent" xml:space="preserve">
+		<value>Deactivate agent</value>
+	</data>
+	<data name="Delete" xml:space="preserve">
+		<value>Delete</value>
+	</data>
+	<data name="Delete project" xml:space="preserve">
+		<value>Delete project</value>
+	</data>
+	<data name="Delete resource" xml:space="preserve">
+		<value>Delete resource</value>
+	</data>
+	<data name="Description" xml:space="preserve">
+		<value>Description</value>
+	</data>
+	<data name="Description / role" xml:space="preserve">
+		<value>Description / role</value>
+	</data>
+	<data name="Development workflow" xml:space="preserve">
+		<value>Development workflow</value>
+	</data>
+	<data name="Direct project link" xml:space="preserve">
+		<value>Direct project link</value>
+	</data>
+	<data name="Dismiss" xml:space="preserve">
+		<value>Dismiss</value>
+	</data>
+	<data name="Display name" xml:space="preserve">
+		<value>Display name</value>
+	</data>
+	<data name="Edit" xml:space="preserve">
+		<value>Edit</value>
+	</data>
+	<data name="Email address" xml:space="preserve">
+		<value>Email address</value>
+	</data>
+	<data name="Expires 30 days after issuance. Only a hash is stored. Keep the new value private." xml:space="preserve">
+		<value>Expires 30 days after issuance. Only a hash is stored. Keep the new value private.</value>
+	</data>
+	<data name="Explicitly replace omitted records (removes missing plan items and their links, never Library files)." xml:space="preserve">
+		<value>Explicitly replace omitted records (removes missing plan items and their links, never Library files).</value>
+	</data>
+	<data name="Explicitly unassigned" xml:space="preserve">
+		<value>Explicitly unassigned</value>
+	</data>
+	<data name="Export CSV" xml:space="preserve">
+		<value>Export CSV</value>
+	</data>
+	<data name="Export project" xml:space="preserve">
+		<value>Export project</value>
+	</data>
+	<data name="File" xml:space="preserve">
+		<value>File</value>
+	</data>
+	<data name="Filter projects by status" xml:space="preserve">
+		<value>Filter projects by status</value>
+	</data>
+	<data name="Filter resource assignment" xml:space="preserve">
+		<value>Filter resource assignment</value>
+	</data>
+	<data name="Hierarchical work plan" xml:space="preserve">
+		<value>Hierarchical work plan</value>
+	</data>
+	<data name="Home" xml:space="preserve">
+		<value>Home</value>
+	</data>
+	<data name="I approve this work as owner" xml:space="preserve">
+		<value>I approve this work as owner</value>
+	</data>
+	<data name="I saved it — close" xml:space="preserve">
+		<value>I saved it — close</value>
+	</data>
+	<data name="I understand and confirm this action." xml:space="preserve">
+		<value>I understand and confirm this action.</value>
+	</data>
+	<data name="Import CSV" xml:space="preserve">
+		<value>Import CSV</value>
+	</data>
+	<data name="Import a full UTF-8 semicolon snapshot exported from this project. Stable IDs and base revision are validated. A stale plan is never overwritten." xml:space="preserve">
+		<value>Import a full UTF-8 semicolon snapshot exported from this project. Stable IDs and base revision are validated. A stale plan is never overwritten.</value>
+	</data>
+	<data name="InProgress" xml:space="preserve">
+		<value>InProgress</value>
+	</data>
+	<data name="Inherit from parent" xml:space="preserve">
+		<value>Inherit from parent</value>
+	</data>
+	<data name="Library" xml:space="preserve">
+		<value>Library</value>
+	</data>
+	<data name="Library resource" xml:space="preserve">
+		<value>Library resource</value>
+	</data>
+	<data name="Library storage is nearing its limit. Review unused files before uploading." xml:space="preserve">
+		<value>Library storage is nearing its limit. Review unused files before uploading.</value>
+	</data>
+	<data name="Library storage usage" xml:space="preserve">
+		<value>Library storage usage</value>
+	</data>
+	<data name="Loading account…" xml:space="preserve">
+		<value>Loading account…</value>
+	</data>
+	<data name="Loading agents…" xml:space="preserve">
+		<value>Loading agents…</value>
+	</data>
+	<data name="Loading resources…" xml:space="preserve">
+		<value>Loading resources…</value>
+	</data>
+	<data name="Loading token metadata…" xml:space="preserve">
+		<value>Loading token metadata…</value>
+	</data>
+	<data name="Loading work plan…" xml:space="preserve">
+		<value>Loading work plan…</value>
+	</data>
+	<data name="Loading your workspace…" xml:space="preserve">
+		<value>Loading your workspace…</value>
+	</data>
+	<data name="Logical identities for your work. No hosted execution, no invented online status." xml:space="preserve">
+		<value>Logical identities for your work. No hosted execution, no invented online status.</value>
+	</data>
+	<data name="Main navigation" xml:space="preserve">
+		<value>Main navigation</value>
+	</data>
+	<data name="Manage" xml:space="preserve">
+		<value>Manage</value>
+	</data>
+	<data name="Manage agents &amp; tokens →" xml:space="preserve">
+		<value>Manage agents &amp; tokens →</value>
+	</data>
+	<data name="Manage project resources" xml:space="preserve">
+		<value>Manage project resources</value>
+	</data>
+	<data name="Merge confirmed" xml:space="preserve">
+		<value>Merge confirmed</value>
+	</data>
+	<data name="NEXT IN FOCUS" xml:space="preserve">
+		<value>NEXT IN FOCUS</value>
+	</data>
+	<data name="Name" xml:space="preserve">
+		<value>Name</value>
+	</data>
+	<data name="New API token" xml:space="preserve">
+		<value>New API token</value>
+	</data>
+	<data name="New password" xml:space="preserve">
+		<value>New password</value>
+	</data>
+	<data name="New project" xml:space="preserve">
+		<value>New project</value>
+	</data>
+	<data name="Next" xml:space="preserve">
+		<value>Next</value>
+	</data>
+	<data name="No agent tokens. Create one when you are ready to connect an external agent." xml:space="preserve">
+		<value>No agent tokens. Create one when you are ready to connect an external agent.</value>
+	</data>
+	<data name="No agents yet" xml:space="preserve">
+		<value>No agents yet</value>
+	</data>
+	<data name="No confirmation" xml:space="preserve">
+		<value>No confirmation</value>
+	</data>
+	<data name="No projects match these filters." xml:space="preserve">
+		<value>No projects match these filters.</value>
+	</data>
+	<data name="No projects yet" xml:space="preserve">
+		<value>No projects yet</value>
+	</data>
+	<data name="No resources here yet" xml:space="preserve">
+		<value>No resources here yet</value>
+	</data>
+	<data name="One library. Independent project and phase links. Files survive plan deletion." xml:space="preserve">
+		<value>One library. Independent project and phase links. Files survive plan deletion.</value>
+	</data>
+	<data name="Order (zero-based)" xml:space="preserve">
+		<value>Order (zero-based)</value>
+	</data>
+	<data name="Override agent" xml:space="preserve">
+		<value>Override agent</value>
+	</data>
+	<data name="Page not found" xml:space="preserve">
+		<value>Page not found</value>
+	</data>
+	<data name="Parent / move to" xml:space="preserve">
+		<value>Parent / move to</value>
+	</data>
+	<data name="Password" xml:space="preserve">
+		<value>Password</value>
+	</data>
+	<data name="Password &amp; sessions" xml:space="preserve">
+		<value>Password &amp; sessions</value>
+	</data>
+	<data name="Pending" xml:space="preserve">
+		<value>Pending</value>
+	</data>
+	<data name="Permanent actions" xml:space="preserve">
+		<value>Permanent actions</value>
+	</data>
+	<data name="Personal API tokens" xml:space="preserve">
+		<value>Personal API tokens</value>
+	</data>
+	<data name="Personal workspace" xml:space="preserve">
+		<value>Personal workspace</value>
+	</data>
+	<data name="Phase resources" xml:space="preserve">
+		<value>Phase resources</value>
+	</data>
+	<data name="Previous" xml:space="preserve">
+		<value>Previous</value>
+	</data>
+	<data name="Profile" xml:space="preserve">
+		<value>Profile</value>
+	</data>
+	<data name="Progress" xml:space="preserve">
+		<value>Progress</value>
+	</data>
+	<data name="Project" xml:space="preserve">
+		<value>Project</value>
+	</data>
+	<data name="Project exported successfully" xml:space="preserve">
+		<value>Project exported successfully</value>
+	</data>
+	<data name="Project exported successfully by agent" xml:space="preserve">
+		<value>Project exported successfully by agent</value>
+	</data>
+	<data name="Project progress" xml:space="preserve">
+		<value>Project progress</value>
+	</data>
+	<data name="Project updated" xml:space="preserve">
+		<value>Project updated</value>
+	</data>
+	<data name="Projects" xml:space="preserve">
+		<value>Projects</value>
+	</data>
+	<data name="Projects, hierarchical work plans and a reusable resource library. API access uses private, revocable 30-day agent credentials." xml:space="preserve">
+		<value>Projects, hierarchical work plans and a reusable resource library. API access uses private, revocable 30-day agent credentials.</value>
+	</data>
+	<data name="Purpose" xml:space="preserve">
+		<value>Purpose</value>
+	</data>
+	<data name="REFERENCE MATERIAL" xml:space="preserve">
+		<value>REFERENCE MATERIAL</value>
+	</data>
+	<data name="Recently updated" xml:space="preserve">
+		<value>Recently updated</value>
+	</data>
+	<data name="Recorded" xml:space="preserve">
+		<value>Recorded</value>
+	</data>
+	<data name="Reload" xml:space="preserve">
+		<value>Reload</value>
+	</data>
+	<data name="Reload and reconcile. No changes were overwritten." xml:space="preserve">
+		<value>Reload and reconcile. No changes were overwritten.</value>
+	</data>
+	<data name="Remove avatar" xml:space="preserve">
+		<value>Remove avatar</value>
+	</data>
+	<data name="Renew" xml:space="preserve">
+		<value>Renew</value>
+	</data>
+	<data name="Resolution" xml:space="preserve">
+		<value>Resolution</value>
+	</data>
+	<data name="Return home" xml:space="preserve">
+		<value>Return home</value>
+	</data>
+	<data name="Revoke" xml:space="preserve">
+		<value>Revoke</value>
+	</data>
+	<data name="Save agent" xml:space="preserve">
+		<value>Save agent</value>
+	</data>
+	<data name="Save profile" xml:space="preserve">
+		<value>Save profile</value>
+	</data>
+	<data name="Save settings" xml:space="preserve">
+		<value>Save settings</value>
+	</data>
+	<data name="Save title" xml:space="preserve">
+		<value>Save title</value>
+	</data>
+	<data name="Search projects" xml:space="preserve">
+		<value>Search projects</value>
+	</data>
+	<data name="Search projects…" xml:space="preserve">
+		<value>Search projects…</value>
+	</data>
+	<data name="Search resources" xml:space="preserve">
+		<value>Search resources</value>
+	</data>
+	<data name="Search resources…" xml:space="preserve">
+		<value>Search resources…</value>
+	</data>
+	<data name="Settings" xml:space="preserve">
+		<value>Settings</value>
+	</data>
+	<data name="Sign in to continue" xml:space="preserve">
+		<value>Sign in to continue</value>
+	</data>
+	<data name="Sign out" xml:space="preserve">
+		<value>Sign out</value>
+	</data>
+	<data name="Sort projects" xml:space="preserve">
+		<value>Sort projects</value>
+	</data>
+	<data name="Start with a project. Build a plan. Keep the next step clear." xml:space="preserve">
+		<value>Start with a project. Build a plan. Keep the next step clear.</value>
+	</data>
+	<data name="Status" xml:space="preserve">
+		<value>Status</value>
+	</data>
+	<data name="Successful push confirmed" xml:space="preserve">
+		<value>Successful push confirmed</value>
+	</data>
+	<data name="The connection was interrupted." xml:space="preserve">
+		<value>The connection was interrupted.</value>
+	</data>
+	<data name="This action is irreversible from PlanForge." xml:space="preserve">
+		<value>This action is irreversible from PlanForge.</value>
+	</data>
+	<data name="This mode defines what evidence closes a step. You can change it later without silently completing pending work." xml:space="preserve">
+		<value>This mode defines what evidence closes a step. You can change it later without silently completing pending work.</value>
+	</data>
+	<data name="This secret is shown only once. Copy it to a private credential store before closing. Never commit it or paste it into public logs." xml:space="preserve">
+		<value>This secret is shown only once. Copy it to a private credential store before closing. Never commit it or paste it into public logs.</value>
+	</data>
+	<data name="Title" xml:space="preserve">
+		<value>Title</value>
+	</data>
+	<data name="Toggle navigation" xml:space="preserve">
+		<value>Toggle navigation</value>
+	</data>
+	<data name="Token name" xml:space="preserve">
+		<value>Token name</value>
+	</data>
+	<data name="Unassigned / Orphan" xml:space="preserve">
+		<value>Unassigned / Orphan</value>
+	</data>
+	<data name="Unlink" xml:space="preserve">
+		<value>Unlink</value>
+	</data>
+	<data name="Unlink association" xml:space="preserve">
+		<value>Unlink association</value>
+	</data>
+	<data name="Unlinked personal token" xml:space="preserve">
+		<value>Unlinked personal token</value>
+	</data>
+	<data name="Updates automatically every 10 seconds" xml:space="preserve">
+		<value>Updates automatically every 10 seconds</value>
+	</data>
+	<data name="Upload a file or attach an existing Library resource." xml:space="preserve">
+		<value>Upload a file or attach an existing Library resource.</value>
+	</data>
+	<data name="Upload avatar" xml:space="preserve">
+		<value>Upload avatar</value>
+	</data>
+	<data name="Upload file" xml:space="preserve">
+		<value>Upload file</value>
+	</data>
+	<data name="Use 12–128 characters. No external identity provider required." xml:space="preserve">
+		<value>Use 12–128 characters. No external identity provider required.</value>
+	</data>
+	<data name="Version" xml:space="preserve">
+		<value>Version</value>
+	</data>
+	<data name="Welcome back" xml:space="preserve">
+		<value>Welcome back</value>
+	</data>
+	<data name="Work done (not approval, merge or push)" xml:space="preserve">
+		<value>Work done (not approval, merge or push)</value>
+	</data>
+	<data name="Work plan" xml:space="preserve">
+		<value>Work plan</value>
+	</data>
+	<data name="Workspace" xml:space="preserve">
+		<value>Workspace</value>
+	</data>
+	<data name="YOUR COLLABORATORS" xml:space="preserve">
+		<value>YOUR COLLABORATORS</value>
+	</data>
+	<data name="YOUR NEXT STEP STARTS HERE" xml:space="preserve">
+		<value>YOUR NEXT STEP STARTS HERE</value>
+	</data>
+	<data name="YOUR WORKSPACE" xml:space="preserve">
+		<value>YOUR WORKSPACE</value>
+	</data>
+	<data name="Your files, ready for the work ahead. Reuse them without uploading twice." xml:space="preserve">
+		<value>Your files, ready for the work ahead. Reuse them without uploading twice.</value>
+	</data>
+	<data name="Your identity, security and application information. No infrastructure credentials are exposed." xml:space="preserve">
+		<value>Your identity, security and application information. No infrastructure credentials are exposed.</value>
+	</data>
+	<data name="pending decision(s)" xml:space="preserve">
+		<value>pending decision(s)</value>
+	</data>
+	<data name="← All projects" xml:space="preserve">
+		<value>← All projects</value>
+	</data>
+	<data name="↧ Download" xml:space="preserve">
+		<value>↧ Download</value>
+	</data>
+	<data name="↻ Refresh" xml:space="preserve">
+		<value>↻ Refresh</value>
+	</data>
+	<data name="↻ Reload" xml:space="preserve">
+		<value>↻ Reload</value>
+	</data>
+</root>
