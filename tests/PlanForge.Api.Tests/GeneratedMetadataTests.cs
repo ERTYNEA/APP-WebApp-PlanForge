@@ -14,7 +14,7 @@ public sealed class GeneratedMetadataTests
 		var metadata = await provider.GetFunctionMetadataAsync(string.Empty);
 
 		string[] names = metadata.Select(item => item.Name!).Order(StringComparer.Ordinal).ToArray();
-		Assert.Equal(new[] { "Agent", "AgentTokens", "Agents", "CleanCompletedPhases", "CleanOrphanResources", "Decisions", "DownloadResource", "ExportProjectArchive", "ExportWorkPlan", "Health", "ImportWorkPlan", "Login", "Logout", "PhaseResources", "Phases", "Project", "ProjectResources", "Projects", "Readiness", "Register", "RenewAgentToken", "Resource", "ResourceLinks", "ResourceUsage", "Resources", "RevokeAgentToken", "Session", "Steps", "Subphases" }, names);
+		Assert.Equal(new[] { "Agent", "AgentAvatar", "AgentTokens", "Agents", "ChangePassword", "CleanCompletedPhases", "CleanOrphanResources", "Decisions", "DownloadResource", "ExportProjectArchive", "ExportWorkPlan", "Health", "ImportWorkPlan", "Login", "Logout", "PhaseResources", "Phases", "Project", "ProjectChanges", "ProjectResources", "ProjectSummaries", "Projects", "Readiness", "Register", "RenewAgentToken", "Resource", "ResourceLinks", "ResourceUsage", "Resources", "RevokeAgentToken", "Session", "Settings", "Steps", "Subphases", "UserAvatar", "UserProfile" }.Order(StringComparer.Ordinal), names);
 		Assert.All(metadata, item => Assert.NotEmpty(item.RawBindings!));
 	}
 }

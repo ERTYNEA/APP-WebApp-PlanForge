@@ -16,11 +16,11 @@ public sealed class AccountService(IAccountStore accountStore, ISecretProtector 
 		if (credential.ExpiresAt <= timeProvider.GetUtcNow())
 			throw new PlanForgeException(401, "The access token has expired. Sign in again or renew your agent token.");
 		UserAccount? user = await accountStore.FindUserAsync(credential.OwnerUserId, cancellationToken);
-		if (user is null || !user.IsActive || (credential.Kind == CredentialKind.HumanSession) != token.StartsWith("pf_h_", StringComparison.Ordinal))
+		if (user is null || !user.IsActive || credential.SecurityVersion != user.SecurityVersion || (credential.Kind == CredentialKind.HumanSession) != token.StartsWith("pf_h_", StringComparison.Ordinal))
 			throw new PlanForgeException(401, "The access token is invalid or revoked.");
 		if (credential.Kind == CredentialKind.AgentToken && credential.AgentId is Guid agentId && !await accountStore.IsAgentActiveAsync(user.Id, agentId, cancellationToken))
 			throw new PlanForgeException(401, "The agent is inactive or unavailable. Renew an authorized agent token.");
-		return new AuthenticatedActor(user.Id, credential.Kind, credential.Id, credential.AgentId);
+		return new AuthenticatedActor(user.Id, credential.Kind, credential.Id, credential.AgentId, credential.SecurityVersion);
 	}
 
 	public async Task<UserProfile> GetProfileAsync(AuthenticatedActor actor, CancellationToken cancellationToken = default)
@@ -28,7 +28,7 @@ public sealed class AccountService(IAccountStore accountStore, ISecretProtector 
 		UserAccount? user = await accountStore.FindUserAsync(actor.UserId, cancellationToken);
 		if (user is null || !user.IsActive)
 			throw new PlanForgeException(401, "The account is unavailable.");
-		return new UserProfile(user.Id, user.Email, user.DisplayName, user.CreatedAt);
+		return new UserProfile(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null);
 	}
 
 	public async Task<AccessGrant> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -80,10 +80,11 @@ public sealed class AccountService(IAccountStore accountStore, ISecretProtector 
 			Kind = CredentialKind.HumanSession,
 			Name = "Web session",
 			OwnerUserId = user.Id,
+			SecurityVersion = user.SecurityVersion,
 			TokenHash = secretProtector.HashToken(token)
 		};
 		await accountStore.AddCredentialAsync(credential, cancellationToken);
 		await accountStore.SaveAsync(cancellationToken);
-		return new AccessGrant(token, credential.ExpiresAt, new UserProfile(user.Id, user.Email, user.DisplayName, user.CreatedAt));
+		return new AccessGrant(token, credential.ExpiresAt, new UserProfile(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null));
 	}
 }

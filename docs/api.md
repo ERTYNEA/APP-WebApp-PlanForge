@@ -1,6 +1,6 @@
 # REST API
 
-Status: alpha.2 business API and three additive SQL migrations are cloud-verified, including controlled ownership/workflow/token/CSV/concurrency scenarios. Alpha.3 Library/ZIP handlers are implemented and tested in-process but await exact-commit deployment and real acceptance. Account editing/avatars, change polling and Web UI remain pending. This is not full product acceptance.
+Status: alpha.3 business and Library/ZIP APIs with four additive SQL migrations are cloud-verified, including ownership, workflow, CSV, ZIP bytes/CRC/manifest and real attachment/cleanup races. Alpha.4 adds tested account/password/avatar management, lightweight summaries, change cursors and settings; its fifth additive migration and new handlers await ordered publication/acceptance. Blazor and complete integrated acceptance remain pending.
 
 One .NET 10 isolated Functions app is the authorizing backend. Anonymous platform triggers still require application Bearer authorization. Clients never submit an OwnerUserId. Known IDs belonging to another owner return the same safe 404 as missing records. HTTPS is mandatory outside loopback development.
 
@@ -12,12 +12,19 @@ All paths below start with `/api/v1`. Bodies are JSON except raw CSV import. Aut
 - POST `/auth/register`: email, password, displayName; returns 201 with a human session grant.
 - POST `/auth/login`: email and password; returns a new human session grant.
 - GET `/auth/session`: human session profile. POST `/auth/logout`: revoke that session, 204.
-- GET `/projects`: current owner's projects. POST `/projects`: name, optional description and workflow; returns 201.
+- GET `/users/me`, PUT `/users/me`: human-only profile and display-name update; identity/email stay unchanged.
+- POST `/users/me/password`: currentPassword/newPassword; checks the current hash and atomically revokes every human session and agent token owned by that account. Returns 204; sign in again. Another owner remains unaffected. Account/credential security versions also invalidate sessions and agent tokens issued by an already-in-flight pre-change login/request.
+- GET/PUT/DELETE `/users/me/avatar`: human-only raster avatar; PUT raw bytes with image/png, image/jpeg or image/webp, at most 256 KiB. MIME/signature validation, safe inline response, independent SQL storage outside Library cleanup.
+- GET `/settings`: authenticated safe product version, limits and the four ordered workflow identifiers, never credentials/configuration secrets.
+- GET `/projects`: current owner's complete snapshots, retained for API compatibility. POST `/projects`: name, optional description and workflow; returns 201.
+- GET `/projects/summary?skip=0&take=50`: lightweight SQL projections, description preview up to 240 characters, actual counts/progress and last event cursor, no trees or binaries. Returns items/total/skip/take/hasMore; take 1–100, skip 0–100000.
+- GET `/projects/{projectId}/changes?after=0`: coherent current revision, latestChangeId, resetRequired and latest 100 retained actor/action events newer than the cursor. Actor names resolve owner-local current identities; IDs/kinds remain authoritative. A stale/pruned cursor requires refreshing the project before advancing the baseline.
 - GET `/projects/{projectId}`: complete snapshot, stable IDs and revision. PUT the same route: full edited snapshot, preserving records. DELETE: `{ "revision": 1, "confirmed": true }`, permanent project/plan deletion.
 - GET/POST `/projects/{projectId}/phases`, `/subphases`, `/steps`, `/decisions`: list/create typed records.
 - GET/PUT/DELETE `/projects/{projectId}/phases/{id}` and equivalent subphases/steps/decisions routes: read/edit/reorder/move/delete a record. Delete requires revision and confirmed=true; descendants are intentional, and the last Subphase of a retained Phase cannot be removed.
 - POST `/projects/{projectId}/completed-phases/clean`: revision and confirmed=true; removes only fully completed Phase trees.
 - GET `/agents`, POST `/agents`: owner's logical agents; creation requires a human session. GET/PUT/DELETE `/agents/{id}`: inspect, edit, or deactivate. Deactivation preserves historical identity and invalidates its tokens.
+- GET/PUT/DELETE `/agents/{id}/avatar`: owner-isolated safe raster read; human-only upload/removal, same 256 KiB and MIME/signature policy as account avatars.
 - GET/POST `/agent-tokens`: human-only metadata listing or issuance with name and optional agentId. DELETE `/agent-tokens/{id}`: immediate revocation, 204. POST `/agent-tokens/{id}/renew`: new value and expiry, old value revoked.
 - GET `/projects/{projectId}/work-plan/export`: UTF-8 `work-plan.csv` download.
 - POST `/projects/{projectId}/work-plan/import`: raw UTF-8 CSV, at most 1 MiB. Set `X-PlanForge-Replace: true` explicitly to permit omitted-record deletion. Ownership is checked before reading/parsing content. See `work-plan-csv.md`.
@@ -46,7 +53,7 @@ Workflow values are `PlanningOnly`, `LocalChangesManualApproval`, `BranchPullReq
 
 Phase/Subphase/Step statuses: Pending, InProgress, Blocked, Completed. Decisions use Pending or Decided and require a resolution when decided. Aggregate status/progress derive from actual children and closed steps; no fake progress counters. Agent assignment modes: Inherit, Override with a valid owner-local agent, or explicit Unassigned. Inactive agent references remain historical but cannot be newly assigned.
 
-Every mutation supplies the current revision; one successful logical operation increments it once. Stale or concurrently superseded revisions return 409. Reload and reconcile; never automatically overwrite the winner. Snapshot and child changes/events share a transaction. Export events do not increment revision. Stored events distinguish Human and Agent and use the exact action strings documented in the specification; observing Web polling remains pending.
+Every mutation supplies the current revision; one successful logical operation increments it once. Stale or concurrently superseded revisions return 409. Reload and reconcile; never automatically overwrite the winner. Snapshot and child changes/events share a transaction. Export events do not increment revision. Stored events distinguish Human and Agent and use the exact action strings documented in the specification; the bounded change endpoint exposes these events; observing Web polling remains pending.
 
 ## Authentication and safety
 

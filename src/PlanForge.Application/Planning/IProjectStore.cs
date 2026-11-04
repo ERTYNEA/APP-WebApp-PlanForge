@@ -1,9 +1,12 @@
 namespace PlanForge.Application.Planning;
 
 using PlanForge.Domain.Planning;
+using PlanForge.Contracts.Planning;
 
 public interface IProjectStore
 {
+	Task<ProjectSummaryPage> ListSummariesAsync(Guid ownerId, int skip, int take, CancellationToken cancellationToken);
+	Task<ProjectChangePage?> GetChangesAsync(Guid ownerId, Guid projectId, long after, CancellationToken cancellationToken);
 	Task RecordEventAsync(Guid ownerId, Guid projectId, long revision, Guid actorId, string actorKind, string action, CancellationToken cancellationToken);
 	Task<bool> IsValidAgentAsync(Guid ownerId, Guid agentId, bool requireActive, CancellationToken cancellationToken);
 	Task CreateAsync(Project project, CancellationToken cancellationToken);

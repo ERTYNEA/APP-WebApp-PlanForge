@@ -15,7 +15,8 @@ public sealed class EfAgentStore(PlanForgeDbContext database) : IAgentStore
 	public Task<AccessCredential?> GetTokenAsync(Guid ownerId, Guid tokenId, CancellationToken cancellationToken)
 		=> database.AccessCredentials.SingleOrDefaultAsync(token => token.OwnerUserId == ownerId && token.Id == tokenId && token.Kind == CredentialKind.AgentToken, cancellationToken);
 	public async Task<IReadOnlyList<Agent>> ListAsync(Guid ownerId, CancellationToken cancellationToken)
-		=> await database.Agents.Where(agent => agent.OwnerUserId == ownerId).OrderBy(agent => agent.Name).ToListAsync(cancellationToken);
+		=> await database.Agents.AsNoTracking().Where(agent => agent.OwnerUserId == ownerId).OrderBy(agent => agent.Name)
+			.Select(agent => new Agent { Id = agent.Id, OwnerUserId = agent.OwnerUserId, Name = agent.Name, Description = agent.Description, IsActive = agent.IsActive, CreatedAt = agent.CreatedAt, AvatarBytes = agent.AvatarBytes == null ? null : Array.Empty<byte>() }).ToListAsync(cancellationToken);
 	public async Task<IReadOnlyList<AccessCredential>> ListTokensAsync(Guid ownerId, CancellationToken cancellationToken)
 		=> await database.AccessCredentials.Where(token => token.OwnerUserId == ownerId && token.Kind == CredentialKind.AgentToken).ToListAsync(cancellationToken);
 	public async Task SaveAsync(CancellationToken cancellationToken) => await database.SaveChangesAsync(cancellationToken);

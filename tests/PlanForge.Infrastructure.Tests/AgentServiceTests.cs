@@ -59,6 +59,27 @@ public sealed class AgentServiceTests
 		Assert.Equal(401, (await Assert.ThrowsAsync<PlanForgeException>(() => fixture.Service.AuthenticateAsync(token.Token))).StatusCode);
 	}
 
+	[Fact]
+	public async Task AvatarAsync_WhenOwned_PreservesRasterBytesAndDeniesOtherOwnerOrAgentMutationAsync()
+	{
+		await using var fixture = new AccountDatabaseFixture();
+		var a = await fixture.Service.RegisterAsync(new RegisterRequest("a@example.test", "CorrectPassword123!", "test"));
+		var b = await fixture.Service.RegisterAsync(new RegisterRequest("b@example.test", "CorrectPassword123!", "test-isolation"));
+		AuthenticatedActor actor = await fixture.Service.AuthenticateAsync(a.Token);
+		AuthenticatedActor other = await fixture.Service.AuthenticateAsync(b.Token);
+		var service = new AgentService(new EfAgentStore(fixture.Database), new SecretProtector(), TimeProvider.System);
+		AgentProfile agent = await service.CreateAsync(actor, new("Avatar agent"));
+		byte[] image = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=");
+		Assert.True((await service.SetAvatarAsync(actor, agent.Id, image, "image/png")).HasAvatar);
+		Assert.True((await service.ListAsync(actor)).Single().HasAvatar);
+		Assert.Equal(image, (await service.GetAvatarAsync(actor, agent.Id)).Content);
+		Assert.Equal(404, (await Assert.ThrowsAsync<PlanForgeException>(() => service.GetAvatarAsync(other, agent.Id))).StatusCode);
+		Assert.Equal(403, (await Assert.ThrowsAsync<PlanForgeException>(() => service.SetAvatarAsync(actor with { Kind = CredentialKind.AgentToken }, agent.Id, image, "image/png"))).StatusCode);
+		Assert.False((await service.SetAvatarAsync(actor, agent.Id, null, null)).HasAvatar);
+		Assert.Equal(404, (await Assert.ThrowsAsync<PlanForgeException>(() => service.GetAvatarAsync(actor, agent.Id))).StatusCode);
+		Assert.Empty(fixture.Database.Resources);
+	}
+
 	private sealed class MutableTimeProvider : TimeProvider
 	{
 		public DateTimeOffset Now { get; set; } = DateTimeOffset.UtcNow;

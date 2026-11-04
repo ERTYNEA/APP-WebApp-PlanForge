@@ -3,6 +3,7 @@ namespace PlanForge.Domain.Accounts;
 public sealed class AccessCredential
 {
 	public Guid Id { get; set; } = Guid.NewGuid();
+	public long SecurityVersion { get; set; }
 	public Guid? AgentId { get; set; }
 	public DateTimeOffset CreatedAt { get; set; }
 	public DateTimeOffset ExpiresAt { get; set; }

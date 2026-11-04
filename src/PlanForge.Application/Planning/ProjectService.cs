@@ -17,6 +17,20 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 		return ToSnapshot(new ProjectAggregate(project, []));
 	}
 
+	public Task<ProjectSummaryPage> ListSummariesAsync(AuthenticatedActor actor, int skip = 0, int take = 50, CancellationToken cancellationToken = default)
+	{
+		if (skip is < 0 or > 100000 || take is < 1 or > 100)
+			throw new PlanForgeException(400, "Use skip 0–100000 and take 1–100.");
+		return store.ListSummariesAsync(actor.UserId, skip, take, cancellationToken);
+	}
+
+	public async Task<ProjectChangePage> GetChangesAsync(AuthenticatedActor actor, Guid projectId, long after = 0, CancellationToken cancellationToken = default)
+	{
+		if (after < 0)
+			throw new PlanForgeException(400, "Use a nonnegative change cursor.");
+		return await store.GetChangesAsync(actor.UserId, projectId, after, cancellationToken) ?? throw new PlanForgeException(404, "Project not found.");
+	}
+
 	public async Task<ProjectSnapshot> GetAsync(AuthenticatedActor actor, Guid projectId, CancellationToken cancellationToken = default)
 		=> ToSnapshot(await store.GetAsync(actor.UserId, projectId, cancellationToken) ?? throw new PlanForgeException(404, "Project not found."));
 	public async Task<IReadOnlyList<ProjectSnapshot>> ListAsync(AuthenticatedActor actor, CancellationToken cancellationToken = default)

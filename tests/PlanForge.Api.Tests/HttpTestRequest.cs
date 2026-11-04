@@ -7,9 +7,9 @@ using System.Net;
 using System.Security.Claims;
 using System.Text;
 
-public sealed class HttpTestRequest(string body = "", string method = "POST") : HttpRequestData(new Mock<FunctionContext>().Object)
+public sealed class HttpTestRequest(string body = "", string method = "POST", byte[]? bytes = null) : HttpRequestData(new Mock<FunctionContext>().Object)
 {
-	public override Stream Body { get; } = new MemoryStream(Encoding.UTF8.GetBytes(body));
+	public override Stream Body { get; } = new MemoryStream(bytes ?? Encoding.UTF8.GetBytes(body));
 	public override IReadOnlyCollection<IHttpCookie> Cookies => [];
 	public override HttpHeadersCollection Headers { get; } = new();
 	public override IEnumerable<ClaimsIdentity> Identities => [];

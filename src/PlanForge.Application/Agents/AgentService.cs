@@ -2,6 +2,7 @@ namespace PlanForge.Application.Agents;
 
 using PlanForge.Application.Accounts;
 using PlanForge.Application.Common;
+using PlanForge.Contracts;
 using PlanForge.Contracts.Agents;
 using PlanForge.Domain.Accounts;
 using PlanForge.Domain.Agents;
@@ -65,6 +66,27 @@ public sealed class AgentService(IAgentStore store, ISecretProtector secrets, Ti
 	public async Task<IReadOnlyList<AgentProfile>> ListAsync(AuthenticatedActor actor, CancellationToken cancellationToken = default)
 		=> (await store.ListAsync(actor.UserId, cancellationToken)).Select(ToProfile).ToList();
 
+	public async Task<AgentProfile> SetAvatarAsync(AuthenticatedActor actor, Guid agentId, byte[]? content, string? contentType, CancellationToken cancellationToken = default)
+	{
+		RequireHuman(actor);
+		if (content is not null)
+			AvatarValidator.Validate(content, contentType ?? string.Empty);
+		Agent agent = await store.GetAsync(actor.UserId, agentId, cancellationToken) ?? throw new PlanForgeException(404, "Agent not found.");
+		agent.AvatarBytes = content;
+		agent.AvatarContentType = content is null ? null : contentType!.ToLowerInvariant();
+		await store.SaveAsync(cancellationToken);
+		return ToProfile(agent);
+	}
+	public async Task<DownloadFile> GetAvatarAsync(AuthenticatedActor actor, Guid agentId, CancellationToken cancellationToken = default)
+	{
+		Agent agent = await store.GetAsync(actor.UserId, agentId, cancellationToken) ?? throw new PlanForgeException(404, "Agent not found.");
+		if (agent.AvatarBytes is null || agent.AvatarContentType is null)
+			throw new PlanForgeException(404, "Avatar not found.");
+		AvatarValidator.Validate(agent.AvatarBytes, agent.AvatarContentType);
+		string extension = agent.AvatarContentType == "image/jpeg" ? "jpg" : agent.AvatarContentType == "image/webp" ? "webp" : "png";
+		return new DownloadFile(agent.AvatarBytes, agent.AvatarContentType, "agent-avatar." + extension, true);
+	}
+
 	private async Task<AgentTokenGrant> PrepareTokenAsync(AuthenticatedActor actor, CreateAgentTokenRequest request, CancellationToken cancellationToken)
 	{
 		if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 80)
@@ -77,7 +99,7 @@ public sealed class AgentService(IAgentStore store, ISecretProtector secrets, Ti
 		}
 		DateTimeOffset now = timeProvider.GetUtcNow();
 		string token = secrets.CreateToken(true);
-		var credential = new AccessCredential { Name = request.Name.Trim(), Kind = CredentialKind.AgentToken, OwnerUserId = actor.UserId, AgentId = request.AgentId, CreatedAt = now, ExpiresAt = now.AddDays(30), TokenHash = secrets.HashToken(token) };
+		var credential = new AccessCredential { Name = request.Name.Trim(), Kind = CredentialKind.AgentToken, OwnerUserId = actor.UserId, SecurityVersion = actor.SecurityVersion, AgentId = request.AgentId, CreatedAt = now, ExpiresAt = now.AddDays(30), TokenHash = secrets.HashToken(token) };
 		store.Add(credential);
 		return new AgentTokenGrant(token, ToTokenProfile(credential));
 	}

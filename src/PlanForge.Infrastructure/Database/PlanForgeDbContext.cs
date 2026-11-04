@@ -62,10 +62,11 @@ public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> opti
 		modelBuilder.Entity<UserAccount>(entity =>
 		{
 			entity.HasKey(user => user.Id);
+			entity.Property(user => user.AvatarContentType).HasMaxLength(80);
 			entity.Property(user => user.Email).HasMaxLength(256).IsRequired();
 			entity.Property(user => user.NormalizedEmail).HasMaxLength(256).IsRequired();
 			entity.Property(user => user.DisplayName).HasMaxLength(80).IsRequired();
-			entity.Property(user => user.PasswordHash).HasMaxLength(512).IsRequired();
+			entity.Property(user => user.PasswordHash).HasMaxLength(512).IsRequired().IsConcurrencyToken();
 			entity.HasIndex(user => user.NormalizedEmail).IsUnique();
 		});
 		modelBuilder.Entity<AccessCredential>(entity =>

@@ -11,5 +11,7 @@ public interface IAccountStore
 	Task<AccessCredential?> FindCredentialByIdAsync(Guid credentialId, Guid ownerUserId, CancellationToken cancellationToken);
 	Task<UserAccount?> FindUserAsync(Guid userId, CancellationToken cancellationToken);
 	Task<bool> IsAgentActiveAsync(Guid ownerId, Guid agentId, CancellationToken cancellationToken);
+	Task<UserAccount?> FindUserForUpdateAsync(Guid userId, CancellationToken cancellationToken);
+	Task<IReadOnlyList<AccessCredential>> ListCredentialsAsync(Guid ownerId, CancellationToken cancellationToken);
 	Task SaveAsync(CancellationToken cancellationToken);
 }

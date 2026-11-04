@@ -54,6 +54,9 @@ namespace PlanForge.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("RevokedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<long>("SecurityVersion")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -78,6 +81,13 @@ namespace PlanForge.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<byte[]>("AvatarBytes")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("AvatarContentType")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -100,9 +110,13 @@ namespace PlanForge.Infrastructure.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.Property<string>("PasswordHash")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
+
+                    b.Property<long>("SecurityVersion")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 

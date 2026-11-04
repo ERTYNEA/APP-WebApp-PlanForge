@@ -26,6 +26,7 @@ var host = new HostBuilder()
 		services.AddSingleton<ISecretProtector, SecretProtector>();
 		services.AddSingleton(TimeProvider.System);
 		services.AddScoped<AccountService>();
+		services.AddScoped<AccountManagementService>();
 		services.AddScoped<IProjectStore, EfProjectStore>();
 		services.AddScoped<ProjectService>();
 		services.AddScoped<PlanEditor>();

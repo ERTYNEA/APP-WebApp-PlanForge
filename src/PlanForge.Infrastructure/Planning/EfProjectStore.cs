@@ -4,10 +4,65 @@ using Microsoft.EntityFrameworkCore;
 using PlanForge.Application.Common;
 using PlanForge.Application.Planning;
 using PlanForge.Domain.Planning;
+using PlanForge.Contracts.Planning;
 using PlanForge.Infrastructure.Database;
 
 public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 {
+	public async Task<ProjectSummaryPage> ListSummariesAsync(Guid ownerId, int skip, int take, CancellationToken cancellationToken)
+	{
+		await using var transaction = await database.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
+		int total = await database.Projects.CountAsync(project => project.OwnerUserId == ownerId, cancellationToken);
+		var records = await database.Projects.AsNoTracking().Where(project => project.OwnerUserId == ownerId).OrderByDescending(project => project.UpdatedAt).ThenBy(project => project.Id).Skip(skip).Take(take)
+			.Select(project => new
+			{
+				project.Id,
+				project.Revision,
+				project.Name,
+				project.Status,
+				project.Workflow,
+				project.UpdatedAt,
+				Description = project.Description.Length > 240 ? project.Description.Substring(0, 240) : project.Description,
+				PhaseCount = database.WorkItems.Count(item => item.ProjectId == project.Id && item.Kind == WorkItemKind.Phase),
+				StepCount = database.WorkItems.Count(item => item.ProjectId == project.Id && item.Kind == WorkItemKind.Step),
+				Completed = database.WorkItems.Count(item => item.ProjectId == project.Id && item.Kind == WorkItemKind.Step && item.Status == WorkStatus.Completed),
+				Decisions = database.WorkItems.Count(item => item.ProjectId == project.Id && item.Kind == WorkItemKind.Decision && item.Status != WorkStatus.Completed),
+				Latest = database.ProjectChanges.Where(change => change.ProjectId == project.Id).Select(change => (long?)change.Id).Max() ?? 0
+			}).ToListAsync(cancellationToken);
+		List<ProjectSummary> summaries = records.Select(project =>
+		{
+			int progress = project.StepCount == 0 ? 0 : project.Completed * 100 / project.StepCount;
+			if (progress == 100 && project.Decisions > 0)
+				progress = 99;
+			return new ProjectSummary(project.Id, project.Revision, project.Name, project.Description, project.Status.ToString(), project.Workflow.ToString(), new DateTimeOffset(DateTime.SpecifyKind(project.UpdatedAt, DateTimeKind.Utc)), project.PhaseCount, project.StepCount, project.Completed, project.Decisions, progress, project.Latest);
+		}).ToList();
+		return new ProjectSummaryPage(summaries, total, skip, take, skip + summaries.Count < total);
+	}
+
+	public async Task<ProjectChangePage?> GetChangesAsync(Guid ownerId, Guid projectId, long after, CancellationToken cancellationToken)
+	{
+		await using var transaction = await database.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
+		long? revision = await database.Projects.Where(project => project.Id == projectId && project.OwnerUserId == ownerId).Select(project => (long?)project.Revision).SingleOrDefaultAsync(cancellationToken);
+		if (!revision.HasValue)
+			return null;
+		var records = await database.ProjectChanges.AsNoTracking().Where(change => change.ProjectId == projectId).OrderByDescending(change => change.Id).Take(100)
+			.Select(change => new
+			{
+				change.Id,
+				change.Revision,
+				change.ActorId,
+				change.ActorKind,
+				change.Action,
+				change.CreatedAt,
+				ActorName = change.ActorKind == "Human" ? database.Users.Where(user => user.Id == change.ActorId && user.Id == ownerId).Select(user => user.DisplayName).FirstOrDefault()
+					: database.Agents.Where(agent => agent.Id == change.ActorId && agent.OwnerUserId == ownerId).Select(agent => agent.Name).FirstOrDefault()
+			}).ToListAsync(cancellationToken);
+		long latest = records.Count == 0 ? 0 : records[0].Id;
+		bool reset = after > latest || after > 0 && records.Count == 100 && after < records[^1].Id;
+		return new ProjectChangePage(revision.Value, latest, reset, records.Where(change => change.Id > after).OrderBy(change => change.Id)
+			.Select(change => new ProjectChangeInfo(change.Id, change.Revision, change.ActorId, change.ActorKind, change.ActorName ?? change.ActorKind, change.Action, new DateTimeOffset(DateTime.SpecifyKind(change.CreatedAt, DateTimeKind.Utc)))).ToList());
+	}
+
 	public Task<bool> IsValidAgentAsync(Guid ownerId, Guid agentId, bool requireActive, CancellationToken cancellationToken)
 		=> database.Agents.AnyAsync(agent => agent.OwnerUserId == ownerId && agent.Id == agentId && (!requireActive || agent.IsActive), cancellationToken);
 

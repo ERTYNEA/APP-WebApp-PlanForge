@@ -1,0 +1,3 @@
+namespace PlanForge.Contracts.Accounts;
+
+public sealed record UpdateProfileRequest(string DisplayName);
