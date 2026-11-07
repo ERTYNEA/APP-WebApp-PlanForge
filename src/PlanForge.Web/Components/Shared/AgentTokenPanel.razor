@@ -5,7 +5,23 @@
 else if(tokens.Count==0) { <p class="empty-state">@T["No agent tokens. Create one when you are ready to connect an external agent."]</p> }
 else
 {
-	<div class="token-list">@foreach(AgentTokenProfile credential in tokens.OrderByDescending(item=>item.CreatedAt)) { <article class="token-row"><div><strong>@credential.Name</strong><small class="muted">@(credential.AgentId is Guid agentId ? Agents.FirstOrDefault(agent=>agent.Id==agentId)?.Name ?? "Inactive agent" : "Unlinked personal token") · <span class="mono">@credential.Id.ToString()[..8]</span></small></div><div><span class="badge @(credential.RevokedAt.HasValue || credential.ExpiresAt<=DateTimeOffset.UtcNow ? "warning" : "success")">@(credential.RevokedAt.HasValue ? "Revoked" : credential.ExpiresAt<=DateTimeOffset.UtcNow ? "Expired" : "Valid")</span><small>@T["Expires {0}", credential.ExpiresAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm 'UTC'")]</small><small class="muted">@T["Last used: {0}", credential.LastUsedAt?.ToUniversalTime().ToString("yyyy-MM-dd HH:mm 'UTC'") ?? T["Never"].Value]</small></div>@if(!credential.RevokedAt.HasValue) { <div class="toolbar"><button class="quiet" @onclick="() => OnRenewAsync(credential.Id)" disabled="@Busy">@T["Renew"]</button><button class="quiet danger-text" @onclick="() => revokeId=credential.Id" disabled="@Busy">@T["Revoke"]</button></div> }</article> }</div>
+	<div class="token-list valid-token-list">@foreach(AgentTokenProfile credential in ValidTokens.Skip(validPage*25).Take(25)) { <AgentTokenRow Credential="credential" Agents="Agents" Valid="true" Busy="Busy" Renew="OnRenewAsync" Revoke="id=>revokeId=id" /> }</div>
+	@if(ValidTokens.Count>25)
+	{
+		<div id="valid-token-pages" class="toolbar"><button class="quiet" disabled="@(validPage==0)" @onclick="()=>validPage--">@T["Previous"]</button><span class="muted small">@T["Page {0}",validPage+1]</span><button class="quiet" disabled="@((validPage+1)*25>=ValidTokens.Count)" @onclick="()=>validPage++">@T["Next"]</button></div>
+	}
+	@if(History.Count>0)
+	{
+		<details id="token-history" class="panel token-history"><summary>@T["Revoked & expired tokens ({0})",History.Count]</summary>
+			<p class="muted small">@T["Cleanup permanently removes revoked and expired credentials only. Valid tokens are kept."]</p><button class="quiet danger-text" @onclick="()=>showCleanup=true" disabled="@Busy">@T["Delete revoked tokens"]</button>
+			<div class="token-list">@foreach(AgentTokenProfile credential in History.Skip(historyPage*10).Take(10)) { <AgentTokenRow Credential="credential" Agents="Agents" /> }</div>
+			<div class="toolbar"><button class="quiet" disabled="@(historyPage==0)" @onclick="()=>historyPage--">@T["Previous"]</button><span class="muted small">@T["Page {0}",historyPage+1]</span><button class="quiet" disabled="@((historyPage+1)*10>=History.Count)" @onclick="()=>historyPage++">@T["Next"]</button></div>
+		</details>
+	}
+}
+@if(showCleanup)
+{
+	<ConfirmDialog Title='@T["Delete revoked tokens"]' Description='@T["Permanently delete your revoked and expired tokens? This removes credential hashes and metadata. Valid tokens and other accounts are not affected."]' Error="@Error" Busy="Busy" Close="()=>showCleanup=false" Confirm="OnCleanupAsync" />
 }
 @if(revokeId.HasValue)
 {
@@ -23,13 +39,17 @@ else
 	[Parameter] public IReadOnlyList<AgentProfile> Agents { get; set; }=[];
 	public Task RefreshAsync() => ExecuteAsync(LoadAsync);
 	private List<AgentTokenProfile>? tokens;
+	private int historyPage,validPage;
+	private List<AgentTokenProfile> ValidTokens => tokens?.Where(token=>!token.RevokedAt.HasValue && token.ExpiresAt>DateTimeOffset.UtcNow).ToList() ?? [];
+	private List<AgentTokenProfile> History => tokens?.Where(token=>token.RevokedAt.HasValue || token.ExpiresAt<=DateTimeOffset.UtcNow).ToList() ?? [];
 	private AgentTokenGrant? grant;
 	private string name="",agent="";
-	private bool showCreate;
+	private bool showCreate,showCleanup;
 	private Guid? revokeId;
+	private Task OnCleanupAsync() => ExecuteAsync(async () => { await Api.SendAsync<object>(HttpMethod.Post,"agent-tokens/history/clean",new CleanAgentTokensRequest(true),cancellationToken:Token); showCleanup=false; await LoadAsync(); },"Revoked and expired tokens deleted");
 	private Task OnRevokeAsync() => ExecuteAsync(async () => { if(!revokeId.HasValue) return; await Api.SendAsync<object>(HttpMethod.Delete,$"agent-tokens/{revokeId}",cancellationToken:Token); revokeId=null; await LoadAsync(); },"Token revoked");
 	protected override Task OnInitializedAsync() => ExecuteAsync(LoadAsync);
-	private async Task LoadAsync() => tokens=await Api.GetAsync<List<AgentTokenProfile>>("agent-tokens",Token);
+	private async Task LoadAsync() { tokens=(await Api.GetAsync<List<AgentTokenProfile>>("agent-tokens",Token)).OrderByDescending(token=>token.CreatedAt).ToList(); historyPage=Math.Min(historyPage,Math.Max(0,(History.Count-1)/10)); validPage=Math.Min(validPage,Math.Max(0,(ValidTokens.Count-1)/25)); }
 	private Task OnCreateAsync() => ExecuteAsync(async () => { grant=await Api.SendAsync<AgentTokenGrant>(HttpMethod.Post,"agent-tokens",new CreateAgentTokenRequest(name,Guid.TryParse(agent,out Guid id) ? id : null),cancellationToken:Token); showCreate=false; name=""; agent=""; await LoadAsync(); });
 	private void OnDismiss() => grant=null;
 	private Task OnRenewAsync(Guid id) => ExecuteAsync(async () => { grant=await Api.SendAsync<AgentTokenGrant>(HttpMethod.Post,$"agent-tokens/{id}/renew",cancellationToken:Token); await LoadAsync(); });

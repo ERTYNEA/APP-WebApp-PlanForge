@@ -19,6 +19,7 @@ public sealed class ComponentTestContext : BunitContext
 		Services.AddHttpClient("PlanForgeApi", client => client.BaseAddress = new Uri("https://api.example.test/api/v1/")).ConfigurePrimaryHttpMessageHandler(() => new Responder(responder));
 		Services.AddScoped<ApiTransport>();
 		Services.AddScoped<PlanForgeClient>();
+		Services.AddScoped<PlanForge.Web.State.BreadcrumbState>();
 	}
 
 	public static HttpResponseMessage Json(object value, HttpStatusCode status = HttpStatusCode.OK) => new(status) { Content = JsonContent.Create(value, value.GetType()) };

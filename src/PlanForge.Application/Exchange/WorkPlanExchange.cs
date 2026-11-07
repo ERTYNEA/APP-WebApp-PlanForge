@@ -10,7 +10,7 @@ public sealed class WorkPlanExchange(ProjectService projects, IProjectStore stor
 	{
 		ProjectSnapshot snapshot = await projects.GetAsync(actor, projectId, cancellationToken);
 		byte[] payload = WorkPlanCsvCodec.Serialize(snapshot);
-		await store.RecordEventAsync(actor.UserId, projectId, snapshot.Revision, actor.AgentId ?? actor.UserId, actor.IsHuman ? "Human" : "Agent", actor.IsHuman ? "Project exported successfully" : "Project exported successfully by agent", cancellationToken);
+		await store.RecordEventAsync(actor.UserId, projectId, snapshot.Revision, actor.AgentId ?? actor.UserId, actor.IsHuman ? "Human" : "Agent", actor.IsHuman ? "Project exported successfully" : "Project exported successfully by agent", cancellationToken, actor.AgentNameSnapshot);
 		return payload;
 	}
 

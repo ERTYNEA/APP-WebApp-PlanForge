@@ -1,5 +1,6 @@
 namespace PlanForge.Web.Tests;
 
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using PlanForge.Contracts.Accounts;
@@ -9,6 +10,22 @@ using System.Text.RegularExpressions;
 
 public sealed class WebAuthenticationTests
 {
+	[Theory]
+	[InlineData("Production", "https://localhost", true)]
+	[InlineData("Development", "http://localhost", false)]
+	public async Task AntiforgeryCookie_WhenLoginOpened_UsesSecureProductionPolicyAndKeepsProtectionAsync(string environment, string baseAddress, bool secure)
+	{
+		await using var app = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder.UseEnvironment(environment).UseSetting("PlanForgeApi:BaseUrl", "https://" + PlanForge.Web.Security.ApiEndpointPolicy.ProductionHost));
+		using var client = app.CreateClient(new() { BaseAddress = new Uri(baseAddress), AllowAutoRedirect = false });
+		var response = await client.GetAsync("/login");
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		string cookie = Assert.Single(response.Headers.GetValues("Set-Cookie"), value => value.StartsWith(".AspNetCore.Antiforgery", StringComparison.Ordinal));
+		Assert.Equal(secure, cookie.Contains("; secure", StringComparison.OrdinalIgnoreCase));
+		Assert.Contains("httponly", cookie.ToLowerInvariant());
+		Assert.Contains("samesite=strict", cookie.ToLowerInvariant());
+		Assert.Contains("__RequestVerificationToken", await response.Content.ReadAsStringAsync());
+	}
+
 	[Fact]
 	public async Task Login_WhenPasswordChanged_ShowsSafeConfirmationAsync()
 	{
@@ -47,7 +64,7 @@ public sealed class WebAuthenticationTests
 		Assert.Contains("Search projects", home);
 		Assert.DoesNotContain(LoginApiHandler.Token, home);
 		Assert.DoesNotContain("v@ProductVersion", home);
-		Assert.Contains("v0.1.0", home);
+		Assert.Contains("v0.2.0", home);
 	}
 
 	private sealed class LoginApiHandler : HttpMessageHandler
@@ -72,7 +89,7 @@ public sealed class WebAuthenticationTests
 		Assert.Contains("__RequestVerificationToken", html);
 		Assert.Contains("/account/login", html);
 		Assert.Contains("type=\"password\"", html);
-		Assert.Contains("0.1.0", html);
+		Assert.Contains("0.2.0", html);
 	}
 
 	[Fact]

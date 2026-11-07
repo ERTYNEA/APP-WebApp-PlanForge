@@ -660,4 +660,107 @@
   <data name="Your password was changed. Sign in again." xml:space="preserve">
     <value>Your password was changed. Sign in again.</value>
   </data>
+  <data name="Account" xml:space="preserve"><value>Account</value></data>
+  <data name="Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Agent token" xml:space="preserve"><value>Agent token</value></data>
+  <data name="Agent unavailable" xml:space="preserve"><value>Agent unavailable</value></data>
+  <data name="Breadcrumb" xml:space="preserve"><value>Breadcrumb</value></data>
+  <data name="Cleanup permanently removes revoked and expired credentials only. Valid tokens are kept." xml:space="preserve"><value>Cleanup permanently removes revoked and expired credentials only. Valid tokens are kept.</value></data>
+  <data name="Close navigation" xml:space="preserve"><value>Close navigation</value></data>
+  <data name="Delete agent" xml:space="preserve"><value>Delete agent</value></data>
+  <data name="Delete agent?" xml:space="preserve"><value>Delete agent?</value></data>
+  <data name="Delete revoked tokens" xml:space="preserve"><value>Delete revoked tokens</value></data>
+  <data name="English" xml:space="preserve"><value>English</value></data>
+  <data name="Expired" xml:space="preserve"><value>Expired</value></data>
+  <data name="Inactive" xml:space="preserve"><value>Inactive</value></data>
+  <data name="Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Loading project…" xml:space="preserve"><value>Loading project…</value></data>
+  <data name="Optional. The selected avatar is uploaded after the agent is saved." xml:space="preserve"><value>Optional. The selected avatar is uploaded after the agent is saved.</value></data>
+  <data name="Page {0}" xml:space="preserve"><value>Page {0}</value></data>
+  <data name="Permanently delete your revoked and expired tokens? This removes credential hashes and metadata. Valid tokens and other accounts are not affected." xml:space="preserve"><value>Permanently delete your revoked and expired tokens? This removes credential hashes and metadata. Valid tokens and other accounts are not affected.</value></data>
+  <data name="Permanently delete {0}? This is irreversible. The agent profile, avatar and all its credentials will be removed and access will stop. Existing work and history are preserved; current assignments are detached." xml:space="preserve"><value>Permanently delete {0}? This is irreversible. The agent profile, avatar and all its credentials will be removed and access will stop. Existing work and history are preserved; current assignments are detached.</value></data>
+  <data name="Personal token" xml:space="preserve"><value>Personal token</value></data>
+  <data name="Revoked" xml:space="preserve"><value>Revoked</value></data>
+  <data name="Revoked &amp; expired tokens ({0})" xml:space="preserve"><value>Revoked &amp; expired tokens ({0})</value></data>
+  <data name="Skip to main content" xml:space="preserve"><value>Skip to main content</value></data>
+  <data name="The agent was saved, but its avatar upload was not confirmed." xml:space="preserve"><value>The agent was saved, but its avatar upload was not confirmed.</value></data>
+  <data name="Valid" xml:space="preserve"><value>Valid</value></data>
+  <data name="Added to your Library without a link. You can assign it later." xml:space="preserve"><value>Added to your Library without a link. You can assign it later.</value></data>
+  <data name="Agent deleted" xml:space="preserve"><value>Agent deleted</value></data>
+  <data name="Agent saved" xml:space="preserve"><value>Agent saved</value></data>
+  <data name="Archived" xml:space="preserve"><value>Archived</value></data>
+  <data name="Attach existing resource" xml:space="preserve"><value>Attach existing resource</value></data>
+  <data name="Automatically linked directly to this project." xml:space="preserve"><value>Automatically linked directly to this project.</value></data>
+  <data name="Avatar removed" xml:space="preserve"><value>Avatar removed</value></data>
+  <data name="Awaiting approval" xml:space="preserve"><value>Awaiting approval</value></data>
+  <data name="Awaiting merge" xml:space="preserve"><value>Awaiting merge</value></data>
+  <data name="Awaiting push confirmation" xml:space="preserve"><value>Awaiting push confirmation</value></data>
+  <data name="Branch + Pull Request" xml:space="preserve"><value>Branch + Pull Request</value></data>
+  <data name="BranchPullRequest" xml:space="preserve"><value>BranchPullRequest</value></data>
+  <data name="Create API token" xml:space="preserve"><value>Create API token</value></data>
+  <data name="Delete {0}" xml:space="preserve"><value>Delete {0}</value></data>
+  <data name="Deleted" xml:space="preserve"><value>Deleted</value></data>
+  <data name="Deleted {0} orphan resources; skipped {1}." xml:space="preserve"><value>Deleted {0} orphan resources; skipped {1}.</value></data>
+  <data name="Direct project association; existing phase links remain unchanged." xml:space="preserve"><value>Direct project association; existing phase links remain unchanged.</value></data>
+  <data name="Direct project resources" xml:space="preserve"><value>Direct project resources</value></data>
+  <data name="Direct to Main" xml:space="preserve"><value>Direct to Main</value></data>
+  <data name="DirectToMain" xml:space="preserve"><value>DirectToMain</value></data>
+  <data name="Edit {0}" xml:space="preserve"><value>Edit {0}</value></data>
+  <data name="Edit {0} {1}" xml:space="preserve"><value>Edit {0} {1}</value></data>
+  <data name="Human" xml:space="preserve"><value>Human</value></data>
+  <data name="HumanApproval" xml:space="preserve"><value>HumanApproval</value></data>
+  <data name="Immediately invalidate this API credential. Its current value will stop working." xml:space="preserve"><value>Immediately invalidate this API credential. Its current value will stop working.</value></data>
+  <data name="In progress" xml:space="preserve"><value>In progress</value></data>
+  <data name="Independent phase-only association; no direct project link is added." xml:space="preserve"><value>Independent phase-only association; no direct project link is added.</value></data>
+  <data name="Inherit" xml:space="preserve"><value>Inherit</value></data>
+  <data name="Local Changes + Manual Approval" xml:space="preserve"><value>Local Changes + Manual Approval</value></data>
+  <data name="LocalChangesManualApproval" xml:space="preserve"><value>LocalChangesManualApproval</value></data>
+  <data name="MainPush" xml:space="preserve"><value>MainPush</value></data>
+  <data name="Manage resource" xml:space="preserve"><value>Manage resource</value></data>
+  <data name="New {0}" xml:space="preserve"><value>New {0}</value></data>
+  <data name="None" xml:space="preserve"><value>None</value></data>
+  <data name="Only this phase receives a link." xml:space="preserve"><value>Only this phase receives a link.</value></data>
+  <data name="Permanently delete '{0}' and all its associations. This removes the Library binary." xml:space="preserve"><value>Permanently delete '{0}' and all its associations. This removes the Library binary.</value></data>
+  <data name="Permanently delete '{0}' and all {1} plan records. Library files survive." xml:space="preserve"><value>Permanently delete '{0}' and all {1} plan records. Library files survive.</value></data>
+  <data name="Permanently delete {0} currently unassigned files. Assigned files are never deleted. Preview: " xml:space="preserve"><value>Permanently delete {0} currently unassigned files. Assigned files are never deleted. Preview: </value></data>
+  <data name="Planning Only" xml:space="preserve"><value>Planning Only</value></data>
+  <data name="PlanningOnly" xml:space="preserve"><value>PlanningOnly</value></data>
+  <data name="Profile updated" xml:space="preserve"><value>Profile updated</value></data>
+  <data name="PullRequestMerge" xml:space="preserve"><value>PullRequestMerge</value></data>
+  <data name="Reference: {0}" xml:space="preserve"><value>Reference: {0}</value></data>
+  <data name="Remove '{0}' and its descendants. Library files survive." xml:space="preserve"><value>Remove '{0}' and its descendants. Library files survive.</value></data>
+  <data name="Remove only fully completed phases ({0} currently marked complete). Pending, blocked and active work is retained. Library files survive." xml:space="preserve"><value>Remove only fully completed phases ({0} currently marked complete). Pending, blocked and active work is retained. Library files survive.</value></data>
+  <data name="Resource attached" xml:space="preserve"><value>Resource attached</value></data>
+  <data name="Resource cleanup completed" xml:space="preserve"><value>Resource cleanup completed</value></data>
+  <data name="Resource library" xml:space="preserve"><value>Resource library</value></data>
+  <data name="Resource links updated" xml:space="preserve"><value>Resource links updated</value></data>
+  <data name="Resource updated" xml:space="preserve"><value>Resource updated</value></data>
+  <data name="Resource uploaded successfully" xml:space="preserve"><value>Resource uploaded successfully</value></data>
+  <data name="Revoke token" xml:space="preserve"><value>Revoke token</value></data>
+  <data name="Revoked and expired tokens deleted" xml:space="preserve"><value>Revoked and expired tokens deleted</value></data>
+  <data name="Save your new token" xml:space="preserve"><value>Save your new token</value></data>
+  <data name="The file could not be read. Check its size and try again." xml:space="preserve"><value>The file could not be read. Check its size and try again.</value></data>
+  <data name="The form expired. Reload and try again." xml:space="preserve"><value>The form expired. Reload and try again.</value></data>
+  <data name="The new passwords do not match." xml:space="preserve"><value>The new passwords do not match.</value></data>
+  <data name="The page could not be loaded. Please try again." xml:space="preserve"><value>The page could not be loaded. Please try again.</value></data>
+  <data name="The request timed out. Reload to check its result before retrying." xml:space="preserve"><value>The request timed out. Reload to check its result before retrying.</value></data>
+  <data name="The service is temporarily unavailable. Try again." xml:space="preserve"><value>The service is temporarily unavailable. Try again.</value></data>
+  <data name="The service is temporarily unavailable. Your changes have not been confirmed. Reload before retrying." xml:space="preserve"><value>The service is temporarily unavailable. Your changes have not been confirmed. Reload before retrying.</value></data>
+  <data name="Toggle {0} {1}" xml:space="preserve"><value>Toggle {0} {1}</value></data>
+  <data name="Token revoked" xml:space="preserve"><value>Token revoked</value></data>
+  <data name="Unassigned" xml:space="preserve"><value>Unassigned</value></data>
+  <data name="Unassigned/Inactive" xml:space="preserve"><value>Unassigned/Inactive</value></data>
+  <data name="Upload resource" xml:space="preserve"><value>Upload resource</value></data>
+  <data name="WorkDone" xml:space="preserve"><value>WorkDone</value></data>
+  <data name="Your work, in focus." xml:space="preserve"><value>Your work, in focus.</value></data>
+  <data name="Phase only: {0}" xml:space="preserve"><value>Phase only: {0}</value></data>
+  <data name="The service returned an empty response." xml:space="preserve"><value>The service returned an empty response.</value></data>
+  <data name="The service could not complete this request. Please try again." xml:space="preserve"><value>The service could not complete this request. Please try again.</value></data>
+  <data name="The service returned an invalid error response." xml:space="preserve"><value>The service returned an invalid error response.</value></data>
+  <data name="Avatar updated" xml:space="preserve"><value>Avatar updated</value></data>
+  <data name="New agent" xml:space="preserve"><value>New agent</value></data>
+  <data name="Edit agent" xml:space="preserve"><value>Edit agent</value></data>
+  <data name="Sign in to continue." xml:space="preserve"><value>Sign in to continue.</value></data>
+  <data name="The export was not downloaded. Reload before retrying." xml:space="preserve"><value>The export was not downloaded. Reload before retrying.</value></data>
+  <data name="Deactivating revokes linked tokens. Reactivating requires a new token; unlinked personal tokens are not affected." xml:space="preserve"><value>Deactivating revokes linked tokens. Reactivating requires a new token; unlinked personal tokens are not affected.</value></data>
 </root>

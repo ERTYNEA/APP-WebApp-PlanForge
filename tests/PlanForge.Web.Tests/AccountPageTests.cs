@@ -18,6 +18,9 @@ public sealed class AccountPageTests
 		Assert.Contains("test@example.test", page.Markup);
 		Assert.Equal("users/me/avatar", page.FindComponent<AvatarEditor>().Instance.ApiPath);
 		Assert.Contains("/account/password", page.Markup);
+		Assert.Single(page.FindAll("#account-language option"));
+		Assert.Equal("English", page.Find("#account-language option").TextContent);
+		Assert.Equal("en", page.Find("#account-language option").GetAttribute("value"));
 		page.Find("#display-name").Change("Updated display name");
 		await page.Find("#profile-form").SubmitAsync();
 		Assert.Equal("Updated display name", sent!.DisplayName);

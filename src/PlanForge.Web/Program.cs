@@ -11,16 +11,25 @@ using (System.Diagnostics.Process process = System.Diagnostics.Process.GetCurren
 	processStartedAtUtc = new DateTimeOffset(process.StartTime.ToUniversalTime());
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+builder.Services.AddAntiforgery(options => options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always);
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorization();
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+	options.SetDefaultCulture("en").AddSupportedCultures(AccountCultureProvider.SupportedLanguages.ToArray()).AddSupportedUICultures(AccountCultureProvider.SupportedLanguages.ToArray());
+	options.RequestCultureProviders = [new AccountCultureProvider()];
+});
 builder.Services.AddScoped<ApiTransport>();
 builder.Services.AddScoped<PlanForgeClient>();
-string apiAddress = builder.Configuration["PlanForgeApi:BaseUrl"] ?? "https://localhost:7601";
-var apiUri = new Uri(apiAddress.EndsWith('/') ? apiAddress : apiAddress + "/");
-if (apiUri.Scheme != "https" && !apiUri.IsLoopback)
-	throw new InvalidOperationException("The PlanForge API must use HTTPS.");
-builder.Services.AddHttpClient("PlanForgeApi", client => { client.BaseAddress = new Uri(apiUri, "api/v1/"); client.Timeout = TimeSpan.FromSeconds(120); });
+builder.Services.AddScoped<PlanForge.Web.State.BreadcrumbState>();
+var apiPolicy = new ApiEndpointPolicy(builder.Configuration["PlanForgeApi:BaseUrl"], builder.Environment.IsDevelopment());
+builder.Services.AddSingleton(apiPolicy);
+builder.Services.AddTransient<ApiDestinationGuard>();
+builder.Services.AddHttpClient("PlanForgeApi", client => { client.BaseAddress = apiPolicy.BaseUri; client.Timeout = TimeSpan.FromSeconds(120); })
+	.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false })
+	.AddHttpMessageHandler<ApiDestinationGuard>()
+	.RedactLoggedHeaders(_ => true);
 string keyPath = builder.Configuration["PlanForge:DataProtectionPath"] ?? (Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID") is not null
 	? Path.Combine(Environment.GetEnvironmentVariable("HOME") ?? "/home", "ASP.NET", "DataProtection-Keys")
 	: Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "../../.secrets/web-keys")));
@@ -63,13 +72,14 @@ app.Use(async (context, next) =>
 	await next();
 });
 app.UseAuthentication();
+app.UseRequestLocalization();
 app.UseAuthorization();
 app.UseAntiforgery();
 app.MapStaticAssets();
 WebSession.MapAccountEndpoints(app);
 FileProxy.MapFileEndpoints(app);
 app.MapGet("/health", () => Results.Json(new { status = "ready", version = ProductVersion.Informational, processStartedAtUtc }));
-app.MapGet("/error", () => Results.Problem("The page could not be loaded. Please try again.", statusCode: 500));
+app.MapGet("/error", () => Results.Problem(PlanForge.Web.UiText.Get("The page could not be loaded. Please try again."), statusCode: 500));
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 app.Run();
 

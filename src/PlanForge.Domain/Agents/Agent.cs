@@ -2,6 +2,7 @@ namespace PlanForge.Domain.Agents;
 
 public sealed class Agent
 {
+	public long CredentialVersion { get; set; }
 	public Guid Id { get; set; } = Guid.NewGuid();
 	public byte[]? AvatarBytes { get; set; }
 	public string? AvatarContentType { get; set; }

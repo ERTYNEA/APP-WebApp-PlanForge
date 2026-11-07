@@ -45,6 +45,7 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 		long? revision = await database.Projects.Where(project => project.Id == projectId && project.OwnerUserId == ownerId).Select(project => (long?)project.Revision).SingleOrDefaultAsync(cancellationToken);
 		if (!revision.HasValue)
 			return null;
+		string deletedAgentSuffix = ApplicationText.Get("DeletedAgentSuffix");
 		var records = await database.ProjectChanges.AsNoTracking().Where(change => change.ProjectId == projectId).OrderByDescending(change => change.Id).Take(100)
 			.Select(change => new
 			{
@@ -55,12 +56,12 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 				change.Action,
 				change.CreatedAt,
 				ActorName = change.ActorKind == "Human" ? database.Users.Where(user => user.Id == change.ActorId && user.Id == ownerId).Select(user => user.DisplayName).FirstOrDefault()
-					: database.Agents.Where(agent => agent.Id == change.ActorId && agent.OwnerUserId == ownerId).Select(agent => agent.Name).FirstOrDefault()
+					: database.Agents.Where(agent => agent.Id == change.ActorId && agent.OwnerUserId == ownerId).Select(agent => agent.Name).FirstOrDefault() ?? (change.ActorNameSnapshot == null ? null : change.ActorNameSnapshot + deletedAgentSuffix)
 			}).ToListAsync(cancellationToken);
 		long latest = records.Count == 0 ? 0 : records[0].Id;
 		bool reset = after > latest || after > 0 && records.Count == 100 && after < records[^1].Id;
 		return new ProjectChangePage(revision.Value, latest, reset, records.Where(change => change.Id > after).OrderBy(change => change.Id)
-			.Select(change => new ProjectChangeInfo(change.Id, change.Revision, change.ActorId, change.ActorKind, change.ActorName ?? change.ActorKind, change.Action, new DateTimeOffset(DateTime.SpecifyKind(change.CreatedAt, DateTimeKind.Utc)))).ToList());
+			.Select(change => new ProjectChangeInfo(change.Id, change.Revision, change.ActorId, change.ActorKind, change.ActorName ?? ApplicationText.Get(change.ActorKind == "Human" ? "AnonymousHuman" : "AnonymousAgent"), change.Action, new DateTimeOffset(DateTime.SpecifyKind(change.CreatedAt, DateTimeKind.Utc)))).ToList());
 	}
 
 	public Task<bool> IsValidAgentAsync(Guid ownerId, Guid agentId, bool requireActive, CancellationToken cancellationToken)
@@ -101,7 +102,7 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 		List<WorkItem> items = await database.WorkItems.AsNoTracking().Where(item => ids.Contains(item.ProjectId)).ToListAsync(cancellationToken);
 		return projects.Select(project => new ProjectAggregate(project, items.Where(item => item.ProjectId == project.Id).ToList())).ToList();
 	}
-	public async Task SaveAsync(ProjectAggregate aggregate, long expectedRevision, Guid actorId, string actorKind, string action, CancellationToken cancellationToken)
+	public async Task SaveAsync(ProjectAggregate aggregate, long expectedRevision, Guid actorId, string actorKind, string action, CancellationToken cancellationToken, string? actorNameSnapshot = null)
 	{
 		await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
 		Project project = aggregate.Project;
@@ -120,7 +121,7 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 			else
 				database.WorkItems.Add(item);
 		}
-		var change = new ProjectChange { ProjectId = project.Id, Revision = expectedRevision + 1, ActorId = actorId, ActorKind = actorKind, Action = action, CreatedAt = DateTime.UtcNow };
+		var change = new ProjectChange { ProjectId = project.Id, Revision = expectedRevision + 1, ActorId = actorId, ActorKind = actorKind, ActorNameSnapshot = actorNameSnapshot, Action = action, CreatedAt = DateTime.UtcNow };
 		database.ProjectChanges.Add(change);
 		try
 		{
@@ -141,12 +142,12 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 				database.Entry(item).State = EntityState.Detached;
 		}
 	}
-	public async Task RecordEventAsync(Guid ownerId, Guid projectId, long revision, Guid actorId, string actorKind, string action, CancellationToken cancellationToken)
+	public async Task RecordEventAsync(Guid ownerId, Guid projectId, long revision, Guid actorId, string actorKind, string action, CancellationToken cancellationToken, string? actorNameSnapshot = null)
 	{
 		await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
 		if (!await database.Projects.AnyAsync(project => project.Id == projectId && project.OwnerUserId == ownerId, cancellationToken))
 			throw new PlanForgeException(404, "Project not found.");
-		var change = new ProjectChange { ProjectId = projectId, Revision = revision, ActorId = actorId, ActorKind = actorKind, Action = action, CreatedAt = DateTime.UtcNow };
+		var change = new ProjectChange { ProjectId = projectId, Revision = revision, ActorId = actorId, ActorKind = actorKind, ActorNameSnapshot = actorNameSnapshot, Action = action, CreatedAt = DateTime.UtcNow };
 		database.ProjectChanges.Add(change);
 		await database.SaveChangesAsync(cancellationToken);
 		List<long> expired = await database.ProjectChanges.Where(entry => entry.ProjectId == projectId).OrderByDescending(entry => entry.Id).Skip(100).Select(entry => entry.Id).ToListAsync(cancellationToken);

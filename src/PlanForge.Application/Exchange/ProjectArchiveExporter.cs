@@ -13,6 +13,7 @@ using System.Text.Json;
 
 public sealed class ProjectArchiveExporter(ProjectService projects, LibraryService library, IProjectStore store)
 {
+	private static readonly System.Resources.ResourceManager readmeResources = new("PlanForge.Application.Resources.ArchiveText", typeof(ProjectArchiveExporter).Assembly);
 	private static readonly SemaphoreSlim exportBudget = new(1, 1);
 	private static readonly JsonSerializerOptions jsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
 
@@ -44,7 +45,7 @@ public sealed class ProjectArchiveExporter(ProjectService projects, LibraryServi
 			}
 			if ((await projects.GetAsync(actor, projectId, cancellationToken)).Revision != project.Revision)
 				throw new PlanForgeException(409, "The project changed during export. Reload and export the current revision.");
-			await store.RecordEventAsync(actor.UserId, projectId, project.Revision, actor.AgentId ?? actor.UserId, actor.IsHuman ? "Human" : "Agent", actor.IsHuman ? "Project exported successfully" : "Project exported successfully by agent", cancellationToken);
+			await store.RecordEventAsync(actor.UserId, projectId, project.Revision, actor.AgentId ?? actor.UserId, actor.IsHuman ? "Human" : "Agent", actor.IsHuman ? "Project exported successfully" : "Project exported successfully by agent", cancellationToken, actor.AgentNameSnapshot);
 			string name = new string(project.Name.Select(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' ? character : '-').Take(60).ToArray()).Trim('-');
 			if (name.Length == 0)
 				name = "project";
@@ -62,15 +63,10 @@ public sealed class ProjectArchiveExporter(ProjectService projects, LibraryServi
 		PlanItem? step = project.Items.Where(item => item.Kind == "Step").OrderBy(item => item.Status == "InProgress" ? 0 : item.Status == "Blocked" ? 1 : item.Status == "Pending" ? 2 : 3).ThenBy(item => item.SortOrder).FirstOrDefault();
 		PlanItem? subphase = step?.ParentId is Guid subphaseId && items.TryGetValue(subphaseId, out PlanItem? parent) ? parent : null;
 		PlanItem? phase = subphase?.ParentId is Guid phaseId && items.TryGetValue(phaseId, out PlanItem? ancestor) ? ancestor : project.Items.FirstOrDefault(item => item.Kind == "Phase");
-		string workflow = project.Workflow switch
-		{
-			"PlanningOnly" => "Planning Only",
-			"LocalChangesManualApproval" => "Local Changes + Manual Approval",
-			"BranchPullRequest" => "Branch + Pull Request",
-			"DirectToMain" => "Direct to Main",
-			_ => project.Workflow
-		};
-		return $"# {project.Name}\n\n{project.Description}\n\nProject ID: {project.Id:D}\nRevision: {project.Revision}\nExported: {exportedAt:O}\nStatus: {project.Status}\nProgress: {project.Progress}%\nWorkflow: {workflow}\nActive phase: {phase?.Title ?? "None"}\nActive subphase: {subphase?.Title ?? "None"}\nActive step: {step?.Title ?? "None"}\n\n## Contents and safe import\n\nwork-plan.csv contains the complete plan snapshot, not file bytes. manifest.json identifies each resource, SHA-256, MIME type and exact project/phase associations. Phase-only resources are included; unrelated Library files are excluded.\n\nImport work-plan.csv only into the matching ProjectId and current BaseRevision. Omitted records require explicit replace confirmation. A stale import returns 409: reload and reconcile rather than overwrite. Workflow closure still requires the authorized approval, merge or push evidence.\n\nThe resources directory is reference material, not an executable package or a resource-import command. This archive contains no credentials.\n";
+		System.Globalization.CultureInfo culture = System.Globalization.CultureInfo.GetCultureInfo("en");
+		string workflow = readmeResources.GetString(project.Workflow, culture) ?? project.Workflow;
+		string none = readmeResources.GetString("None", culture)!;
+		return string.Format(culture, readmeResources.GetString("ProjectReadme", culture)!, project.Name, project.Description, project.Id, project.Revision, exportedAt, project.Status, project.Progress, workflow, phase?.Title ?? none, subphase?.Title ?? none, step?.Title ?? none);
 	}
 
 	private static async Task WriteEntryAsync(ZipArchive archive, string name, byte[] content, CancellationToken cancellationToken)

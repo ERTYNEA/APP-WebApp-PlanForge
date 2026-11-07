@@ -22,12 +22,12 @@ public partial class ResourcePanel : ApiPage
 		List<ResourceProfile> orphans = await GetAllResourcesAsync("orphan");
 		orphanIds = orphans.Where(resource => !resource.IsAssigned).Select(resource => resource.Id).ToList();
 		deleteResource = null; deleteTitle = "Clean orphan resources";
-		deleteDescription = $"Permanently delete {orphanIds.Count} currently unassigned files. Assigned files are never deleted. Preview: " + string.Join(", ", orphans.Select(resource => resource.FileName));
+		deleteDescription = T["Permanently delete {0} currently unassigned files. Assigned files are never deleted. Preview: ", orphanIds.Count].Value + string.Join(", ", orphans.Select(resource => resource.FileName));
 	});
 	private void OnPreviewDelete()
 	{
 		deleteResource = managed; managed = null; deleteTitle = "Delete resource";
-		deleteDescription = $"Permanently delete '{deleteResource!.FileName}' and all its associations. This removes the Library binary.";
+		deleteDescription = T["Permanently delete '{0}' and all its associations. This removes the Library binary.", deleteResource!.FileName].Value;
 	}
 	private Task OnConfirmDeleteAsync() => ExecuteAsync(async () =>
 	{
@@ -35,7 +35,7 @@ public partial class ResourcePanel : ApiPage
 		else
 		{
 			JsonElement result = await Api.SendAsync<JsonElement>(HttpMethod.Post, "resources/orphans/clean", new CleanOrphansRequest(true, orphanIds), cancellationToken: Token);
-			Notify($"Deleted {result.GetProperty("deletedCount").GetInt32()} orphan resources; skipped {result.GetProperty("skippedCount").GetInt32()}.");
+			Notify(T["Deleted {0} orphan resources; skipped {1}.", result.GetProperty("deletedCount").GetInt32(), result.GetProperty("skippedCount").GetInt32()].Value);
 		}
 		deleteTitle = null; deleteResource = null; skip = 0;
 		await LoadAsync(); await Changed.InvokeAsync();

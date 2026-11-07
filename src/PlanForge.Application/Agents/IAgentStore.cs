@@ -5,6 +5,8 @@ using PlanForge.Domain.Agents;
 
 public interface IAgentStore
 {
+	Task<int> CleanTokensAsync(Guid ownerId, DateTimeOffset now, CancellationToken cancellationToken);
+	Task DeleteAsync(Guid ownerId, Guid agentId, CancellationToken cancellationToken);
 	void Add(Agent agent);
 	void Add(AccessCredential credential);
 	Task<Agent?> GetAsync(Guid ownerId, Guid agentId, CancellationToken cancellationToken);

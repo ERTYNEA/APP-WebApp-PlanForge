@@ -1,0 +1,13 @@
+<article class="token-row">
+	<div><strong>@Credential.Name</strong><small><span class="badge">@T[Credential.AgentId.HasValue ? "Agent token" : "Personal token"]</span></small><small class="muted">@(Credential.AgentId is Guid agentId ? Agents.FirstOrDefault(agent=>agent.Id==agentId)?.Name ?? T["Agent unavailable"].Value : T["Unlinked personal token"].Value) · <span class="mono">@Credential.Id.ToString()[..8]</span></small></div>
+	<div><span class="badge @(Valid ? "success" : "warning")">@T[Credential.RevokedAt.HasValue ? "Revoked" : Valid ? "Valid" : "Expired"]</span><small>@T["Expires {0}",Credential.ExpiresAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm 'UTC'")]</small><small class="muted">@T["Last used: {0}",Credential.LastUsedAt?.ToUniversalTime().ToString("yyyy-MM-dd HH:mm 'UTC'") ?? T["Never"].Value]</small></div>
+	@if(Valid) { <div class="toolbar"><button class="quiet" @onclick="() => Renew.InvokeAsync(Credential.Id)" disabled="Busy">@T["Renew"]</button><button class="quiet danger-text" @onclick="() => Revoke.InvokeAsync(Credential.Id)" disabled="Busy">@T["Revoke"]</button></div> }
+</article>
+@code {
+	[Parameter,EditorRequired] public AgentTokenProfile Credential { get; set; }=default!;
+	[Parameter] public IReadOnlyList<AgentProfile> Agents { get; set; }=[];
+	[Parameter] public bool Valid { get; set; }
+	[Parameter] public bool Busy { get; set; }
+	[Parameter] public EventCallback<Guid> Renew { get; set; }
+	[Parameter] public EventCallback<Guid> Revoke { get; set; }
+}

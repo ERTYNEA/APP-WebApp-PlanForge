@@ -1,6 +1,6 @@
 # Deployment
 
-All three components are published through four workflows and controlled real HTTP/browser acceptance. Six additive migrations are applied. Exact-SHA deployment success, browser functionality and session/data continuity are distinct release gates; a green pipeline alone is not product acceptance.
+All three components are published through four workflows and controlled real HTTP/browser acceptance. The initial release has six additive migrations; v0.2.0 adds `20261107010522_AccountPreferencesAndAgentLifecycle`, and actual application is verified from SQL history during publication. Exact-SHA deployment success, browser functionality and session/data continuity are distinct release gates; a green pipeline alone is not product acceptance.
 
 Only GitHub Actions applies migrations or publishes Azure apps. `tests.yml` runs hermetic Release restore/build/tests on main and external PRs without Azure secrets. Its trusted-main database job calls `deploy-database.yml` only after the same SHA passes tests, when schema/database paths change or an API deployment requires reconciliation. The pipeline serializes main runs, and the database workflow serializes migrations without cancellation. Readme-only pushes do not migrate. Manual Tests dispatch requests migration reconciliation after tests.
 
@@ -9,6 +9,14 @@ The database job builds a self-contained EF migration bundle in Production, read
 The connection stays in the runner environment, not a repository file or artifact. API runtime uses a different least-privilege SQL identity. No Azure login/OIDC or IP firewall updater is used.
 
 The API reusable job requires successful same-SHA tests and SQL reconciliation. The Web job needs tests, scope detection, database and API jobs for the same SHA. Its first runner step executes the tested scripts/deployment-gates.py truth table: required database/API jobs must succeed; only explicitly unrequired jobs may be skipped. Failures/cancellation/pending results are never accepted. Web-only paths do not republish SQL/API; Contracts/version/SDK changes deploy both consumers in order. The fourth reusable deploy-web.yml publishes only the existing PlanForge-Web with Azure/webapps-deploy v3.0.8 and verifies HTTPS exact-SHA health, login/CSRF form, design CSS and anonymous workspace challenge. It rejects superseded main before publication. Profile preflight runs only in the trusted runner, rejects blank/REDACTED fields, verifies matching existing HTTPS SCM/public hosts and disables authenticated redirects; no credentials/settings bodies are exported. Simultaneous push triggers are not a deployment gate. Existing secret names for publication are `AZURE_FUNCTIONAPP_PUBLISH_PROFILE` and `AZURE_WEBAPP_PUBLISH_PROFILE`. Flex publication requires `sku: flexconsumption`; never create new identities to work around authentication failure.
+
+## v0.2.0 expansion and runtime configuration
+
+The reviewed lifecycle migration adds exactly four columns: required `Users.Language` (`nvarchar(16)`, default `en`), nullable `ProjectChanges.ActorNameSnapshot` (`nvarchar(80)`), and bigint agent/credential generations with default zero. Existing account preferences and existing valid credentials remain compatible. It does not drop/rename tables or columns, introduce cascades or remove data. Its Down method refuses destructive downgrade; use reviewed forward correction, never a local database-update/reset. Existing runtime credentials remain DML-only; only the existing trusted migration runner applies DDL.
+
+Web `PlanForgeApi__BaseUrl` must identify the exact existing HTTPS API origin on port 443, without userinfo, query, fragment or extra path. Startup fails closed for missing/invalid production configuration. Development additionally permits HTTP/HTTPS loopback port 7601; local Web normally uses 7600. The final API destination is guarded, automatic redirects/shared HTTP cookies are disabled, and auth headers are redacted. No new cloud setting, identity or secret is required.
+
+The central `Directory.Build.props` version feeds Contracts and every displayed/reported product version. Account language, physical deletion and token cleanup require the additive schema plus API publication before accepting the new Web behavior. Retain only controlled test cookies/tokens/fixture IDs for ordered publication and verify old sessions/data afterwards. Never test destructive lifecycle actions with real owner agents or credentials.
 
 ## Data protection and recovery
 

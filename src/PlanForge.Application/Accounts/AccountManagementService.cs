@@ -49,8 +49,11 @@ public sealed class AccountManagementService(IAccountStore store, ISecretProtect
 		RequireHuman(actor);
 		if (string.IsNullOrWhiteSpace(request.DisplayName) || request.DisplayName.Length > 80)
 			throw new PlanForgeException(400, "Provide a display name of up to 80 characters.");
+		if (request.Language != "en")
+			throw new PlanForgeException(400, "Choose a supported account language.");
 		UserAccount user = await GetUserAsync(actor, cancellationToken);
 		user.DisplayName = request.DisplayName.Trim();
+		user.Language = request.Language;
 		await store.SaveAsync(cancellationToken);
 		return ToProfile(user);
 	}
@@ -63,5 +66,5 @@ public sealed class AccountManagementService(IAccountStore store, ISecretProtect
 		if (!actor.IsHuman)
 			throw new PlanForgeException(403, "This operation requires a human account session.");
 	}
-	private static UserProfile ToProfile(UserAccount user) => new(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null);
+	private static UserProfile ToProfile(UserAccount user) => new(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null, user.Language);
 }

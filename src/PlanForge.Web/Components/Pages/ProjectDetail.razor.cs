@@ -16,9 +16,13 @@ public partial class ProjectDetail : ApiPage
 	private Guid? editingId;
 	private string itemAgent = "", itemAssignment = "Inherit", itemDescription = "", itemEvidence = "", itemKind = "Phase", itemParent = "", itemResolution = "", itemStatus = "Pending", itemTitle = "";
 	private int? itemOrder;
-	private ProjectSnapshot? project;
+	[Inject] private BreadcrumbState Breadcrumbs { get; set; } = default!;
+	private ProjectSnapshot? currentProject;
+	private ProjectSnapshot? project { get => currentProject; set { currentProject = value; Breadcrumbs.SetProject(value); } }
 	private List<ResourceProfile> resources = [];
-	private bool showItem, showSettings, showImport, replacePlan;
+	private bool showItem, showImport, replacePlan;
+	private bool settingsOpen;
+	private bool showSettings { get => settingsOpen; set { settingsOpen = value; Breadcrumbs.SetSettings(value); } }
 	private IBrowserFile? importFile;
 	private Task OnExportAsync(string kind) => ExecuteAsync(async () =>
 	{
@@ -44,9 +48,9 @@ public partial class ProjectDetail : ApiPage
 
 	private string? deletePath, deleteTitle, deleteDescription;
 	private bool deleteProject;
-	private void OnDeleteItem(PlanItem item) => PrepareDelete($"projects/{Id}/{PlanLabels.RouteKind(item.Kind)}/{item.Id}", $"Delete {item.Kind.ToLowerInvariant()}", $"Remove '{item.Title}' and its descendants. Library files survive.", false);
-	private void OnDeleteProject() => PrepareDelete($"projects/{Id}", "Delete project", $"Permanently delete '{project!.Name}' and all {project.Items.Count} plan records. Library files survive.", true);
-	private void OnCleanCompleted() => PrepareDelete($"projects/{Id}/completed-phases/clean", "Clean completed phases", $"Remove only fully completed phases ({project!.Items.Count(item => item.Kind == "Phase" && item.Status == "Completed")} currently marked complete). Pending, blocked and active work is retained. Library files survive.", false);
+	private void OnDeleteItem(PlanItem item) => PrepareDelete($"projects/{Id}/{PlanLabels.RouteKind(item.Kind)}/{item.Id}", T["Delete {0}", T[item.Kind.ToLowerInvariant()]].Value, T["Remove '{0}' and its descendants. Library files survive.", item.Title].Value, false);
+	private void OnDeleteProject() => PrepareDelete($"projects/{Id}", "Delete project", T["Permanently delete '{0}' and all {1} plan records. Library files survive.", project!.Name, project.Items.Count].Value, true);
+	private void OnCleanCompleted() => PrepareDelete($"projects/{Id}/completed-phases/clean", "Clean completed phases", T["Remove only fully completed phases ({0} currently marked complete). Pending, blocked and active work is retained. Library files survive.", project!.Items.Count(item => item.Kind == "Phase" && item.Status == "Completed")].Value, false);
 	private void PrepareDelete(string path, string title, string description, bool wholeProject) { deletePath = path; deleteTitle = title; deleteDescription = description; deleteProject = wholeProject; showSettings = false; }
 	private Task OnConfirmDeleteAsync() => ExecuteAsync(async () =>
 	{
@@ -79,6 +83,7 @@ public partial class ProjectDetail : ApiPage
 		if (loadedProject != Id) { loadedProject = Id; cursor = new(); project = null; }
 		await ExecuteAsync(LoadAsync);
 		if (Settings && project is not null) OnSettings();
+		else showSettings = false;
 		StartPolling(PollProjectAsync);
 	}
 

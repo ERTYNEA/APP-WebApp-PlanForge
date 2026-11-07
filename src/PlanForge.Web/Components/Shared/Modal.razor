@@ -1,6 +1,6 @@
 @inject Microsoft.JSInterop.IJSRuntime JavaScript
-<dialog @ref="dialog" class="modal" aria-label="@Title" @oncancel="OnCancelAsync">
-	<div class="modal-heading"><h2>@Title</h2><button type="button" class="quiet" @onclick="Close" aria-label="@T["Close dialog"]">×</button></div>
+<dialog @ref="dialog" class="modal" aria-label="@T[Title]" @oncancel="OnCancelAsync">
+	<div class="modal-heading"><h2>@T[Title]</h2><button type="button" class="quiet" @onclick="Close" aria-label="@T["Close dialog"]">×</button></div>
 	@if (Error is not null) { <div class="notice error" role="alert">@Error</div> }
 	@ChildContent
 </dialog>

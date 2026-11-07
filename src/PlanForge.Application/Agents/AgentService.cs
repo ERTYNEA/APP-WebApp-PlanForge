@@ -9,6 +9,20 @@ using PlanForge.Domain.Agents;
 
 public sealed class AgentService(IAgentStore store, ISecretProtector secrets, TimeProvider timeProvider)
 {
+	public Task<int> CleanTokensAsync(AuthenticatedActor actor, CleanAgentTokensRequest request, CancellationToken cancellationToken = default)
+	{
+		RequireHuman(actor);
+		if (!request.Confirmed)
+			throw new PlanForgeException(400, "Confirm permanent deletion of revoked and expired tokens.");
+		return store.CleanTokensAsync(actor.UserId, timeProvider.GetUtcNow(), cancellationToken);
+	}
+
+	public Task DeleteAsync(AuthenticatedActor actor, Guid agentId, CancellationToken cancellationToken = default)
+	{
+		RequireHuman(actor);
+		return store.DeleteAsync(actor.UserId, agentId, cancellationToken);
+	}
+
 	public async Task<AgentProfile> CreateAsync(AuthenticatedActor actor, AgentRequest request, CancellationToken cancellationToken = default)
 	{
 		RequireHuman(actor);
@@ -56,10 +70,9 @@ public sealed class AgentService(IAgentStore store, ISecretProtector secrets, Ti
 		Agent agent = await store.GetAsync(actor.UserId, agentId, cancellationToken) ?? throw new PlanForgeException(404, "Agent not found.");
 		agent.Name = request.Name.Trim();
 		agent.Description = request.Description;
+		if (!request.IsActive)
+			agent.CredentialVersion++;
 		agent.IsActive = request.IsActive;
-		if (!agent.IsActive)
-			foreach (AccessCredential token in (await store.ListTokensAsync(actor.UserId, cancellationToken)).Where(token => token.AgentId == agent.Id && token.RevokedAt is null))
-				token.RevokedAt = timeProvider.GetUtcNow();
 		await store.SaveAsync(cancellationToken);
 		return ToProfile(agent);
 	}
@@ -91,15 +104,17 @@ public sealed class AgentService(IAgentStore store, ISecretProtector secrets, Ti
 	{
 		if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 80)
 			throw new PlanForgeException(400, "Provide a token name of up to 80 characters.");
+		long agentVersion = 0;
 		if (request.AgentId is Guid agentId)
 		{
 			Agent? agent = await store.GetAsync(actor.UserId, agentId, cancellationToken);
 			if (agent is null || !agent.IsActive)
 				throw new PlanForgeException(404, "Active agent not found.");
+			agentVersion = agent.CredentialVersion;
 		}
 		DateTimeOffset now = timeProvider.GetUtcNow();
 		string token = secrets.CreateToken(true);
-		var credential = new AccessCredential { Name = request.Name.Trim(), Kind = CredentialKind.AgentToken, OwnerUserId = actor.UserId, SecurityVersion = actor.SecurityVersion, AgentId = request.AgentId, CreatedAt = now, ExpiresAt = now.AddDays(30), TokenHash = secrets.HashToken(token) };
+		var credential = new AccessCredential { Name = request.Name.Trim(), Kind = CredentialKind.AgentToken, OwnerUserId = actor.UserId, SecurityVersion = actor.SecurityVersion, AgentCredentialVersion = agentVersion, AgentId = request.AgentId, CreatedAt = now, ExpiresAt = now.AddDays(30), TokenHash = secrets.HashToken(token) };
 		store.Add(credential);
 		return new AgentTokenGrant(token, ToTokenProfile(credential));
 	}

@@ -21,7 +21,7 @@ public static class WebSession
 		if (operation is not ("login" or "register" or "logout" or "password"))
 			return Results.NotFound();
 		try { await antiforgery.ValidateRequestAsync(context); }
-		catch (AntiforgeryValidationException) { return Results.BadRequest("The form expired. Reload and try again."); }
+		catch (AntiforgeryValidationException) { return Results.BadRequest(UiText.Get("The form expired. Reload and try again.")); }
 		if (operation == "logout")
 		{
 			string? token = context.User.FindFirst(TokenClaim)?.Value;
@@ -41,14 +41,14 @@ public static class WebSession
 			{
 				string? token = context.User.FindFirst(TokenClaim)?.Value;
 				if (token is null) return Results.Unauthorized();
-				if (form["newPassword"].ToString() != form["confirmPassword"].ToString()) return Results.LocalRedirect("/settings?error=" + Uri.EscapeDataString("The new passwords do not match."));
+				if (form["newPassword"].ToString() != form["confirmPassword"].ToString()) return Results.LocalRedirect("/settings?error=" + Uri.EscapeDataString(UiText.Get("The new passwords do not match.")));
 				await api.SendAsync<object>(HttpMethod.Post, "users/me/password", token, new ChangePasswordRequest(form["currentPassword"].ToString(), form["newPassword"].ToString()), cancellationToken: context.RequestAborted);
 				await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 				return Results.LocalRedirect("/login?notice=password-changed");
 			}
 			object request = operation == "register" ? new RegisterRequest(form["email"].ToString(), form["password"].ToString(), form["displayName"].ToString()) : new LoginRequest(form["email"].ToString(), form["password"].ToString());
 			AccessGrant grant = await api.SendAsync<AccessGrant>(HttpMethod.Post, "auth/" + operation, body: request, cancellationToken: context.RequestAborted);
-			var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, grant.User.Id.ToString()), new Claim(ClaimTypes.Name, grant.User.DisplayName), new Claim(TokenClaim, grant.Token)], CookieAuthenticationDefaults.AuthenticationScheme);
+			var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, grant.User.Id.ToString()), new Claim(ClaimTypes.Name, grant.User.DisplayName), new Claim(TokenClaim, grant.Token), new Claim(AccountCultureProvider.LanguageClaim, grant.User.Language)], CookieAuthenticationDefaults.AuthenticationScheme);
 			await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), new AuthenticationProperties { IsPersistent = true, ExpiresUtc = grant.ExpiresAt, AllowRefresh = false });
 			return Results.LocalRedirect("/");
 		}
@@ -58,7 +58,7 @@ public static class WebSession
 		}
 		catch (HttpRequestException)
 		{
-			return Results.LocalRedirect("/" + errorPath + "?error=" + Uri.EscapeDataString("The service is temporarily unavailable. Try again."));
+			return Results.LocalRedirect("/" + errorPath + "?error=" + Uri.EscapeDataString(UiText.Get("The service is temporarily unavailable. Try again.")));
 		}
 	}
 }

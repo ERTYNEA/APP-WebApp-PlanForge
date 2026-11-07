@@ -18,9 +18,14 @@ public sealed class AccountService(IAccountStore accountStore, ISecretProtector 
 		UserAccount? user = await accountStore.FindUserAsync(credential.OwnerUserId, cancellationToken);
 		if (user is null || !user.IsActive || credential.SecurityVersion != user.SecurityVersion || (credential.Kind == CredentialKind.HumanSession) != token.StartsWith("pf_h_", StringComparison.Ordinal))
 			throw new PlanForgeException(401, "The access token is invalid or revoked.");
-		if (credential.Kind == CredentialKind.AgentToken && credential.AgentId is Guid agentId && !await accountStore.IsAgentActiveAsync(user.Id, agentId, cancellationToken))
-			throw new PlanForgeException(401, "The agent is inactive or unavailable. Renew an authorized agent token.");
-		return new AuthenticatedActor(user.Id, credential.Kind, credential.Id, credential.AgentId, credential.SecurityVersion);
+		string? agentName = null;
+		if (credential.Kind == CredentialKind.AgentToken && credential.AgentId is Guid agentId)
+		{
+			agentName = await accountStore.GetActiveAgentNameAsync(user.Id, agentId, credential.AgentCredentialVersion, cancellationToken);
+			if (agentName is null)
+				throw new PlanForgeException(401, "The agent is inactive or unavailable. Renew an authorized agent token.");
+		}
+		return new AuthenticatedActor(user.Id, credential.Kind, credential.Id, credential.AgentId, credential.SecurityVersion, agentName);
 	}
 
 	public async Task<UserProfile> GetProfileAsync(AuthenticatedActor actor, CancellationToken cancellationToken = default)
@@ -28,7 +33,7 @@ public sealed class AccountService(IAccountStore accountStore, ISecretProtector 
 		UserAccount? user = await accountStore.FindUserAsync(actor.UserId, cancellationToken);
 		if (user is null || !user.IsActive)
 			throw new PlanForgeException(401, "The account is unavailable.");
-		return new UserProfile(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null);
+		return new UserProfile(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null, user.Language);
 	}
 
 	public async Task<AccessGrant> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -85,6 +90,6 @@ public sealed class AccountService(IAccountStore accountStore, ISecretProtector 
 		};
 		await accountStore.AddCredentialAsync(credential, cancellationToken);
 		await accountStore.SaveAsync(cancellationToken);
-		return new AccessGrant(token, credential.ExpiresAt, new UserProfile(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null));
+		return new AccessGrant(token, credential.ExpiresAt, new UserProfile(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null, user.Language));
 	}
 }

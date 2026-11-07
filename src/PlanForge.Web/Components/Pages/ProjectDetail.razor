@@ -7,7 +7,7 @@ else
 {
 	<PageTitle>@project.Name · PlanForge</PageTitle>
 	<div class="page-heading project-heading"><div><a href="/">@T["← All projects"]</a><h1>@project.Name<span class="accent">.</span></h1><p class="user-text muted">@project.Description</p></div><div class="toolbar"><button class="quiet" @onclick="() => showImport=true" disabled="@Busy">@T["Import CSV"]</button><button class="quiet" @onclick='() => OnExportAsync("csv")' disabled="@Busy">@T["Export CSV"]</button><button class="primary" @onclick='() => OnExportAsync("projects")' disabled="@Busy">@T["Export project"]</button><button class="quiet" @onclick="OnSettings" disabled="@Busy">@T["Settings"]</button></div></div>
-	<div class="project-overview"><span class="badge @PlanLabels.StatusClass(project.Status)">@project.Status</span><span class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</span><span class="mono muted">@T["Revision {0}", project.Revision]</span><span class="progress-summary">@T["{0}% complete", project.Progress]</span><progress value="@project.Progress" max="100" aria-label="@T["Project progress"]"></progress></div>
+	<div class="project-overview"><span class="badge @PlanLabels.StatusClass(project.Status)">@T[project.Status]</span><span class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</span><span class="mono muted">@T["Revision {0}", project.Revision]</span><span class="progress-summary">@T["{0}% complete", project.Progress]</span><progress value="@project.Progress" max="100" aria-label="@T["Project progress"]"></progress></div>
 	<div class="section-heading"><div><h2>@T["Work plan"]</h2><span class="muted small">@T["Phases → Subphases → Steps · Updates automatically"]</span></div><div class="toolbar"><button class="quiet" @onclick="() => ExecuteAsync(LoadAsync)" disabled="@Busy">@T["↻ Reload"]</button><button class="primary" @onclick="OnAddPhase" disabled="@Busy">@T["+ Add phase"]</button></div></div>
 	@if (project.Items.Count == 0) { <section class="empty-state"><h2>@T["A clear start"]</h2><p>@T["Add a phase to build your work plan. Every phase includes a real subphase."]</p></section> }
 	<WorkPlanTree Snapshot="project" Agents="agents" Resources="resources" Edit="OnEdit" Add="OnAdd" Delete="OnDeleteItem" AttachResources="OnPhaseResources" Disabled="Busy" />
@@ -23,7 +23,7 @@ else
 @if(showSettings)
 {
 	<Modal Title='@T["Project settings"]' Error="@Error" Close="() => showSettings=false"><form id="project-settings-form" @onsubmit="OnSaveSettingsAsync" @onsubmit:preventDefault>
-		<label>@T["Name"]<input id="project-name" @bind="projectName" required maxlength="160" /></label><label>@T["Purpose"]<textarea @bind="projectDescription" maxlength="8000" rows="3"></textarea></label><div class="form-grid"><label>@T["Status"]<select @bind="projectStatus">@foreach(string value in new[]{"Pending","InProgress","Blocked","Completed"}) { <option>@value</option> }</select></label><label>@T["Development workflow"]<select id="project-workflow" @bind="projectWorkflow">@foreach(string value in PlanLabels.Workflows) { <option value="@value">@PlanLabels.Workflow(value)</option> }</select></label></div><p class="muted small">@T["Changing workflow never silently closes pending steps. Library resources survive project and phase deletion."]</p>
+		<label>@T["Name"]<input id="project-name" @bind="projectName" required maxlength="160" /></label><label>@T["Purpose"]<textarea @bind="projectDescription" maxlength="8000" rows="3"></textarea></label><div class="form-grid"><label>@T["Status"]<select @bind="projectStatus">@foreach(string value in new[]{"Pending","InProgress","Blocked","Completed"}) { <option value="@value">@T[value]</option> }</select></label><label>@T["Development workflow"]<select id="project-workflow" @bind="projectWorkflow">@foreach(string value in PlanLabels.Workflows) { <option value="@value">@PlanLabels.Workflow(value)</option> }</select></label></div><p class="muted small">@T["Changing workflow never silently closes pending steps. Library resources survive project and phase deletion."]</p>
 		<div class="form-actions"><button type="button" class="quiet" @onclick="() => showSettings=false">@T["Cancel"]</button><button class="primary" disabled="@Busy">@T["Save settings"]</button></div>
 	</form><div class="settings-resources"><button class="quiet" @onclick="OnProjectResources">@T["Manage project resources"]</button></div><div class="danger-zone"><h3>@T["Permanent actions"]</h3><button class="quiet" @onclick="OnCleanCompleted" disabled="@Busy">@T["Clean completed phases"]</button><button class="danger" @onclick="OnDeleteProject" disabled="@Busy">@T["Delete project"]</button></div></Modal>
 }
@@ -33,20 +33,20 @@ else
 }
 @if (showItem)
 {
-	<Modal Title="@($"{(editingId.HasValue ? "Edit" : "New")} {itemKind.ToLowerInvariant()}")" Error="@Error" Close="() => showItem = false">
+	<Modal Title='@T[editingId.HasValue ? "Edit {0}" : "New {0}",T[itemKind.ToLowerInvariant()]]' Error="@Error" Close="() => showItem = false">
 		<form @onsubmit="OnSaveItemAsync" @onsubmit:preventDefault>
 			<label for="item-title">@T["Title"]</label><input id="item-title" @bind="itemTitle" required maxlength="240" autofocus />
 			<label for="item-description">@T["Description"]</label><textarea id="item-description" @bind="itemDescription" maxlength="8000" rows="3"></textarea>
-			<div class="form-grid"><label>@T["Status"]<select id="item-status" @bind="itemStatus">@foreach(string value in itemKind=="Decision" ? new[]{"Pending","Decided"} : new[]{"Pending","InProgress","Blocked","Completed"}) { <option>@value</option> }</select></label><label>@T["Order (zero-based)"]<input id="item-order" type="number" @bind="itemOrder" min="0" /></label></div>
+			<div class="form-grid"><label>@T["Status"]<select id="item-status" @bind="itemStatus">@foreach(string value in itemKind=="Decision" ? new[]{"Pending","Decided"} : new[]{"Pending","InProgress","Blocked","Completed"}) { <option value="@value">@T[value]</option> }</select></label><label>@T["Order (zero-based)"]<input id="item-order" type="number" @bind="itemOrder" min="0" /></label></div>
 			@if (itemKind != "Phase")
 			{
-				<label>@T["Parent / move to"]<select id="item-parent" @bind="itemParent">@foreach(PlanItem parent in project!.Items.Where(item=>itemKind=="Decision" ? item.Kind!="Decision" : item.Kind==(itemKind=="Subphase" ? "Phase" : "Subphase"))) { <option value="@parent.Id">@parent.Kind: @parent.Title</option> }</select></label>
+				<label>@T["Parent / move to"]<select id="item-parent" @bind="itemParent">@foreach(PlanItem parent in project!.Items.Where(item=>itemKind=="Decision" ? item.Kind!="Decision" : item.Kind==(itemKind=="Subphase" ? "Phase" : "Subphase"))) { <option value="@parent.Id">@T[parent.Kind.ToLowerInvariant()]: @parent.Title</option> }</select></label>
 			}
 			@if(itemKind=="Decision") { <label>@T["Resolution"]<textarea id="item-resolution" @bind="itemResolution" maxlength="8000" required="@(itemStatus=="Decided")"></textarea></label> }
 			else
 			{
 				<div class="form-grid"><label>@T["Agent assignment"]<select id="item-assignment" @bind="itemAssignment"><option value="Inherit">@T["Inherit from parent"]</option><option value="Override">@T["Override agent"]</option><option value="Unassigned">@T["Explicitly unassigned"]</option></select></label>
-				@if(itemAssignment=="Override") { <label>@T["Agent"]<select id="item-agent" @bind="itemAgent" required><option value="">@T["Choose agent"]</option>@foreach(AgentProfile agent in agents.Where(agent=>agent.IsActive || agent.Id.ToString()==itemAgent)) { <option value="@agent.Id">@agent.Name@(agent.IsActive ? "" : " (Inactive)")</option> }</select></label> }</div>
+				@if(itemAssignment=="Override") { <label>@T["Agent"]<select id="item-agent" @bind="itemAgent" required><option value="">@T["Choose agent"]</option>@foreach(AgentProfile agent in agents.Where(agent=>agent.IsActive || agent.Id.ToString()==itemAgent)) { <option value="@agent.Id">@agent.Name@(agent.IsActive ? "" : " ("+T["Inactive"].Value+")")</option> }</select></label> }</div>
 			}
 			@if(itemKind=="Step")
 			{

@@ -25,6 +25,7 @@ public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> opti
 		modelBuilder.Entity<Agent>(entity =>
 		{
 			entity.HasKey(agent => agent.Id);
+			entity.Property(agent => agent.CredentialVersion).IsConcurrencyToken();
 			entity.HasAlternateKey(agent => new { agent.OwnerUserId, agent.Id });
 			entity.Property(agent => agent.Name).HasMaxLength(80).IsRequired();
 			entity.Property(agent => agent.Description).HasMaxLength(2000).IsRequired();
@@ -36,6 +37,7 @@ public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> opti
 			entity.HasKey(change => change.Id);
 			entity.Property(change => change.Action).HasMaxLength(100).IsRequired();
 			entity.Property(change => change.ActorKind).HasMaxLength(10).IsRequired();
+			entity.Property(change => change.ActorNameSnapshot).HasMaxLength(80);
 			entity.HasIndex(change => new { change.ProjectId, change.Id });
 			entity.HasOne<Project>().WithMany().HasForeignKey(change => change.ProjectId).OnDelete(DeleteBehavior.Restrict);
 		});
@@ -62,6 +64,7 @@ public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> opti
 		modelBuilder.Entity<UserAccount>(entity =>
 		{
 			entity.HasKey(user => user.Id);
+			entity.Property(user => user.Language).HasMaxLength(16).HasDefaultValue("en").IsRequired();
 			entity.Property(user => user.AvatarContentType).HasMaxLength(80);
 			entity.Property(user => user.Email).HasMaxLength(256).IsRequired();
 			entity.Property(user => user.NormalizedEmail).HasMaxLength(256).IsRequired();

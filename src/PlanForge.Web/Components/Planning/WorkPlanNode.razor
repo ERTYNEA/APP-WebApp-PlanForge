@@ -1,11 +1,11 @@
 <section class="plan-node @Item.Kind.ToLowerInvariant() @(Item.Status == "InProgress" ? "is-current" : "")" data-item-id="@Item.Id">
 	<div class="node-heading">
-		<button class="node-title" @onclick="() => Toggle.InvokeAsync(Item.Id)" aria-expanded="@Expanded.Contains(Item.Id).ToString().ToLowerInvariant()" aria-label="@($"Toggle {Item.Kind} {Item.Title}")">
+		<button class="node-title" @onclick="() => Toggle.InvokeAsync(Item.Id)" aria-expanded="@Expanded.Contains(Item.Id).ToString().ToLowerInvariant()" aria-label='@T["Toggle {0} {1}",T[Item.Kind.ToLowerInvariant()],Item.Title]'>
 			<span class="node-chevron">@(Expanded.Contains(Item.Id) ? "⌄" : "›")</span><span class="node-kind">@(Item.Kind == "Decision" ? Item.Status == "Decided" ? "✓" : "⚠" : Item.Kind == "Phase" ? (Item.SortOrder + 1).ToString("00") : Item.Kind == "Subphase" ? "◈" : Item.Status == "Completed" ? "✓" : "○")</span><span>@Item.Title</span>
 		</button>
 		<div class="node-meta"><span class="badge @PlanLabels.StatusClass(Item.Status)">@PlanLabels.Status(Item, Snapshot.Workflow)</span>
 			@if (Snapshot.GetEffectiveAgentId(Item.Id) is Guid agentId) { <span class="agent-tag">@if (Agents.FirstOrDefault(agent => agent.Id == agentId)?.HasAvatar == true) { <img src="@($"/files/agent-avatars/{agentId}")" alt="" /> } else { <span aria-hidden="true">◇</span> } @AgentName(agentId)</span> }
-			<button class="quiet compact" @onclick="() => Edit.InvokeAsync(Item)" disabled="@Disabled" aria-label="@($"Edit {Item.Kind.ToLowerInvariant()} {Item.Title}")">@T["Edit"]</button>
+			<button class="quiet compact" @onclick="() => Edit.InvokeAsync(Item)" disabled="@Disabled" aria-label='@T["Edit {0} {1}",T[Item.Kind.ToLowerInvariant()],Item.Title]'>@T["Edit"]</button>
 		</div>
 	</div>
 	@if (!Expanded.Contains(Item.Id) && PendingDecisions > 0) { <span class="collapsed-decision warning">⚠ @PendingDecisions @T["pending decision(s)"]</span> }
@@ -28,7 +28,7 @@
 			<div class="node-actions">
 				@if (Item.Kind is "Phase" or "Subphase") { <button class="quiet compact" @onclick='() => Add.InvokeAsync((Item.Kind == "Phase" ? "Subphase" : "Step", Item.Id))' disabled="@Disabled">+ @T[Item.Kind == "Phase" ? "Add subphase" : "Add step"]</button> }
 				@if (Item.Kind != "Decision") { <button class="quiet compact" @onclick='() => Add.InvokeAsync(("Decision", Item.Id))' disabled="@Disabled">+ @T["Add decision"]</button> }
-				<button class="quiet danger-text compact" @onclick="() => Delete.InvokeAsync(Item)" disabled="@Disabled">@T["Delete"] @Item.Kind.ToLowerInvariant()</button>
+				<button class="quiet danger-text compact" @onclick="() => Delete.InvokeAsync(Item)" disabled="@Disabled">@T["Delete"] @T[Item.Kind.ToLowerInvariant()]</button>
 			</div>
 		</div>
 	}
@@ -45,7 +45,7 @@
 	[Parameter] public EventCallback<(string Kind, Guid? ParentId)> Add { get; set; }
 	[Parameter] public EventCallback<Guid> AttachResources { get; set; }
 	[Parameter] public bool Disabled { get; set; }
-	private string AgentName(Guid id) => Agents.FirstOrDefault(agent => agent.Id == id) is AgentProfile agent ? agent.Name + (agent.IsActive ? "" : " (Inactive)") : "Unassigned/Inactive";
+	private string AgentName(Guid id) => Agents.FirstOrDefault(agent => agent.Id == id) is AgentProfile agent ? agent.Name + (agent.IsActive ? "" : " ("+T["Inactive"].Value+")") : T["Unassigned/Inactive"].Value;
 	private int PendingDecisions => Snapshot.Items.Count(item => item.Kind == "Decision" && item.Status == "Pending" && IsDescendant(item));
 	private bool IsDescendant(PlanItem item)
 	{

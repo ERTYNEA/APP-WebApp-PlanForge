@@ -19,6 +19,20 @@ A release is not accepted solely because it compiles. The verification layers ar
 
 Actual cloud-browser checks include normal project/plan forms, decisions, moves, four workflows, irreversible confirmations, token issuance/dismissal/renewal/revocation, account/avatar management, file upload/download, filters, empty states, automatic notifications and desktop/narrow layouts. A controlled collection of twenty projects was exercised and removed after inspection. All fixtures are recorded by immutable IDs before cleanup. Generated passwords, protected cookies and temporary API tokens stay private, never in this repository.
 
+## v0.2.0 acceptance focus
+
+Preserve the initial automated regression suite; this release adds targeted live checks, not a new functional re-audit of every Projects/Library workflow. The release checklist additionally requires:
+
+- Exact six approved palette values and canonical single-source P-hammer SVG in actual shell/auth/favicon consumers; measured contrast, 16/24px readability, keyboard/reduced-motion and compact layouts.
+- One account-settings navigation surface at the bottom profile, stable normal/hover/active geometry, separate sign out, real contextual breadcrumbs and native select-arrow inset. Project settings remain a distinct function.
+- English-only resource-backed application messages, unchanged user text/native validation, persisted per-account English preference after fresh reads/sign-in.
+- Optional create-agent avatar using the existing PNG/JPEG/WebP 256 KiB policy; honest confirmed-profile/unconfirmed-avatar recovery without duplicate creation.
+- Linked-token deactivation/reactivation and credential-generation races, personal-token survival, human-only/known-foreign boundaries and stale-update rejection.
+- Confirmed physical agent/avatar/all-linked-token deletion; inherited/override/unassigned semantics, stable business work/exports/resource bytes, revision conflict, actual retained actor name, double delete and transactional rollback. Portable relational fixtures are supplemented by actual SQL Server provider/FK checks.
+- Personal/agent token labels, bounded valid/history display, collapsed history, issuance/renewal/revocation and confirmed manual owner-only eligible cleanup. Valid/foreign/human credentials survive, repeated cleanup is safe and deleted credentials cannot authenticate.
+- Explicit Secure production antiforgery, positive/negative API-origin configuration, resolved-URI guard, redirects disabled and no credential/header leaks.
+- Ordered same-SHA tests → SQL → API → Web, actual seven-migration history, real versions and protected non-QA data fingerprints/controlled-session continuity. README is finalized only after real QA and deployment acceptance; private fixtures and credentials never enter reports or the repository.
+
 ## Deliberate limits
 
 - This is a single-owner-per-project application for a few people, not a collaboration/tenant/role platform or an agent execution service. Workflow evidence is authenticated recorded confirmation, not an automatic GitHub/provider integration.

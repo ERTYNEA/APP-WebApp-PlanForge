@@ -119,7 +119,7 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 				item.CompletedBy = previous?.Status == WorkStatus.Completed ? previous.CompletedBy : actor.AgentId ?? actor.UserId;
 			}
 		}
-		await store.SaveAsync(new ProjectAggregate(aggregate.Project, items), snapshot.Revision, actor.AgentId ?? actor.UserId, actor.IsHuman ? "Human" : "Agent", action, cancellationToken);
+		await store.SaveAsync(new ProjectAggregate(aggregate.Project, items), snapshot.Revision, actor.AgentId ?? actor.UserId, actor.IsHuman ? "Human" : "Agent", action, cancellationToken, actor.AgentNameSnapshot);
 		aggregate.Project.Revision++;
 		return ToSnapshot(new ProjectAggregate(aggregate.Project, items));
 	}

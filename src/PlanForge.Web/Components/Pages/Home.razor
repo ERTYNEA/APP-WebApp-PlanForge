@@ -15,7 +15,7 @@ else
 	<div class="project-grid">
 	@foreach (ProjectSummary project in Filtered)
 	{
-		<article class="project-card" @key="project.Id"><div class="card-top"><span class="project-icon">▦</span><span class="badge @PlanLabels.StatusClass(project.Status)">@project.Status</span></div><h2><a href="@($"/projects/{project.Id}")">@project.Name</a></h2><p class="project-description">@project.Description</p><div class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</div><div class="progress-caption"><span>@T["{0} / {1} steps", project.CompletedSteps, project.StepCount]</span><strong>@project.Progress%</strong></div><progress value="@project.Progress" max="100" aria-label="@T["Project progress"]"></progress>
+		<article class="project-card" @key="project.Id"><div class="card-top"><span class="project-icon">▦</span><span class="badge @PlanLabels.StatusClass(project.Status)">@T[project.Status]</span></div><h2><a href="@($"/projects/{project.Id}")">@project.Name</a></h2><p class="project-description">@project.Description</p><div class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</div><div class="progress-caption"><span>@T["{0} / {1} steps", project.CompletedSteps, project.StepCount]</span><strong>@project.Progress%</strong></div><progress value="@project.Progress" max="100" aria-label="@T["Project progress"]"></progress>
 		@if (snapshots.TryGetValue(project.Id,out ProjectSnapshot? snapshot))
 		{
 			PlanItem? active = PlanLabels.CurrentWork(snapshot) ?? snapshot.Items.FirstOrDefault(item => item.Kind == "Step" && item.Status == "Pending");

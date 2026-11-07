@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="None" xml:space="preserve"><value>None</value></data>
+  <data name="PlanningOnly" xml:space="preserve"><value>Planning Only</value></data>
+  <data name="LocalChangesManualApproval" xml:space="preserve"><value>Local Changes + Manual Approval</value></data>
+  <data name="BranchPullRequest" xml:space="preserve"><value>Branch + Pull Request</value></data>
+  <data name="DirectToMain" xml:space="preserve"><value>Direct to Main</value></data>
+  <data name="ProjectReadme" xml:space="preserve"><value># {0}
+
+{1}
+
+Project ID: {2:D}
+Revision: {3}
+Exported: {4:O}
+Status: {5}
+Progress: {6}%
+Workflow: {7}
+Active phase: {8}
+Active subphase: {9}
+Active step: {10}
+
+## Contents and safe import
+
+work-plan.csv contains the complete plan snapshot, not file bytes. manifest.json identifies each resource, SHA-256, MIME type and exact project/phase associations. Phase-only resources are included; unrelated Library files are excluded.
+
+Import work-plan.csv only into the matching ProjectId and current BaseRevision. Omitted records require explicit replace confirmation. A stale import returns 409: reload and reconcile rather than overwrite. Workflow closure still requires the authorized approval, merge or push evidence.
+
+The resources directory is reference material, not an executable package or a resource-import command. This archive contains no credentials.
+</value></data>
+</root>

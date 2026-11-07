@@ -10,6 +10,7 @@ public sealed class UserAccount
 	public string DisplayName { get; set; } = string.Empty;
 	public string Email { get; set; } = string.Empty;
 	public bool IsActive { get; set; } = true;
+	public string Language { get; set; } = "en";
 	public string NormalizedEmail { get; set; } = string.Empty;
 	public string PasswordHash { get; set; } = string.Empty;
 }

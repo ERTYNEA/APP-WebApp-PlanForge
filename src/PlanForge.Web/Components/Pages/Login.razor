@@ -2,7 +2,7 @@
 @page "/register"
 @layout AuthLayout
 @inject NavigationManager Navigation
-<PageTitle>@(IsRegister ? "Create account" : "Sign in") · PlanForge</PageTitle>
+<PageTitle>@T[IsRegister ? "Create account" : "Sign in"] · PlanForge</PageTitle>
 <section class="auth-card">
 	<div class="eyebrow">@T["YOUR NEXT STEP STARTS HERE"]</div>
 	<h1>@T[IsRegister ? "Create your workspace" : "Welcome back"]<span class="accent">.</span></h1>

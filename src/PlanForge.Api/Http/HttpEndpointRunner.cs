@@ -79,5 +79,5 @@ public sealed class HttpEndpointRunner(ILogger<HttpEndpointRunner>? logger = nul
 	}
 
 	private static Task<HttpResponseData> WriteProblemAsync(HttpRequestData request, int status, string detail, string correlationId)
-		=> WriteAsync(request, status, new { type = "about:blank", title = "Request failed", status, detail, correlationId }, correlationId);
+		=> WriteAsync(request, status, new { type = "about:blank", title = ApplicationText.Get("RequestFailedTitle"), status, detail = ApplicationText.Get(detail), correlationId }, correlationId);
 }

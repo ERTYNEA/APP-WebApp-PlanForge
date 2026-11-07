@@ -18,6 +18,18 @@ using System.Text.Json;
 public sealed class ProjectArchiveTests
 {
 	[Fact]
+	public void EnglishArchiveScaffold_WhenLocalized_UsesEmbeddedCanonicalTemplate()
+	{
+		var resources = new System.Resources.ResourceManager("PlanForge.Application.Resources.ArchiveText", typeof(ProjectArchiveExporter).Assembly);
+		string? template = resources.GetString("ProjectReadme", System.Globalization.CultureInfo.InvariantCulture);
+		Assert.NotNull(template);
+		Assert.Contains("# {0}\n\n{1}", template);
+		DirectoryInfo root = new(AppContext.BaseDirectory);
+		while (!File.Exists(Path.Combine(root.FullName, "APP-WebApp-PlanForge.slnx"))) root = root.Parent ?? throw new InvalidOperationException("Repository root not found.");
+		Assert.DoesNotContain("## Contents and safe import", File.ReadAllText(Path.Combine(root.FullName, "src/PlanForge.Application/Exchange/ProjectArchiveExporter.cs")));
+	}
+
+	[Fact]
 	public async Task ExportAsync_WhenMixedResources_IncludesPhaseOnlyUnionExactBytesManifestAndNoOrphansAsync()
 	{
 		await using var fixture = new AccountDatabaseFixture();

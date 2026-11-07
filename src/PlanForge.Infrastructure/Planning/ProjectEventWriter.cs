@@ -16,7 +16,7 @@ internal static class ProjectEventWriter
 		if (changed != 1)
 			throw new PlanForgeException(404, "Project not found.");
 		long revision = await database.Projects.Where(project => project.Id == projectId && project.OwnerUserId == actor.UserId).Select(project => project.Revision).SingleAsync(cancellationToken);
-		var change = new ProjectChange { ProjectId = projectId, Revision = revision, ActorId = actor.AgentId ?? actor.UserId, ActorKind = actor.IsHuman ? "Human" : "Agent", Action = "Project updated", CreatedAt = DateTime.UtcNow };
+		var change = new ProjectChange { ProjectId = projectId, Revision = revision, ActorId = actor.AgentId ?? actor.UserId, ActorKind = actor.IsHuman ? "Human" : "Agent", ActorNameSnapshot = actor.AgentNameSnapshot, Action = "Project updated", CreatedAt = DateTime.UtcNow };
 		database.ProjectChanges.Add(change);
 		await database.SaveChangesAsync(cancellationToken);
 		List<long> expired = await database.ProjectChanges.Where(entry => entry.ProjectId == projectId).OrderByDescending(entry => entry.Id).Skip(100).Select(entry => entry.Id).ToListAsync(cancellationToken);

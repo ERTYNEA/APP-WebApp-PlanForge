@@ -29,18 +29,19 @@ public abstract class ApiPage : ComponentBase, IAsyncDisposable
 		catch (ApiException exception)
 		{
 			Conflict = exception.StatusCode == 409;
-			Error = exception.Message + (exception.CorrelationId is null ? "" : " Reference: " + exception.CorrelationId);
+			Error = exception.Message + (exception.CorrelationId is null ? "" : " " + string.Format(UiText.Get("Reference: {0}"), exception.CorrelationId));
 			if (exception.StatusCode == 401) Navigation.NavigateTo("/login", forceLoad: true);
 		}
-		catch (HttpRequestException) { Error = "The service is temporarily unavailable. Your changes have not been confirmed. Reload before retrying."; }
-		catch (IOException) { Error = "The file could not be read. Check its size and try again."; }
-		catch (OperationCanceledException) { Error = "The request timed out. Reload to check its result before retrying."; }
+		catch (HttpRequestException) { Error = UiText.Get("The service is temporarily unavailable. Your changes have not been confirmed. Reload before retrying."); }
+		catch (IOException) { Error = UiText.Get("The file could not be read. Check its size and try again."); }
+		catch (OperationCanceledException) { Error = UiText.Get("The request timed out. Reload to check its result before retrying."); }
 		finally { Busy = false; }
 	}
 	private readonly Dictionary<string, long> toastVersions = [];
 	private long toastSequence;
 	protected void Notify(string message)
 	{
+		message = UiText.Get(message);
 		long sequence = ++toastSequence;
 		toastVersions[message] = sequence;
 		Toasts.Remove(message);

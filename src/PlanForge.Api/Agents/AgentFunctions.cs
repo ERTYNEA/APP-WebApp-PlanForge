@@ -28,9 +28,19 @@ public sealed class AgentFunctions(AgentService agents, AccountService accounts,
 			AgentProfile agent = (await agents.ListAsync(actor, request.FunctionContext.CancellationToken)).SingleOrDefault(item => item.Id == agentId) ?? throw new PlanForgeException(404, "Agent not found.");
 			if (request.Method == "GET")
 				return agent;
-			AgentRequest command = request.Method == "DELETE" ? new AgentRequest(agent.Name, agent.Description, false) : await runner.ReadJsonAsync<AgentRequest>(request);
+			if (request.Method == "DELETE")
+			{
+				if (!actor.IsHuman)
+					throw new PlanForgeException(403, "Only a human account session may delete an agent.");
+				DeleteAgentRequest confirmation = await runner.ReadJsonAsync<DeleteAgentRequest>(request);
+				if (!confirmation.Confirmed)
+					throw new PlanForgeException(400, "Confirm permanent agent deletion.");
+				await agents.DeleteAsync(actor, agentId, request.FunctionContext.CancellationToken);
+				return null;
+			}
+			AgentRequest command = await runner.ReadJsonAsync<AgentRequest>(request);
 			return await agents.UpdateAsync(actor, agentId, command, request.FunctionContext.CancellationToken);
-		});
+		}, request.Method == "DELETE" ? 204 : 200);
 
 	[Function("AgentTokens")]
 	public Task<HttpResponseData> TokensAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "v1/agent-tokens")] HttpRequestData request)
@@ -41,6 +51,16 @@ public sealed class AgentFunctions(AgentService agents, AccountService accounts,
 			return request.Method == "GET" ? await agents.ListTokensAsync(actor, request.FunctionContext.CancellationToken)
 				: await agents.CreateTokenAsync(actor, await runner.ReadJsonAsync<CreateAgentTokenRequest>(request), request.FunctionContext.CancellationToken);
 		}, request.Method == "POST" ? 201 : 200);
+
+	[Function("CleanAgentTokens")]
+	public Task<HttpResponseData> CleanTokensAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "v1/agent-tokens/history/clean")] HttpRequestData request)
+		=> runner.ExecuteAsync(request, async () =>
+		{
+			AuthenticatedActor actor = await RequestActorReader.ReadAsync(request, accounts, true);
+			runner.AcquireBudget("tokens:" + actor.UserId, 60, TimeSpan.FromMinutes(1));
+			int deletedCount = await agents.CleanTokensAsync(actor, await runner.ReadJsonAsync<CleanAgentTokensRequest>(request), request.FunctionContext.CancellationToken);
+			return new { deletedCount };
+		});
 
 	[Function("RevokeAgentToken")]
 	public Task<HttpResponseData> RevokeAsync([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "v1/agent-tokens/{tokenId:guid}")] HttpRequestData request, Guid tokenId)

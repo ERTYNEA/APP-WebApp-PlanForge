@@ -32,8 +32,8 @@ public sealed class EfAccountStore(PlanForgeDbContext database) : IAccountStore
 	public Task<UserAccount?> FindUserAsync(Guid userId, CancellationToken cancellationToken)
 		=> MetadataQuery().SingleOrDefaultAsync(user => user.Id == userId, cancellationToken);
 
-	public Task<bool> IsAgentActiveAsync(Guid ownerId, Guid agentId, CancellationToken cancellationToken)
-		=> database.Agents.AnyAsync(agent => agent.OwnerUserId == ownerId && agent.Id == agentId && agent.IsActive, cancellationToken);
+	public Task<string?> GetActiveAgentNameAsync(Guid ownerId, Guid agentId, long credentialVersion, CancellationToken cancellationToken)
+		=> database.Agents.Where(agent => agent.OwnerUserId == ownerId && agent.Id == agentId && agent.IsActive && agent.CredentialVersion == credentialVersion).Select(agent => (string?)agent.Name).SingleOrDefaultAsync(cancellationToken);
 
 	public Task<UserAccount?> FindUserForUpdateAsync(Guid userId, CancellationToken cancellationToken)
 		=> database.Users.SingleOrDefaultAsync(user => user.Id == userId, cancellationToken);
@@ -45,7 +45,27 @@ public sealed class EfAccountStore(PlanForgeDbContext database) : IAccountStore
 	{
 		try
 		{
+			var rotations = database.ChangeTracker.Entries<UserAccount>().Where(entry => entry.State == EntityState.Modified && entry.Property(user => user.SecurityVersion).IsModified).OrderBy(entry => entry.Entity.Id).ToList();
+			if (rotations.Count == 0)
+			{
+				await database.SaveChangesAsync(cancellationToken);
+				return;
+			}
+			await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
+			foreach (var entry in rotations)
+			{
+				long originalVersion = entry.Property(user => user.SecurityVersion).OriginalValue;
+				Guid ownerId = entry.Entity.Id;
+				int locked = await database.Users.Where(user => user.Id == ownerId && user.SecurityVersion == originalVersion)
+					.ExecuteUpdateAsync(setters => setters.SetProperty(user => user.SecurityVersion, user => user.SecurityVersion), cancellationToken);
+				if (locked != 1)
+					throw new DbUpdateConcurrencyException("The account changed concurrently.");
+				DateTimeOffset revokedAt = DateTimeOffset.UtcNow;
+				await database.AccessCredentials.Where(credential => credential.OwnerUserId == ownerId && credential.RevokedAt == null)
+					.ExecuteUpdateAsync(setters => setters.SetProperty(credential => credential.RevokedAt, (DateTimeOffset?)revokedAt), cancellationToken);
+			}
 			await database.SaveChangesAsync(cancellationToken);
+			await transaction.CommitAsync(cancellationToken);
 		}
 		catch (DbUpdateConcurrencyException)
 		{
@@ -60,6 +80,7 @@ public sealed class EfAccountStore(PlanForgeDbContext database) : IAccountStore
 			Email = user.Email,
 			NormalizedEmail = user.NormalizedEmail,
 			DisplayName = user.DisplayName,
+			Language = user.Language,
 			CreatedAt = user.CreatedAt,
 			IsActive = user.IsActive,
 			PasswordHash = user.PasswordHash,

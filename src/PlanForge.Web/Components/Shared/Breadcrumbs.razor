@@ -1,0 +1,26 @@
+@implements IDisposable
+@inject NavigationManager Navigation
+@inject PlanForge.Web.State.BreadcrumbState State
+<nav class="breadcrumb" aria-label='@T["Breadcrumb"]'>
+	<ol>
+		@if(Account) { <li>@T["Account"]</li> } else { <li><a href="/">@T["Workspace"]</a></li> }
+		@if(ProjectId is Guid id)
+		{
+			<li><a href="/projects">@T["Projects"]</a></li>
+			@if(State.SettingsOpen && State.ProjectId==id) { <li class="project-crumb"><a href="@($"/projects/{id}")" title="@ProjectName">@ProjectName</a></li><li aria-current="page">@T["Settings"]</li> }
+			else { <li class="project-crumb" aria-current="page" title="@ProjectName"><span class="crumb-label">@ProjectName</span></li> }
+		}
+		else { <li aria-current="page">@T[CurrentLabel]</li> }
+	</ol>
+</nav>
+@code {
+	private string Route => Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Trim('/');
+	private string CurrentLabel => Route switch { "settings"=>"Settings","projects"=>"Projects","library"=>"Library","agents"=>"Agents",_=>"Home" };
+	private bool Account => Route=="settings";
+	private Guid? ProjectId => Route.StartsWith("projects/",StringComparison.Ordinal) && Guid.TryParse(Route[9..],out Guid id) ? id : null;
+	private string ProjectName => State.ProjectId==ProjectId && State.ProjectName is not null ? State.ProjectName : T["Loading project…"].Value;
+	protected override void OnInitialized() { Navigation.LocationChanged+=OnLocationChanged; State.Changed+=OnStateChanged; }
+	private void OnLocationChanged(object? sender,LocationChangedEventArgs args) => OnStateChanged();
+	private void OnStateChanged() => _=InvokeAsync(StateHasChanged);
+	public void Dispose() { Navigation.LocationChanged-=OnLocationChanged; State.Changed-=OnStateChanged; }
+}
