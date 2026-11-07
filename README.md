@@ -1,29 +1,53 @@
 # PlanForge
 
-PlanForge is an MIT-licensed work-plan application for individuals and a few colleagues. Projects contain Phase → Subphase → Step hierarchies, decisions, inherited agent assignments and a reusable resource library.
+<img src="src/PlanForge.Web/wwwroot/favicon.svg" alt="PlanForge symbol" width="64" height="64" />
 
-Version: `0.1.0` — functional initial release. SQL, Functions API and Blazor Web are delivered through the existing ordered GitHub Actions pipeline. Controlled real HTTP/browser acceptance covers workflows, ownership, CSV, binary resources, notifications and responsive UI; every release also requires exact-SHA cloud readiness and persisted-session/data continuity, not merely a passing build. See [acceptance and limitations](docs/acceptance.md).
+Version **0.2.0** · MIT licensed
 
-## Implemented capabilities
+## About PlanForge
 
-- Public registration, persisted human sessions, account names/raster avatars and verified password changes that invalidate only that owner's sessions and agent tokens.
-- Owner-isolated projects with stable IDs/revisions, nested work plans, decisions, ordering/moves and inherit/override/explicitly-unassigned agent semantics.
-- Four closure workflows, in order: Planning Only; Local Changes + Manual Approval; Branch + Pull Request; Direct to Main. Work done is not human approval, merge or confirmed push.
-- Logical agents and revocable, renewable, hashed API tokens with a 30-day expiry. Newly issued values are shown once, never retrieved from SQL.
-- UTF-8 semicolon `work-plan.csv` snapshot exchange, stable IDs, atomic validation, explicit replacement for omissions and stale-revision 409 protection.
-- SQL resource binaries, independent project/phase-only links, Assigned/Orphan metadata, bounded uploads, safe downloads and confirmed manual cleanup. Plan deletion preserves Library files.
-- Complete project ZIPs with CSV, readable README, exact resource bytes and association manifest, including phase-only attachments without duplicates.
-- Blazor Interactive Server Home, Projects/Work Plan, Library, Agents and Account screens, cancellable persisted-event polling and actor-correct notifications. No fake agent-online indicators or external AI execution.
+PlanForge turns a project into a clear, structured work plan. It brings the work to do, the decisions still needed, the responsible logical agents and the supporting files into one focused workspace—without confusing progress with final approval.
 
-## Architecture
+### Keep the work understandable
 
-One .NET 10 solution separates Domain, Application, Contracts, Infrastructure, isolated Functions API and Blazor Web. Web consumes the API server-side and never references SQL infrastructure. Existing Azure SQL Basic, Functions Flex and App Service resources are reused; no additional cloud identity or paid service is required.
+- Organize projects into **Phases → Subphases → Steps**, with descriptions, statuses, ordering and stable identities.
+- Record decisions where they belong and keep unresolved decisions visible alongside the work.
+- Assign logical agents at the right level. Descendants can inherit an assignment, override it or remain explicitly unassigned.
+- Choose the completion workflow that fits the project: **Planning Only**, **Local Changes + Manual Approval**, **Branch + Pull Request**, or **Direct to Main**. Work done, human approval, a confirmed merge and a confirmed push are different milestones.
+- Follow actual completed-step progress and recent project activity. Open views refresh through lightweight polling rather than requiring a manual reload for every change.
 
-See [architecture](docs/architecture.md), [API](docs/api.md), [CSV contract](docs/work-plan-csv.md), [design system](docs/ui-design-system.md) and [deployment/recovery](docs/deployment.md).
+### Keep supporting material reusable
 
-## Local checks
+The **Library** stores files independently of a single plan. A resource can be linked directly to a project, to a Phase only, or reused through multiple associations. Removing a project or Phase removes its links—not the Library file itself. Assigned and orphan filters make the remaining relationships visible; permanent cleanup requires explicit confirmation.
 
-Use the .NET 10 SDK pinned by `global.json`:
+Export a plan as UTF-8 semicolon `work-plan.csv`, or download a project ZIP containing its plan, readable summary, resource-association manifest and linked files, including Phase-only resources. Imports preserve stable IDs, validate the whole snapshot and reject stale revisions instead of silently overwriting newer work.
+
+### Connect tools deliberately
+
+Logical agents identify assignments and authenticated activity; they are **not hosted AI workers**. Use an unlinked **Personal token** for a personal integration, or a specifically linked **Agent token** to attribute its requests to that identity. Tokens expire after 30 days, can be renewed or revoked, and are shown only when issued. PlanForge does not execute agents, connect to providers or verify GitHub merges and pushes automatically.
+
+Each account has its own projects, resources, agents and credentials. Account settings include a display name, raster avatar, password/session management and a persistent language preference. The interface currently supports **English only**; user-authored names and descriptions retain their original language.
+
+## Technology & Architecture
+
+PlanForge uses **C# and .NET 10**, **Blazor Interactive Server**, an **isolated-worker Azure Functions API**, **Entity Framework Core** and **Azure SQL**. The Web runs on Azure App Service. GitHub Actions tests and publishes through the existing ordered **Tests → SQL reconciliation → API → Web** pipeline, with path-aware skips when a component has not changed.
+
+One solution, `APP-WebApp-PlanForge.slnx`, separates responsibilities:
+
+| Project | Responsibility |
+|---|---|
+| `PlanForge.Domain` | Work-plan rules and domain entities |
+| `PlanForge.Application` | Authorized use cases and application boundaries |
+| `PlanForge.Contracts` | API request/response contracts |
+| `PlanForge.Infrastructure` | EF Core persistence, SQL transactions and migrations |
+| `PlanForge.Api` | HTTP authentication, validation and composition |
+| `PlanForge.Web` | Accessible UI and server-side API client/BFF; no direct SQL access |
+
+The API enforces authenticated ownership, human-only operations and revision concurrency. The Web keeps its opaque session in a protected HttpOnly cookie, uses antiforgery and does not put credentials in browser localStorage. Production cookies require HTTPS. The Web-to-API client admits only explicit approved destinations and does not automatically follow redirects. Passwords are robustly hashed; only token hashes are persisted. Resource binaries and raster avatars are stored separately within SQL.
+
+### Check the project locally
+
+Use the SDK pinned in `global.json`:
 
 ```sh
 dotnet restore APP-WebApp-PlanForge.slnx
@@ -34,22 +58,33 @@ python3 -m unittest discover -s tests/pipeline -v
 node --test tests/browser/ui.test.cjs
 ```
 
-The small JavaScript regression suite uses the built-in Node.js test runner (Node 22+), with no npm dependencies. Default tests are hermetic and use SQLite relational fixtures, handler transport, bUnit and ASP.NET TestServer where appropriate. They do not touch shared Azure SQL and are not substitutes for SQL Server/cloud/browser evidence. No local SQL Server, Docker, Azurite or global Functions tools are needed.
+The Node.js tests use the built-in runner with no npm dependencies. Default tests are hermetic: domain/application checks, relational SQLite fixtures, direct Functions-handler tests, bUnit and ASP.NET TestServer. They do not reset or contact shared Azure SQL and are not substitutes for separate SQL Server, real-browser and deployed-endpoint acceptance.
 
-## Run the Web locally
-
-Point Web at a configured API root, normally the already deployed HTTPS API, and use a free loopback port:
+To run the Web against an available API, first set `PLANFORGE_API_URL` to its approved HTTPS origin. The endpoint policy also permits a separately running Development API on loopback port 7601; arbitrary origins are rejected.
 
 ```sh
 export ASPNETCORE_ENVIRONMENT=Development
-export PlanForgeApi__BaseUrl=https://your-existing-api.azurewebsites.net
-dotnet run --project src/PlanForge.Web --configuration Release --urls http://127.0.0.1:7600
+export PlanForgeApi__BaseUrl="$PLANFORGE_API_URL"
+dotnet run --project src/PlanForge.Web --configuration Release --no-launch-profile --urls http://127.0.0.1:7600
 ```
 
-The placeholder API hostname must be replaced with the actual existing API URL. HTTP is allowed only for loopback development. Production cookies are Secure, HttpOnly and SameSite=Lax; browser forms use antiforgery. The opaque API session is protected inside the cookie, never placed in localStorage. Local key files are ignored under `.secrets/web-keys`; App Service uses its existing persistent HOME key directory. Never delete the key ring to deploy or restart.
+Keep credentials and local settings outside source control. Preserve the existing DataProtection key ring across Web restarts. Shared SQL migrations and Azure publication run only through trusted GitHub Actions; local development never requires resetting the shared database or provisioning another cloud service.
 
-Only trusted-main GitHub Actions may migrate shared SQL or publish Azure apps. Four workflows enforce exact-SHA tests → SQL reconciliation → API → Web, with path-aware no-change skips and superseded-publication guards. Publishing profiles and migration credentials remain existing repository secrets, not files/artifacts. Runtime credentials, private settings, test passwords and API tokens must never be committed.
+### Technical documentation and limits
 
-## License
+Read the [architecture](docs/architecture.md), [REST API](docs/api.md), [CSV contract](docs/work-plan-csv.md), [UI design system](docs/ui-design-system.md), [deployment and recovery](docs/deployment.md), and [acceptance and operational limits](docs/acceptance.md).
 
-MIT. See [LICENSE](LICENSE).
+Recent activity is bounded project-change history, not a complete perpetual audit system. Rate limits are per worker rather than distributed anti-DDoS protection. Selected contrast and responsive checks do not constitute independent WCAG certification. Cloud point-in-time recovery is an owner-operated disaster-recovery procedure, not an application undo button. Password-recovery email, Spanish translation and autonomous agent execution are not included.
+
+Licensed under [MIT](LICENSE).
+
+## What's New — v0.2.0
+
+- **Refined visual identity:** a single canonical geometric P-hammer symbol, dark near-neutral surfaces and restrained parchment accents, with distinct success, warning and danger states.
+- **Clearer navigation:** one account-settings entry through the bottom profile row, contextual clickable breadcrumbs with real project names, and consistent native-select arrow spacing. Project-specific Settings remain available.
+- **Localization foundation:** application-owned UI and safe error messages use English `.resx` resources. The account's English language preference persists; native browser validation and user content are unchanged.
+- **Safer agent lifecycle:** optional raster avatar upload during creation, honest recovery if that upload is not confirmed, explicit linked-token consequences for deactivation/reactivation, and confirmed physical deletion. Deletion removes the profile, avatar and every linked credential while preserving work, resources and the names in actual retained activity; affected assignments and revisions are reconciled transactionally.
+- **Clearer token management:** visible Personal/Agent types, bounded valid-token pages, collapsed paginated revoked/expired history, working renewal/revocation controls, and confirmed manual cleanup that preserves valid credentials and other accounts.
+- **Security hardening:** explicitly Secure production antiforgery cookies, exact Web-to-API destination checks, disabled automatic redirects, and generation/transaction gates covering concurrent credential issuance and revocation. These changes do not claim to determine or remove an external Safe Browsing classification.
+
+Release verification includes automated regressions, controlled SQL Server rollback/lifecycle checks, local and published browser flows, migration history, protected non-test data fingerprints, and continuity of prepublication sessions, credentials and resource bytes. No README screenshots are included in this version.
