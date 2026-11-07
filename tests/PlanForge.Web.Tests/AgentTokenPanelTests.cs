@@ -6,6 +6,19 @@ using PlanForge.Web.Components.Shared;
 
 public sealed class AgentTokenPanelTests
 {
+	[Theory]
+	[InlineData(false)]
+	[InlineData(true)]
+	public void ValidRow_WhenBusyChanges_TogglesNativeRenewAndRevokeControls(bool busy)
+	{
+		DateTimeOffset now = DateTimeOffset.UtcNow;
+		var credential = new AgentTokenProfile(Guid.NewGuid(), "Controlled integration", null, now, now.AddDays(1), null, null);
+		using var context = new ComponentTestContext(request => Task.FromResult(ComponentTestContext.Json(Array.Empty<AgentTokenProfile>())));
+		var row = context.Render<AgentTokenRow>(parameters => parameters.Add(component => component.Credential, credential).Add(component => component.Valid, true).Add(component => component.Busy, busy));
+		Assert.Equal(2, row.FindAll("button").Count);
+		Assert.All(row.FindAll("button"), button => Assert.Equal(busy, button.HasAttribute("disabled")));
+	}
+
 	[Fact]
 	public void List_WhenHistoryExists_ShowsValidTypesAndCollapsedPagedHistory()
 	{
