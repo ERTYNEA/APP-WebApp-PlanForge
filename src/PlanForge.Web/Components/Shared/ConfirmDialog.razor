@@ -2,6 +2,7 @@
 	<p class="user-text">@T[Description]</p>
 	<p class="warning">@T["This action is irreversible from PlanForge."]</p>
 	<label class="check-label"><input id="confirm-intent" type="checkbox" @bind="confirmed" /> @T["I understand and confirm this action."]</label>
+	<FormError />
 	<div class="form-actions"><button type="button" class="quiet" @onclick="Close" disabled="@Busy">@T["Cancel"]</button><button id="confirm-delete" class="danger" @onclick="Confirm" disabled="@(!confirmed || Busy)">@T[ConfirmLabel ?? Title]</button></div>
 </Modal>
 @code {

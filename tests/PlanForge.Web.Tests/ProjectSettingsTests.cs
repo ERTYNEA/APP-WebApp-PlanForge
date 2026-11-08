@@ -15,6 +15,7 @@ public sealed class ProjectSettingsTests
 		using var fixture = new ProjectPageFixture();
 		var page = fixture.Context.Render<ProjectDetail>(parameters => parameters.Add(component => component.Id, fixture.Project.Id));
 		if (!phaseOnly) await page.FindAll("button").Single(button => button.TextContent == "Settings").ClickAsync(new());
+		else await page.Find($"button[data-select-id='{fixture.Project.Items.Single(item => item.Kind == "Phase").Id}']").ClickAsync(new());
 		await page.FindAll("button").Single(button => button.TextContent.Contains(phaseOnly ? "Attach resources" : "Manage project resources", StringComparison.Ordinal)).ClickAsync(new());
 		var panel = page.FindComponent<PlanForge.Web.Components.Shared.ResourcePanel>();
 		Assert.Equal(fixture.Project.Id, panel.Instance.ProjectId);
@@ -28,6 +29,7 @@ public sealed class ProjectSettingsTests
 		var page = fixture.Context.Render<ProjectDetail>(parameters => parameters.Add(component => component.Id, fixture.Project.Id));
 		await page.FindAll("button").Single(button => button.TextContent == "Settings").ClickAsync(new());
 		page.Find("#project-name").Change("Renamed project");
+		Assert.DoesNotContain(page.FindAll("#project-settings-form label"), label => label.TextContent.StartsWith("Status", StringComparison.Ordinal));
 		page.Find("#project-workflow").Change("BranchPullRequest");
 		await page.Find("#project-settings-form").SubmitAsync();
 		var command = Assert.Single(fixture.Commands);

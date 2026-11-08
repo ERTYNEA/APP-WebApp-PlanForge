@@ -8,13 +8,20 @@
 	<h1>@T[IsRegister ? "Create your workspace" : "Welcome back"]<span class="accent">.</span></h1>
 	<p class="muted">@T[IsRegister ? "One place for projects, agents and the work ahead." : "Pick up where you left off. Your plans are waiting."]</p>
 	@if (Notice == "password-changed") { <div class="notice" role="status">@T["Your password was changed. Sign in again."]</div> }
-	@if (!string.IsNullOrEmpty(Error)) { <div class="notice error" role="alert">@Error</div> }
-	<form method="post" action="@(IsRegister ? "/account/register" : "/account/login")" data-enhance="false">
+
+	<form method="post" action="@(IsRegister ? "/account/register" : "/account/login")" data-enhance="false" data-registration="@(IsRegister ? "true" : null)">
 		<AntiforgeryToken />
 		@if (IsRegister) { <label>@T["Display name"]<input name="displayName" autocomplete="name" maxlength="80" required /></label> }
 		<label>@T["Email address"]<input type="email" name="email" autocomplete="username" maxlength="256" required /></label>
 		<label>@T["Password"]<input type="password" name="password" autocomplete="@(IsRegister ? "new-password" : "current-password")" minlength="12" maxlength="128" required /></label>
-		@if (IsRegister) { <small class="muted">@T["Use 12–128 characters. No external identity provider required."]</small> }
+		@if (IsRegister)
+		{
+			<label for="confirm-password">@T["Confirm password"]</label>
+			<input id="confirm-password" type="password" name="confirmPassword" autocomplete="new-password" minlength="12" maxlength="128" required aria-invalid="@(PasswordMismatch ? "true" : null)" aria-describedby="@(PasswordMismatch ? "password-confirmation-error" : null)" />
+			<div id="password-confirmation-error" class="field-error" role="alert" hidden="@(!PasswordMismatch)">@T["Passwords do not match."]</div>
+			<small class="muted">@T["Use 12–128 characters. No external identity provider required."]</small>
+		}
+		@if (!string.IsNullOrEmpty(Error)) { <div class="notice error" role="alert">@Error</div> }
 		<button class="primary full" type="submit">@T[IsRegister ? "Create account" : "Sign in"] <span>→</span></button>
 	</form>
 	<p class="auth-switch">@T[IsRegister ? "Already have an account?" : "New to PlanForge?"] <a href="@(IsRegister ? "/login" : "/register")" data-enhance-nav="false">@T[IsRegister ? "Sign in" : "Create an account"]</a></p>
@@ -23,5 +30,6 @@
 @code {
 	[SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
 	[SupplyParameterFromQuery(Name = "notice")] public string? Notice { get; set; }
+	[SupplyParameterFromQuery(Name = "passwordMismatch")] public bool PasswordMismatch { get; set; }
 	private bool IsRegister => new Uri(Navigation.Uri).AbsolutePath == "/register";
 }

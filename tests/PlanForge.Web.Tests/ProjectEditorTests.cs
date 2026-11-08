@@ -28,8 +28,8 @@ public sealed class ProjectEditorTests
 		});
 		var page = context.Render<ProjectDetail>(parameters => parameters.Add(component => component.Id, project.Id));
 		Guid parent = items.Single(item => item.Kind == parentKind).Id;
-		var parentNode = page.Find($"section[data-item-id='{parent}']");
-		await parentNode.QuerySelectorAll("button").Last(button => button.TextContent.Contains(buttonText, StringComparison.Ordinal)).ClickAsync(new());
+		await page.Find($"button[data-select-id='{parent}']").ClickAsync(new());
+		await page.Find("#plan-inspector").QuerySelectorAll("button").Single(button => button.TextContent.Contains(buttonText, StringComparison.Ordinal)).ClickAsync(new());
 		page.Find("#item-title").Change("Created child");
 		await page.Find("dialog form").SubmitAsync();
 		Assert.NotNull(sent);
@@ -62,10 +62,12 @@ public sealed class ProjectEditorTests
 			return ComponentTestContext.Json(path.EndsWith("/agents", StringComparison.Ordinal) ? (object)new[] { new AgentProfile(agent, "NEA", "", true, false) } : path.EndsWith("/resources", StringComparison.Ordinal) ? Array.Empty<ResourceProfile>() : path.EndsWith("/changes", StringComparison.Ordinal) ? new ProjectChangePage(project.Revision, 1, false, []) : project);
 		});
 		var page = context.Render<ProjectDetail>(parameters => parameters.Add(component => component.Id, project.Id));
+		await page.Find($"button[data-select-id='{(kind == "Decision" ? target.ParentId : target.Id)}']").ClickAsync(new());
 		await page.Find($"button[aria-label='Edit {kind.ToLowerInvariant()} {target.Title}']").ClickAsync(new());
 		page.Find("#item-title").Change("Edited title");
 		page.Find("#item-order").Change("2");
-		page.Find("#item-status").Change(kind == "Decision" ? "Decided" : "Completed");
+		if (kind is "Step" or "Decision") page.Find("#item-status").Change(kind == "Decision" ? "Decided" : "Completed");
+		else Assert.Empty(page.FindAll("#item-status"));
 		if (kind == "Decision") page.Find("#item-resolution").Change("Verified decision");
 		else
 		{
@@ -80,7 +82,7 @@ public sealed class ProjectEditorTests
 		Assert.Equal(target.ParentId, sent.ParentId);
 		Assert.Equal(2, sent.SortOrder);
 		Assert.Equal("Edited title", sent.Title);
-		Assert.Equal(kind == "Decision" ? "Decided" : "Completed", sent.Status);
+		Assert.Equal(kind == "Decision" ? "Decided" : kind == "Step" ? "Completed" : target.Status, sent.Status);
 		if (kind == "Step") Assert.Equal("OwnerApproved", sent.Evidence);
 		if (kind != "Decision") { Assert.Equal("Override", sent.AssignmentMode); Assert.Equal(agent, sent.AssignedAgentId); }
 		else Assert.Equal("Verified decision", sent.Resolution);

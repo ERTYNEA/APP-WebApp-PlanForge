@@ -194,7 +194,7 @@ public sealed class WorkPlanCsvCodecTests
 	[InlineData(2, 14, "")]
 	[InlineData(5, 15, "Invented")]
 	[InlineData(3, 13, "")]
-	[InlineData(4, 9, "Pending")]
+
 	[InlineData(4, 5, "44444444-4444-4444-4444-444444444444")]
 	[InlineData(5, 5, "99999999-9999-9999-9999-999999999999")]
 	[InlineData(5, 4, "11111111-1111-1111-1111-111111111111")]

@@ -292,7 +292,7 @@
 		<value>Merge confirmed</value>
 	</data>
 	<data name="NEXT IN FOCUS" xml:space="preserve">
-		<value>NEXT IN FOCUS</value>
+		<value>Next in focus</value>
 	</data>
 	<data name="Name" xml:space="preserve">
 		<value>Name</value>
@@ -763,4 +763,23 @@
   <data name="Sign in to continue." xml:space="preserve"><value>Sign in to continue.</value></data>
   <data name="The export was not downloaded. Reload before retrying." xml:space="preserve"><value>The export was not downloaded. Reload before retrying.</value></data>
   <data name="Deactivating revokes linked tokens. Reactivating requires a new token; unlinked personal tokens are not affected." xml:space="preserve"><value>Deactivating revokes linked tokens. Reactivating requires a new token; unlinked personal tokens are not affected.</value></data>
+  <data name="Status is calculated from the plan." xml:space="preserve"><value>Status is calculated from the plan.</value></data>
+  <data name="Passwords do not match." xml:space="preserve"><value>Passwords do not match.</value></data>
+  <data name="Confirm password" xml:space="preserve"><value>Confirm password</value></data>
+  <data name="Enter a display name of 1–80 characters." xml:space="preserve"><value>Enter a display name of 1–80 characters.</value></data>
+  <data name="Choose a supported language." xml:space="preserve"><value>Choose a supported language.</value></data>
+  <data name="Page {0} / {1}" xml:space="preserve"><value>Page {0} / {1}</value></data>
+  <data name="Token history pages" xml:space="preserve"><value>Token history pages</value></data>
+  <data name="Back to structure" xml:space="preserve"><value>Back to structure</value></data>
+  <data name="Decisions" xml:space="preserve"><value>Decisions</value></data>
+  <data name="Full description" xml:space="preserve"><value>Full description</value></data>
+  <data name="Pending decisions" xml:space="preserve"><value>Pending decisions</value></data>
+  <data name="Phases" xml:space="preserve"><value>Phases</value></data>
+  <data name="Selection details" xml:space="preserve"><value>Selection details</value></data>
+  <data name="Selection path" xml:space="preserve"><value>Selection path</value></data>
+  <data name="Pending steps" xml:space="preserve"><value>Pending steps</value></data>
+  <data name="Overall progress" xml:space="preserve"><value>Overall progress</value></data>
+  <data name="No pending or in-progress steps. Open a project to review its plan." xml:space="preserve"><value>No pending or in-progress steps. Open a project to review its plan.</value></data>
+  <data name="Recent project pages" xml:space="preserve"><value>Recent project pages</value></data>
+  <data name="All projects" xml:space="preserve"><value>All projects</value></data>
 </root>

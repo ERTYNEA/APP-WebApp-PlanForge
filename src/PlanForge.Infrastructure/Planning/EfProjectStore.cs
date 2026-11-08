@@ -9,6 +9,29 @@ using PlanForge.Infrastructure.Database;
 
 public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 {
+	public async Task<WorkspaceDashboard> GetDashboardAsync(Guid ownerId, CancellationToken cancellationToken)
+	{
+		await using var transaction = await database.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
+		int projectCount = await database.Projects.CountAsync(project => project.OwnerUserId == ownerId, cancellationToken);
+		IQueryable<WorkItem> steps = database.WorkItems.AsNoTracking().Where(item => item.Kind == WorkItemKind.Step && database.Projects.Any(project => project.Id == item.ProjectId && project.OwnerUserId == ownerId));
+		var counts = await steps.GroupBy(item => 1).Select(group => new
+		{
+			Total = group.Count(),
+			Pending = group.Count(item => item.Status == WorkStatus.Pending),
+			Completed = group.Count(item => item.Status == WorkStatus.Completed)
+		}).SingleOrDefaultAsync(cancellationToken);
+		List<FocusStep> next = await (from step in steps
+									  join project in database.Projects on step.ProjectId equals project.Id
+									  join subphase in database.WorkItems on step.ParentId equals (Guid?)subphase.Id
+									  join phase in database.WorkItems on subphase.ParentId equals (Guid?)phase.Id
+									  where project.OwnerUserId == ownerId && subphase.ProjectId == project.Id && phase.ProjectId == project.Id
+										  && subphase.Kind == WorkItemKind.Subphase && phase.Kind == WorkItemKind.Phase
+										  && (step.Status == WorkStatus.Pending || step.Status == WorkStatus.InProgress)
+									  orderby step.CreationOrder, step.Id.ToString()
+									  select new FocusStep(project.Id, project.Revision, project.Name, step.Id, step.Title, phase.Id, phase.Title, subphase.Id, subphase.Title, step.Status.ToString(), step.CreationOrder))
+			.Take(3).ToListAsync(cancellationToken);
+		return new WorkspaceDashboard(projectCount, counts?.Pending ?? 0, counts?.Completed ?? 0, counts?.Total ?? 0, next);
+	}
 	public async Task<ProjectSummaryPage> ListSummariesAsync(Guid ownerId, int skip, int take, CancellationToken cancellationToken)
 	{
 		await using var transaction = await database.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
@@ -70,6 +93,7 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 	public async Task CreateAsync(Project project, CancellationToken cancellationToken)
 	{
 		database.Projects.Add(project);
+		database.Entry(project).Property<long>("WriteRevision").CurrentValue = project.Revision;
 		await database.SaveChangesAsync(cancellationToken);
 		database.Entry(project).State = EntityState.Detached;
 	}
@@ -77,7 +101,7 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 	public async Task DeleteAsync(Guid ownerId, Guid projectId, long expectedRevision, CancellationToken cancellationToken)
 	{
 		await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
-		int locked = await database.Projects.Where(project => project.Id == projectId && project.OwnerUserId == ownerId && project.Revision == expectedRevision).ExecuteUpdateAsync(setters => setters.SetProperty(project => project.Revision, expectedRevision + 1), cancellationToken);
+		int locked = await database.Projects.Where(project => project.Id == projectId && project.OwnerUserId == ownerId && project.Revision == expectedRevision).ExecuteUpdateAsync(setters => setters.SetProperty(project => project.Revision, expectedRevision + 1).SetProperty(project => EF.Property<long>(project, "WriteRevision"), expectedRevision + 1), cancellationToken);
 		if (locked != 1)
 			throw new PlanForgeException(409, "The project changed. Reload before deleting.");
 		List<Guid> directResources = await database.ProjectResources.Where(link => link.ProjectId == projectId).Select(link => link.ResourceId).ToListAsync(cancellationToken);
@@ -108,23 +132,27 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 		Project project = aggregate.Project;
 		int changed = await database.Projects.Where(current => current.Id == project.Id && current.OwnerUserId == project.OwnerUserId && current.Revision == expectedRevision)
 			.ExecuteUpdateAsync(setters => setters.SetProperty(current => current.Revision, expectedRevision + 1)
+				.SetProperty(current => EF.Property<long>(current, "WriteRevision"), expectedRevision + 1)
 				.SetProperty(current => current.Name, project.Name).SetProperty(current => current.Description, project.Description)
 				.SetProperty(current => current.Workflow, project.Workflow).SetProperty(current => current.Status, project.Status)
 				.SetProperty(current => current.UpdatedAt, project.UpdatedAt), cancellationToken);
 		if (changed != 1)
 			throw new PlanForgeException(409, "The project changed. Reload before retrying.");
-		List<Guid> existing = await database.WorkItems.Where(item => item.ProjectId == project.Id).Select(item => item.Id).ToListAsync(cancellationToken);
-		foreach (WorkItem item in aggregate.Items)
-		{
-			if (existing.Contains(item.Id))
-				database.WorkItems.Update(item);
-			else
-				database.WorkItems.Add(item);
-		}
+		Dictionary<Guid, long> existing = await database.WorkItems.AsNoTracking().Where(item => item.ProjectId == project.Id).Select(item => new { item.Id, item.CreationOrder }).ToDictionaryAsync(item => item.Id, item => item.CreationOrder, cancellationToken);
 		var change = new ProjectChange { ProjectId = project.Id, Revision = expectedRevision + 1, ActorId = actorId, ActorKind = actorKind, ActorNameSnapshot = actorNameSnapshot, Action = action, CreatedAt = DateTime.UtcNow };
 		database.ProjectChanges.Add(change);
 		try
 		{
+			// The existing event identity supplies clock-independent creation age in this same transaction.
+			await database.SaveChangesAsync(cancellationToken);
+			foreach (WorkItem item in aggregate.Items)
+			{
+				item.CreationOrder = existing.TryGetValue(item.Id, out long order) ? order : change.Id;
+				if (existing.ContainsKey(item.Id))
+					database.WorkItems.Update(item);
+				else
+					database.WorkItems.Add(item);
+			}
 			await database.SaveChangesAsync(cancellationToken);
 			await RemoveItemsAsync(project.OwnerUserId, project.Id, aggregate.Items.Select(item => item.Id).ToList(), cancellationToken);
 			List<long> expired = await database.ProjectChanges.Where(entry => entry.ProjectId == project.Id).OrderByDescending(entry => entry.Id).Skip(100).Select(entry => entry.Id).ToListAsync(cancellationToken);

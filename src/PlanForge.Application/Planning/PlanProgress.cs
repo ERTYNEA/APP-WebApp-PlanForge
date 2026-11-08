@@ -24,17 +24,17 @@ public static class PlanProgress
 			{
 				PlanItem item = items[index];
 				if (item.Kind == kind)
-					items[index] = item with { Status = Derive(items.Where(child => child.ParentId == item.Id).ToList(), item.Status, pendingDecisionAncestors.Contains(item.Id)) };
+					items[index] = item with { Status = Derive(items.Where(child => child.ParentId == item.Id && child.Kind != "Decision").ToList(), pendingDecisionAncestors.Contains(item.Id)) };
 			}
-		return snapshot with { Items = items, Status = Derive(items.Where(item => item.Kind == "Phase").ToList(), snapshot.Status, pendingDecisionAncestors.Count > 0) };
+		return snapshot with { Items = items, Status = Derive(items.Where(item => item.Kind == "Phase").ToList(), pendingDecisionAncestors.Count > 0) };
 	}
 
-	private static string Derive(List<PlanItem> children, string requested, bool hasPendingDecision)
+	private static string Derive(List<PlanItem> children, bool hasPendingDecision)
 	{
-		if (requested == "Blocked" || children.Any(item => item.Status == "Blocked"))
+		if (children.Any(item => item.Status == "Blocked"))
 			return "Blocked";
-		if (!hasPendingDecision && children.Any(item => item.Kind != "Decision") && children.All(item => item.Status == (item.Kind == "Decision" ? "Decided" : "Completed")))
+		if (!hasPendingDecision && children.Count > 0 && children.All(item => item.Status == "Completed"))
 			return "Completed";
-		return requested == "InProgress" || children.Any(item => item.Status is "Completed" or "Decided" or "InProgress") ? "InProgress" : "Pending";
+		return children.Any(item => item.Status is "Completed" or "InProgress") ? "InProgress" : "Pending";
 	}
 }

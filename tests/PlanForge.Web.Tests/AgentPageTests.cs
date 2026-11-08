@@ -86,6 +86,7 @@ public sealed class AgentPageTests
 
 		Assert.Equal(1, created);
 		Assert.Contains("The agent was saved, but its avatar upload was not confirmed.", page.Markup);
+		Assert.NotNull(Assert.Single(page.FindAll("[role=alert]")).Closest(".avatar-editor"));
 		Assert.DoesNotContain("Agent saved", string.Join(" ", page.FindAll(".toast").Select(element => element.TextContent)));
 		Assert.Contains("Edit agent", page.Find("dialog").TextContent);
 		Assert.Equal("Partial agent", Assert.Single(page.FindAll(".agent-card h2")).TextContent);

@@ -6,6 +6,59 @@ using PlanForge.Web.Components.Shared;
 
 public sealed class AgentTokenPanelTests
 {
+	[Fact]
+	public async Task History_PaginatesExactTotalsAndCleansToEmptyWithoutResidualControlsAsync()
+	{
+		DateTimeOffset now = DateTimeOffset.UtcNow;
+		List<AgentTokenProfile> tokens = Enumerable.Range(1, 13).Select(index => new AgentTokenProfile(Guid.NewGuid(), "History " + index, null, now.AddDays(-40).AddMinutes(index), now.AddDays(-10), now.AddDays(-20), null)).ToList();
+		using var context = new ComponentTestContext(request =>
+		{
+			if (request.Method == HttpMethod.Post) { tokens.Clear(); return Task.FromResult(ComponentTestContext.Json(new { deletedCount = 13 })); }
+			return Task.FromResult(ComponentTestContext.Json(tokens));
+		});
+		var page = context.Render<AgentTokenPanel>();
+		Assert.Contains("pagination", page.Find("#history-token-pages").ClassList);
+		Assert.Contains("Page 1 / 2", page.Find("#history-token-pages").TextContent);
+		Assert.True(page.Find("#history-token-pages button:first-child").HasAttribute("disabled"));
+		await page.Find("#history-token-pages button:last-child").ClickAsync(new());
+		Assert.Equal(3, page.FindAll("#token-history .token-row").Count);
+		Assert.Contains("Page 2 / 2", page.Find("#history-token-pages").TextContent);
+		Assert.True(page.Find("#history-token-pages button:last-child").HasAttribute("disabled"));
+		await page.Find("#history-token-pages button:first-child").ClickAsync(new());
+		Assert.Equal(10, page.FindAll("#token-history .token-row").Count);
+		await page.FindAll("button").Single(button => button.TextContent == "Delete revoked tokens").ClickAsync(new());
+		page.Find("#confirm-intent").Change(true);
+		await page.Find("#confirm-delete").ClickAsync(new());
+		Assert.Empty(page.FindAll("#token-history, .valid-token-list, #history-token-pages"));
+		Assert.Contains("No agent tokens.", page.Markup);
+	}
+
+	[Fact]
+	public void HistoryOnly_DoesNotRenderEmptyValidListOrSinglePageControls()
+	{
+		DateTimeOffset now = DateTimeOffset.UtcNow;
+		var token = new AgentTokenProfile(Guid.NewGuid(), "Expired", null, now.AddDays(-40), now.AddDays(-10), null, null);
+		using var context = new ComponentTestContext(_ => Task.FromResult(ComponentTestContext.Json(new[] { token })));
+		var page = context.Render<AgentTokenPanel>();
+		Assert.Empty(page.FindAll(".valid-token-list"));
+		Assert.Empty(page.FindAll("#history-token-pages"));
+		Assert.DoesNotContain(page.FindAll("#token-history button"), button => button.TextContent is "Previous" or "Next");
+		Assert.Contains("danger", page.FindAll("button").Single(button => button.TextContent == "Delete revoked tokens").ClassList);
+	}
+
+	[Fact]
+	public async Task Renewal_FailureStaysOnItsCredentialRowAndDoesNotPolluteCreateFormAsync()
+	{
+		DateTimeOffset now = DateTimeOffset.UtcNow;
+		var credential = new AgentTokenProfile(Guid.NewGuid(), "Integration", null, now, now.AddDays(1), null, null);
+		using var context = new ComponentTestContext(request => Task.FromResult(request.Method == HttpMethod.Get ? ComponentTestContext.Json(new[] { credential }) : ComponentTestContext.Json(new { detail = "The renewal was not confirmed." }, System.Net.HttpStatusCode.BadRequest)));
+		var page = context.Render<AgentTokenPanel>();
+		await page.FindAll("button").Single(button => button.TextContent == "Renew").ClickAsync(new());
+		Assert.NotNull(Assert.Single(page.FindAll("[role=alert]")).Closest(".token-row"));
+		await page.FindAll("button").Single(button => button.TextContent == "+ Create token").ClickAsync(new());
+		Assert.Empty(page.FindAll("[role=alert]"));
+	}
+
 	[Theory]
 	[InlineData(false)]
 	[InlineData(true)]

@@ -68,6 +68,8 @@ jobs:
           assert not (root / 'PlanForge.Infrastructure.dll').exists(), 'Web must never include SQL infrastructure.'
           assert not any(p.name.lower() in {'local.settings.json', '.env', '.secrets'} or p.suffix.lower() in {'.pfx', '.pem', '.publishsettings'} for p in root.rglob('*'))
           print('Verified Blazor payload, design assets and no SQL/private credential files.')
+      - name: Record actual Web publication payload identity
+        run: python3 scripts/payload-fingerprint.py artifacts/web PlanForge.Web.dll
       - name: Reject superseded Web publication
         shell: python
         run: |

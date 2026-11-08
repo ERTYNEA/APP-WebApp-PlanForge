@@ -47,6 +47,7 @@ public sealed class NavigationTests
 		context.Services.GetRequiredService<NavigationManager>().NavigateTo("/settings");
 		var page = context.Render<MainLayout>();
 
+		Assert.Equal("-1", page.Find("#main-content").GetAttribute("tabindex"));
 		Assert.Single(page.FindAll("a[href='/settings']"));
 		Assert.Contains("active", page.Find(".account-link").ClassList);
 		Assert.Equal("page", page.Find(".account-link").GetAttribute("aria-current"));

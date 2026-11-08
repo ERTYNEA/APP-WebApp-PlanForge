@@ -2,69 +2,44 @@
 @page "/projects"
 @attribute [Authorize]
 @inherits ApiPage
-@using PlanForge.Web.State
 <PageTitle>@T[IsManagement ? "Projects" : "Home"] · PlanForge</PageTitle>
-<div class="page-heading"><div><div class="eyebrow">@T["YOUR WORKSPACE"]</div><h1>@T[IsManagement ? "Projects" : "Work in focus"]<span class="accent">.</span></h1><p class="muted">@T[IsManagement ? "Manage project settings, execution modes and linked resources." : "A clear view of what matters now, and what comes next."]</p></div><button class="primary" @onclick="() => showCreate = true" disabled="@Busy">+ @T["New project"]</button></div>
-<Feedback Error="@Error" Conflict="Conflict" Toasts="Toasts" />
-<div class="filter-bar"><input aria-label="@T["Search projects"]" placeholder="@T["Search projects…"]" @bind="search" @bind:event="oninput" /><select aria-label="@T["Filter projects by status"]" @bind="status"><option value="">@T["All statuses"]</option><option>@T["Pending"]</option><option>@T["InProgress"]</option><option>@T["Blocked"]</option><option>@T["Completed"]</option></select><select aria-label="@T["Sort projects"]" @bind="sort"><option value="updated">@T["Recently updated"]</option><option value="progress">@T["Progress"]</option><option value="name">@T["Name"]</option></select><button class="quiet" @onclick="() => ExecuteAsync(LoadAsync)" disabled="@Busy">@T["↻ Refresh"]</button></div>
+<div class="page-heading"><div><div class="eyebrow">@T["YOUR WORKSPACE"]</div><h1>@T[IsManagement ? "Projects" : "Work in focus"]<span class="accent">.</span></h1><p class="muted">@T[IsManagement ? "Manage project settings, execution modes and linked resources." : "A clear view of what matters now, and what comes next."]</p></div><button class="primary" @onclick="OnOpenCreate" disabled="@Busy">+ @T["New project"]</button></div>
+<Feedback Error="@(showCreate ? null : Error)" Conflict="Conflict" Toasts="Toasts" />
+@if (IsManagement)
+{
+	<div class="filter-bar"><input aria-label="@T["Search projects"]" placeholder="@T["Search projects…"]" @bind="search" @bind:event="oninput" /><select aria-label="@T["Filter projects by status"]" @bind="status"><option value="">@T["All statuses"]</option><option value="Pending">@T["Pending"]</option><option value="InProgress">@T["InProgress"]</option><option value="Blocked">@T["Blocked"]</option><option value="Completed">@T["Completed"]</option></select><select aria-label="@T["Sort projects"]" @bind="sort"><option value="updated">@T["Recently updated"]</option><option value="progress">@T["Progress"]</option><option value="name">@T["Name"]</option></select><button class="quiet" @onclick="() => ExecuteAsync(LoadAsync)" disabled="@Busy">@T["↻ Refresh"]</button></div>
+}
 @if (projects is null) { <p class="loading" role="status">@T["Loading your workspace…"]</p> }
-else if (projects.Count == 0) { <section class="empty-state"><span class="empty-icon">▦</span><h2>@T["No projects yet"]</h2><p class="muted">@T["Start with a project. Build a plan. Keep the next step clear."]</p><button class="primary" @onclick="() => showCreate = true">@T["Create your first project →"]</button></section> }
+else if (!IsManagement && dashboard is not null)
+{
+	<dl id="workspace-metrics" class="workspace-metrics"><div data-metric="projects"><dt>@T["Projects"]</dt><dd>@dashboard.ProjectCount</dd></div><div data-metric="pending"><dt>@T["Pending steps"]</dt><dd>@dashboard.PendingSteps</dd></div><div data-metric="progress"><dt>@T["Overall progress"]</dt><dd>@dashboard.Progress%</dd></div></dl>
+	<section id="next-in-focus"><div class="section-heading"><h2>@T["NEXT IN FOCUS"]</h2><button class="quiet" @onclick="() => ExecuteAsync(LoadAsync)" disabled="@Busy">@T["↻ Refresh"]</button></div>
+		@if (dashboard.NextSteps.Count == 0) { <p class="muted">@T["No pending or in-progress steps. Open a project to review its plan."]</p> }
+		else
+		{
+			<ol class="focus-list">@foreach (FocusStep step in dashboard.NextSteps) { <li class="focus-row" @key="step.StepId"><div><a href="@($"/projects/{step.ProjectId}?step={step.StepId}")">@step.StepName</a><p class="muted small user-text">@step.ProjectName · @step.PhaseName / @step.SubphaseName</p></div><span class="badge @PlanLabels.StatusClass(step.Status)">@T[step.Status]</span></li> }</ol>
+		}
+	</section>
+	<section><div class="section-heading"><h2>@T["Recently updated"]</h2><a href="/projects">@T["All projects"] →</a></div>
+		@if (projects.Count == 0) { <p class="empty-state">@T["No projects yet"]</p> }
+		else
+		{
+			<ol id="recent-projects" class="recent-projects">@foreach (ProjectSummary project in projects) { <li class="recent-project" @key="project.Id"><div><a href="@($"/projects/{project.Id}")">@project.Name</a><p class="muted small">@T["{0} / {1} steps",project.CompletedSteps,project.StepCount] · <time datetime="@project.UpdatedAt.ToString("O")">@project.UpdatedAt.ToLocalTime().ToString("MMM d, HH:mm")</time></p></div><span class="badge @PlanLabels.StatusClass(project.Status)">@T[project.Status]</span></li> }</ol>
+			@if (recentTotal > 25) { <nav id="recent-project-pages" class="pagination" aria-label='@T["Recent project pages"]'><button class="quiet" disabled="@(Busy || recentSkip == 0)" @onclick="OnPreviousAsync">@T["Previous"]</button><span>@T["Page {0} / {1}",recentSkip / 25 + 1,(recentTotal + 24) / 25]</span><button class="quiet" disabled="@(Busy || recentSkip + projects.Count >= recentTotal)" @onclick="OnNextAsync">@T["Next"]</button></nav> }
+		}
+	</section>
+}
+else if (projects.Count == 0)
+{
+	<section class="empty-state"><span class="empty-icon">▦</span><h2>@T["No projects yet"]</h2><p class="muted">@T["Start with a project. Build a plan. Keep the next step clear."]</p><button class="primary" @onclick="OnOpenCreate">@T["Create your first project →"]</button></section>
+}
 else
 {
-	<div class="section-heading"><span>@T[Filtered.Count() == 1 ? "{0} project" : "{0} projects", Filtered.Count()]</span><span class="muted small">@T["Updates automatically every 10 seconds"]</span></div>
-	<div class="project-grid">
-	@foreach (ProjectSummary project in Filtered)
-	{
-		<article class="project-card" @key="project.Id"><div class="card-top"><span class="project-icon">▦</span><span class="badge @PlanLabels.StatusClass(project.Status)">@T[project.Status]</span></div><h2><a href="@($"/projects/{project.Id}")">@project.Name</a></h2><p class="project-description">@project.Description</p><div class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</div><div class="progress-caption"><span>@T["{0} / {1} steps", project.CompletedSteps, project.StepCount]</span><strong>@project.Progress%</strong></div><progress value="@project.Progress" max="100" aria-label="@T["Project progress"]"></progress>
-		@if (snapshots.TryGetValue(project.Id,out ProjectSnapshot? snapshot))
-		{
-			PlanItem? active = PlanLabels.CurrentWork(snapshot) ?? snapshot.Items.FirstOrDefault(item => item.Kind == "Step" && item.Status == "Pending");
-			@if (active is not null) { <div class="current-work"><span class="eyebrow">@T["NEXT IN FOCUS"]</span><strong>@active.Title</strong><small>@Path(snapshot,active)</small>@if(snapshot.GetEffectiveAgentId(active.Id) is Guid id) { <span class="agent-tag">@if (agents.FirstOrDefault(agent=>agent.Id==id)?.HasAvatar == true) { <img src="@($"/files/agent-avatars/{id}")" alt="" /> } else { <span aria-hidden="true">◇</span> } @agents.FirstOrDefault(agent=>agent.Id==id)?.Name</span> }</div> }
-		}
-		<div class="card-footer"><small>@project.UpdatedAt.ToLocalTime().ToString("MMM d, HH:mm")</small><a href="@($"/projects/{project.Id}" + (IsManagement ? "?settings=true" : ""))">@T[IsManagement ? "Settings" : "Open work plan"] →</a></div></article>
-	}
-	</div>
+	<div class="section-heading"><span>@T[Filtered.Count() == 1 ? "{0} project" : "{0} projects",Filtered.Count()]</span><span class="muted small">@T["Updates automatically every 10 seconds"]</span></div>
+	<div class="project-grid">@foreach (ProjectSummary project in Filtered) { <article class="project-card" @key="project.Id"><div class="card-top"><span class="project-icon">▦</span><span class="badge @PlanLabels.StatusClass(project.Status)">@T[project.Status]</span></div><h2><a href="@($"/projects/{project.Id}")">@project.Name</a></h2><p class="project-description">@project.Description</p><div class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</div><div class="progress-caption"><span>@T["{0} / {1} steps",project.CompletedSteps,project.StepCount]</span><strong>@project.Progress%</strong></div><progress value="@project.Progress" max="100" aria-label='@T["Project progress"]'></progress><div class="card-footer"><small>@project.UpdatedAt.ToLocalTime().ToString("MMM d, HH:mm")</small><a href="@($"/projects/{project.Id}?settings=true")">@T["Settings"] →</a></div></article> }</div>
 	@if (!Filtered.Any()) { <p class="empty-state">@T["No projects match these filters."]</p> }
 }
 @if (showCreate)
 {
-	<Modal Title='@T["New project"]' Error="@Error" Close="() => showCreate = false"><form @onsubmit="OnCreateAsync" @onsubmit:preventDefault><label>@T["Name"]<input @bind="name" required maxlength="160" autofocus /></label><label>@T["Purpose"]<textarea @bind="description" maxlength="8000" rows="3"></textarea></label><label>@T["Development workflow"]<select @bind="workflow">@foreach(string value in PlanLabels.Workflows) { <option value="@value">@PlanLabels.Workflow(value)</option> }</select></label><p class="muted small">@T["This mode defines what evidence closes a step. You can change it later without silently completing pending work."]</p><div class="form-actions"><button type="button" class="quiet" @onclick="() => showCreate = false">@T["Cancel"]</button><button class="primary" disabled="@Busy">@T["Create project"]</button></div></form></Modal>
-}
-@code {
-	private List<ProjectSummary>? projects;
-	private List<AgentProfile> agents = [];
-	private readonly Dictionary<Guid,ProjectSnapshot> snapshots = [];
-	private readonly Dictionary<Guid,ProjectChangeCursor> cursors = [];
-	private string search="",status="",sort="updated",name="",description="",workflow="PlanningOnly";
-	private bool showCreate;
-	private bool IsManagement => new Uri(Navigation.Uri).AbsolutePath == "/projects";
-	private IEnumerable<ProjectSummary> Filtered => (projects ?? []).Where(project => (status.Length==0 || project.Status==status) && project.Name.Contains(search,StringComparison.OrdinalIgnoreCase)).OrderBy(project=>sort=="name" ? project.Name : "").ThenByDescending(project=>sort=="progress" ? project.Progress : 0).ThenByDescending(project=>project.UpdatedAt);
-	protected override async Task OnInitializedAsync() { await ExecuteAsync(LoadAsync); StartPolling(PollAsync); }
-	private async Task LoadAsync()
-	{
-		List<ProjectSummary> loaded=[];
-		ProjectSummaryPage page;
-		do { page=await Api.GetAsync<ProjectSummaryPage>($"projects/summary?skip={loaded.Count}&take=100",Token); loaded.AddRange(page.Items); } while(page.HasMore);
-		agents=await Api.GetAsync<List<AgentProfile>>("agents",Token);
-		foreach(ProjectSummary project in loaded)
-		{
-			if (!snapshots.TryGetValue(project.Id,out ProjectSnapshot? cached) || cached.Revision != project.Revision)
-				snapshots[project.Id]=await Api.GetAsync<ProjectSnapshot>($"projects/{project.Id}",Token);
-			if (!cursors.TryGetValue(project.Id,out ProjectChangeCursor? cursor)) { cursor=new(); cursors[project.Id]=cursor; }
-			var changes=await Api.GetAsync<ProjectChangePage>($"projects/{project.Id}/changes?after={cursor.After}",Token);
-			foreach(string message in cursor.Observe(changes)) Notify(message);
-		}
-		projects=loaded;
-		foreach(Guid id in snapshots.Keys.Where(id=>!loaded.Any(project=>project.Id==id)).ToList()) { snapshots.Remove(id); cursors.Remove(id); }
-	}
-	private Task PollAsync() => LoadAsync();
-	private Task OnCreateAsync() => ExecuteAsync(async () => { var project=await Api.SendAsync<ProjectSnapshot>(HttpMethod.Post,"projects",new CreateProjectRequest(name,description,workflow),cancellationToken:Token); showCreate=false; Navigation.NavigateTo($"/projects/{project.Id}"); });
-	private static string Path(ProjectSnapshot project, PlanItem item)
-	{
-		if (item.Kind == "Phase") return item.Title;
-		var sub=project.Items.FirstOrDefault(parent=>parent.Id==item.ParentId);
-		if (item.Kind == "Subphase") return sub?.Title ?? "";
-		var phase=project.Items.FirstOrDefault(parent=>parent.Id==sub?.ParentId);
-		return $"{phase?.Title} / {sub?.Title}";
-	}
+	<Modal Title='@T["New project"]' Error="@Error" Close="OnCloseCreate"><form @onsubmit="OnCreateAsync" @onsubmit:preventDefault><label>@T["Name"]<input @bind="name" required maxlength="160" autofocus /></label><label>@T["Purpose"]<textarea @bind="description" maxlength="8000" rows="3"></textarea></label><label>@T["Development workflow"]<select @bind="workflow">@foreach (string value in PlanLabels.Workflows) { <option value="@value">@PlanLabels.Workflow(value)</option> }</select></label><p class="muted small">@T["This mode defines what evidence closes a step. You can change it later without silently completing pending work."]</p><FormError Conflict="Conflict" /><div class="form-actions"><button type="button" class="quiet" @onclick="OnCloseCreate">@T["Cancel"]</button><button class="primary" disabled="@Busy">@T["Create project"]</button></div></form></Modal>
 }

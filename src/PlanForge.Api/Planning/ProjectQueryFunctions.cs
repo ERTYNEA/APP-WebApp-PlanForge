@@ -11,6 +11,15 @@ using System.Web;
 
 public sealed class ProjectQueryFunctions(ProjectService projects, AccountService accounts, HttpEndpointRunner runner)
 {
+	[Function("WorkspaceDashboard")]
+	public Task<HttpResponseData> DashboardAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "v1/projects/dashboard")] HttpRequestData request)
+		=> runner.ExecuteAsync(request, async () =>
+		{
+			AuthenticatedActor actor = await RequestActorReader.ReadAsync(request, accounts);
+			runner.AcquireBudget("api:" + actor.UserId, 600, TimeSpan.FromMinutes(1));
+			return await projects.GetDashboardAsync(actor, request.FunctionContext.CancellationToken);
+		});
+
 	[Function("ProjectChanges")]
 	public Task<HttpResponseData> ChangesAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "v1/projects/{projectId:guid}/changes")] HttpRequestData request, Guid projectId)
 		=> runner.ExecuteAsync(request, async () =>

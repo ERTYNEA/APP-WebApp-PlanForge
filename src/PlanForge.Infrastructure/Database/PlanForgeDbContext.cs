@@ -47,6 +47,8 @@ public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> opti
 			entity.Property(project => project.Name).HasMaxLength(160).IsRequired();
 			entity.Property(project => project.Description).HasMaxLength(8000).IsRequired();
 			entity.Property(project => project.Revision).IsConcurrencyToken();
+			entity.Property<long>("WriteRevision").HasDefaultValue(0L);
+			entity.ToTable("Projects", table => table.HasCheckConstraint("CK_Projects_WriteRevision", "[WriteRevision] = [Revision]"));
 			entity.HasIndex(project => new { project.OwnerUserId, project.UpdatedAt });
 			entity.HasOne<UserAccount>().WithMany().HasForeignKey(project => project.OwnerUserId).OnDelete(DeleteBehavior.Restrict);
 		});
@@ -54,6 +56,8 @@ public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> opti
 		{
 			entity.HasKey(item => item.Id);
 			entity.HasAlternateKey(item => new { item.ProjectId, item.Id });
+			entity.Property(item => item.CreationOrder).HasDefaultValue(0L);
+			entity.HasIndex(item => new { item.Kind, item.Status, item.CreationOrder, item.Id });
 			entity.Property(item => item.Title).HasMaxLength(240).IsRequired();
 			entity.Property(item => item.Description).HasMaxLength(16000).IsRequired();
 			entity.Property(item => item.Resolution).HasMaxLength(8000).IsRequired();

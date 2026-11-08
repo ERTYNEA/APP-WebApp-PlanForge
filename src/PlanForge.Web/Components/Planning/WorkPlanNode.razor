@@ -1,60 +1,29 @@
-<section class="plan-node @Item.Kind.ToLowerInvariant() @(Item.Status == "InProgress" ? "is-current" : "")" data-item-id="@Item.Id">
-	<div class="node-heading">
-		<button class="node-title" @onclick="() => Toggle.InvokeAsync(Item.Id)" aria-expanded="@Expanded.Contains(Item.Id).ToString().ToLowerInvariant()" aria-label='@T["Toggle {0} {1}",T[Item.Kind.ToLowerInvariant()],Item.Title]'>
-			<span class="node-chevron">@(Expanded.Contains(Item.Id) ? "⌄" : "›")</span><span class="node-kind">@(Item.Kind == "Decision" ? Item.Status == "Decided" ? "✓" : "⚠" : Item.Kind == "Phase" ? (Item.SortOrder + 1).ToString("00") : Item.Kind == "Subphase" ? "◈" : Item.Status == "Completed" ? "✓" : "○")</span><span>@Item.Title</span>
-		</button>
-		<div class="node-meta"><span class="badge @PlanLabels.StatusClass(Item.Status)">@PlanLabels.Status(Item, Snapshot.Workflow)</span>
-			@if (Snapshot.GetEffectiveAgentId(Item.Id) is Guid agentId) { <span class="agent-tag">@if (Agents.FirstOrDefault(agent => agent.Id == agentId)?.HasAvatar == true) { <img src="@($"/files/agent-avatars/{agentId}")" alt="" /> } else { <span aria-hidden="true">◇</span> } @AgentName(agentId)</span> }
-			<button class="quiet compact" @onclick="() => Edit.InvokeAsync(Item)" disabled="@Disabled" aria-label='@T["Edit {0} {1}",T[Item.Kind.ToLowerInvariant()],Item.Title]'>@T["Edit"]</button>
-		</div>
+<li class="plan-branch" data-item-id="@Item.Id">
+	<div class="node-heading plan-row @(SelectedId == Item.Id ? "is-selected" : "")">
+		@if (Children.Count > 0)
+		{
+			<button type="button" class="tree-expander" @onclick="() => Toggle.InvokeAsync(Item.Id)" aria-expanded="@Expanded.Contains(Item.Id).ToString().ToLowerInvariant()" aria-controls="@($"branch-{Item.Id}")" aria-label='@T["Toggle {0} {1}",T[Item.Kind.ToLowerInvariant()],Item.Title]'>@(Expanded.Contains(Item.Id) ? "⌄" : "›")</button>
+		}
+		else { <span class="tree-expander tree-leaf" aria-hidden="true">−</span> }
+		<button type="button" class="tree-select" data-select-id="@Item.Id" @onclick="() => Select.InvokeAsync(Item.Id)" aria-current="@(SelectedId == Item.Id ? "true" : null)" title="@Item.Title"><span class="node-kind" aria-hidden="true">@(Item.Kind == "Phase" ? "▱" : Item.Kind == "Subphase" ? "◈" : "○")</span><span class="tree-title">@Item.Title</span></button>
+		<span class="badge @PlanLabels.StatusClass(Item.Status)">@T[Item.Status]</span>
 	</div>
-	@if (!Expanded.Contains(Item.Id) && PendingDecisions > 0) { <span class="collapsed-decision warning">⚠ @PendingDecisions @T["pending decision(s)"]</span> }
-	@if (Expanded.Contains(Item.Id))
+	@if (Children.Count > 0 && Expanded.Contains(Item.Id))
 	{
-		<div class="node-body">
-			@if (!string.IsNullOrWhiteSpace(Item.Description)) { <p class="user-text muted">@Item.Description</p> }
-			@if (Item.Kind == "Decision" && !string.IsNullOrWhiteSpace(Item.Resolution)) { <p class="decision-resolution user-text">✓ @Item.Resolution</p> }
-			@if (Item.CompletedAt.HasValue) { <small class="muted">@T["Recorded"] @Item.CompletedAt.Value.ToLocalTime().ToString("g") · <span class="mono">@Item.CompletedBy?.ToString()[..8]</span> · @Item.Evidence</small> }
-			@foreach (PlanItem child in Snapshot.Items.Where(item => item.ParentId == Item.Id).OrderBy(item => item.Kind == "Decision" ? 1 : 0).ThenBy(item => item.SortOrder))
+		<ul id="@($"branch-{Item.Id}")" class="tree-children">
+			@foreach (PlanItem child in Children)
 			{
-				<WorkPlanNode @key="child.Id" Item="child" Snapshot="Snapshot" Agents="Agents" Resources="Resources" Expanded="Expanded" Toggle="Toggle" Edit="Edit" Add="Add" Delete="Delete" AttachResources="AttachResources" Disabled="Disabled" />
+				<WorkPlanNode @key="child.Id" Item="child" Snapshot="Snapshot" Expanded="Expanded" SelectedId="SelectedId" Toggle="Toggle" Select="Select" />
 			}
-			@if (Item.Kind == "Phase")
-			{
-				<div class="phase-resources"><span class="section-label">@T["Phase resources"]</span>
-				@foreach (ResourceProfile resource in Resources.Where(resource => resource.Phases.Any(link => link.PhaseId == Item.Id))) { <a class="resource-chip" href="@($"/files/resources/{resource.Id}")" data-enhance-nav="false">↧ @resource.FileName</a> }
-				<button class="quiet compact" @onclick="() => AttachResources.InvokeAsync(Item.Id)" disabled="@Disabled">+ @T["Attach resources"]</button></div>
-			}
-			<div class="node-actions">
-				@if (Item.Kind is "Phase" or "Subphase") { <button class="quiet compact" @onclick='() => Add.InvokeAsync((Item.Kind == "Phase" ? "Subphase" : "Step", Item.Id))' disabled="@Disabled">+ @T[Item.Kind == "Phase" ? "Add subphase" : "Add step"]</button> }
-				@if (Item.Kind != "Decision") { <button class="quiet compact" @onclick='() => Add.InvokeAsync(("Decision", Item.Id))' disabled="@Disabled">+ @T["Add decision"]</button> }
-				<button class="quiet danger-text compact" @onclick="() => Delete.InvokeAsync(Item)" disabled="@Disabled">@T["Delete"] @T[Item.Kind.ToLowerInvariant()]</button>
-			</div>
-		</div>
+		</ul>
 	}
-</section>
+</li>
 @code {
 	[Parameter, EditorRequired] public PlanItem Item { get; set; } = default!;
 	[Parameter, EditorRequired] public ProjectSnapshot Snapshot { get; set; } = default!;
-	[Parameter] public IReadOnlyList<AgentProfile> Agents { get; set; } = [];
-	[Parameter] public IReadOnlyList<ResourceProfile> Resources { get; set; } = [];
 	[Parameter] public HashSet<Guid> Expanded { get; set; } = [];
+	[Parameter] public Guid? SelectedId { get; set; }
+	[Parameter] public EventCallback<Guid> Select { get; set; }
 	[Parameter] public EventCallback<Guid> Toggle { get; set; }
-	[Parameter] public EventCallback<PlanItem> Edit { get; set; }
-	[Parameter] public EventCallback<PlanItem> Delete { get; set; }
-	[Parameter] public EventCallback<(string Kind, Guid? ParentId)> Add { get; set; }
-	[Parameter] public EventCallback<Guid> AttachResources { get; set; }
-	[Parameter] public bool Disabled { get; set; }
-	private string AgentName(Guid id) => Agents.FirstOrDefault(agent => agent.Id == id) is AgentProfile agent ? agent.Name + (agent.IsActive ? "" : " ("+T["Inactive"].Value+")") : T["Unassigned/Inactive"].Value;
-	private int PendingDecisions => Snapshot.Items.Count(item => item.Kind == "Decision" && item.Status == "Pending" && IsDescendant(item));
-	private bool IsDescendant(PlanItem item)
-	{
-		Guid? parent = item.ParentId;
-		for (int depth=0; depth<Snapshot.Items.Count && parent.HasValue; depth++)
-		{
-			if (parent == Item.Id) return true;
-			parent = Snapshot.Items.FirstOrDefault(candidate => candidate.Id == parent)?.ParentId;
-		}
-		return false;
-	}
+	private List<PlanItem> Children => Snapshot.Items.Where(item => item.ParentId == Item.Id && item.Kind != "Decision").OrderBy(item => item.SortOrder).ThenBy(item => item.Id).ToList();
 }

@@ -23,6 +23,7 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 builder.Services.AddScoped<ApiTransport>();
 builder.Services.AddScoped<PlanForgeClient>();
 builder.Services.AddScoped<PlanForge.Web.State.BreadcrumbState>();
+builder.Services.AddScoped<PlanForge.Web.State.PlanExplorerState>();
 var apiPolicy = new ApiEndpointPolicy(builder.Configuration["PlanForgeApi:BaseUrl"], builder.Environment.IsDevelopment());
 builder.Services.AddSingleton(apiPolicy);
 builder.Services.AddTransient<ApiDestinationGuard>();

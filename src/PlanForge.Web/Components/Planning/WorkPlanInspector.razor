@@ -1,0 +1,75 @@
+<section id="plan-inspector" class="panel plan-inspector" data-selected-id="@(Item?.Id ?? Snapshot.Id)" aria-label='@T["Selection details"]'>
+	<a class="inspector-back" href="#plan-structure">@T["Back to structure"] ↑</a>
+	<nav class="selection-path" aria-label='@T["Selection path"]'><ol><li><button type="button" class="quiet compact" @onclick="() => Select.InvokeAsync(null)">@Snapshot.Name</button></li>@foreach (PlanItem ancestor in Ancestors) { <li><button type="button" class="quiet compact" @onclick="() => Select.InvokeAsync(ancestor.Id)">@ancestor.Title</button></li> }</ol></nav>
+	<div class="section-label">@T[Item is null ? "Project" : Item.Kind.ToLowerInvariant()]</div>
+	<h3 class="user-text">@(Item?.Title ?? Snapshot.Name)</h3>
+	<span class="badge @PlanLabels.StatusClass(Item?.Status ?? Snapshot.Status)">@T[Item?.Status ?? Snapshot.Status]</span>
+	@if (Item is null || Item.Kind is "Phase" or "Subphase") { <p class="muted small calculated-status">@T["Status is calculated from the plan."]</p> }
+	@if (!string.IsNullOrWhiteSpace(Description))
+	{
+		@if (Description.Length <= 300) { <p class="user-text inspector-description">@Description</p> }
+		else { <p class="user-text inspector-description">@Description[..300]…</p><details><summary>@T["Full description"]</summary><p class="user-text">@Description</p></details> }
+	}
+	@if (Item is null)
+	{
+		<p class="muted small">@PlanLabels.Workflow(Snapshot.Workflow)</p><p>@T["{0}% complete",Snapshot.Progress] · @T["{0} / {1} steps",Snapshot.Items.Count(item => item.Kind == "Step" && item.Status == "Completed"),Snapshot.Items.Count(item => item.Kind == "Step")]</p>
+		<p class="muted small">@T["Phases"]: @Snapshot.Items.Count(item => item.Kind == "Phase") · @T["Pending decisions"]: @Snapshot.Items.Count(item => item.Kind == "Decision" && item.Status == "Pending")</p>
+		<button type="button" class="quiet" @onclick="ProjectSettings" disabled="@Disabled">@T["Project settings"]</button>
+	}
+	else
+	{
+		@if (Snapshot.GetEffectiveAgentId(Item.Id) is Guid agentId)
+		{
+			<p class="agent-tag">@if (Agents.FirstOrDefault(agent => agent.Id == agentId)?.HasAvatar == true) { <img src="@($"/files/agent-avatars/{agentId}")" alt="" /> } @AgentName(agentId)</p>
+		}
+		else { <p class="muted small">@T["Explicitly unassigned"]: @T[Item.AssignmentMode]</p> }
+		@if (Item.Kind == "Step") { <p class="muted small">@PlanLabels.Status(Item, Snapshot.Workflow) · @PlanLabels.Workflow(Snapshot.Workflow)</p> }
+		@if (Item.CompletedAt.HasValue) { <p class="muted small">@T["Recorded"] @Item.CompletedAt.Value.ToLocalTime().ToString("g") · @Item.Evidence · <span class="mono">@Item.CompletedBy</span></p> }
+		<div class="inspector-actions">
+			<button type="button" class="quiet" @onclick="() => Edit.InvokeAsync(Item)" disabled="@Disabled" aria-label='@T["Edit {0} {1}",T[Item.Kind.ToLowerInvariant()],Item.Title]'>@T["Edit"]</button>
+			@if (Item.Kind is "Phase" or "Subphase") { <button type="button" class="quiet" @onclick='() => Add.InvokeAsync((Item.Kind == "Phase" ? "Subphase" : "Step", Item.Id))' disabled="@Disabled">+ @T[Item.Kind == "Phase" ? "Add subphase" : "Add step"]</button> }
+			<button type="button" class="quiet" @onclick='() => Add.InvokeAsync(("Decision", Item.Id))' disabled="@Disabled">+ @T["Add decision"]</button>
+			<button type="button" class="danger" @onclick="() => Delete.InvokeAsync(Item)" disabled="@Disabled">@T["Delete"] @T[Item.Kind.ToLowerInvariant()]</button>
+		</div>
+		@if (Item.Kind == "Phase")
+		{
+			<div class="phase-resources"><span class="section-label">@T["Phase resources"]</span>@foreach (ResourceProfile resource in Resources.Where(resource => resource.Phases.Any(link => link.PhaseId == Item.Id))) { <a class="resource-chip" href="@($"/files/resources/{resource.Id}")" data-enhance-nav="false">↧ @resource.FileName</a> }<button type="button" class="quiet compact" @onclick="() => AttachResources.InvokeAsync(Item.Id)" disabled="@Disabled">+ @T["Attach resources"]</button></div>
+		}
+		<section class="inspector-decisions" aria-label='@T["Decisions"]'><h4>@T["Decisions"]</h4>
+			@foreach (PlanItem decision in Snapshot.Items.Where(item => item.Kind == "Decision" && item.ParentId == Item.Id).OrderBy(item => item.SortOrder))
+			{
+				<div class="inspector-decision"><strong class="user-text">@decision.Title</strong><span class="badge @PlanLabels.StatusClass(decision.Status)">@T[decision.Status]</span>@if (decision.Resolution.Length > 0) { <p class="decision-resolution user-text">@decision.Resolution</p> }<div class="toolbar"><button type="button" class="quiet compact" @onclick="() => Edit.InvokeAsync(decision)" disabled="@Disabled" aria-label='@T["Edit {0} {1}",T["decision"],decision.Title]'>@T["Edit"]</button><button type="button" class="danger compact" @onclick="() => Delete.InvokeAsync(decision)" disabled="@Disabled">@T["Delete"] @T["decision"]</button></div></div>
+			}
+		</section>
+	}
+</section>
+@code {
+	[Parameter, EditorRequired] public ProjectSnapshot Snapshot { get; set; } = default!;
+	[Parameter] public PlanItem? Item { get; set; }
+	[Parameter] public IReadOnlyList<AgentProfile> Agents { get; set; } = [];
+	[Parameter] public IReadOnlyList<ResourceProfile> Resources { get; set; } = [];
+	[Parameter] public EventCallback<PlanItem> Edit { get; set; }
+	[Parameter] public EventCallback<PlanItem> Delete { get; set; }
+	[Parameter] public EventCallback<(string Kind, Guid? ParentId)> Add { get; set; }
+	[Parameter] public EventCallback<Guid> AttachResources { get; set; }
+	[Parameter] public EventCallback ProjectSettings { get; set; }
+	[Parameter] public EventCallback<Guid?> Select { get; set; }
+	[Parameter] public bool Disabled { get; set; }
+	private string Description => Item?.Description ?? Snapshot.Description;
+	private string AgentName(Guid id) => Agents.FirstOrDefault(agent => agent.Id == id) is AgentProfile agent ? agent.Name + (agent.IsActive ? "" : " (" + T["Inactive"].Value + ")") : T["Unassigned/Inactive"].Value;
+	private IReadOnlyList<PlanItem> Ancestors
+	{
+		get
+		{
+			List<PlanItem> result = [];
+			Guid? parent = Item?.ParentId;
+			for (int depth = 0; depth < Snapshot.Items.Count && parent.HasValue; depth++)
+			{
+				PlanItem? item = Snapshot.Items.FirstOrDefault(item => item.Id == parent);
+				if (item is null) break;
+				result.Insert(0, item); parent = item.ParentId;
+			}
+			return result;
+		}
+	}
+}

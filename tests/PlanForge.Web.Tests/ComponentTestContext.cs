@@ -20,6 +20,7 @@ public sealed class ComponentTestContext : BunitContext
 		Services.AddScoped<ApiTransport>();
 		Services.AddScoped<PlanForgeClient>();
 		Services.AddScoped<PlanForge.Web.State.BreadcrumbState>();
+		Services.AddScoped<PlanForge.Web.State.PlanExplorerState>();
 	}
 
 	public static HttpResponseMessage Json(object value, HttpStatusCode status = HttpStatusCode.OK) => new(status) { Content = JsonContent.Create(value, value.GetType()) };

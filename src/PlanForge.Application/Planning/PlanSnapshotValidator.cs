@@ -30,12 +30,7 @@ public static class PlanSnapshotValidator
 				throw Invalid("Only an explicit agent override may contain an agent ID.");
 			if (kind == WorkItemKind.Decision && (item.Status is not ("Pending" or "Decided") || (item.Status == "Decided" && string.IsNullOrWhiteSpace(item.Resolution))))
 				throw Invalid("A decision is Pending or Decided, and a decided record requires a resolution.");
-			if (item.Status == "Completed" && kind is WorkItemKind.Phase or WorkItemKind.Subphase)
-			{
-				List<PlanItem> children = snapshot.Items.Where(child => child.ParentId == item.Id).ToList();
-				if (!children.Any(child => child.Kind != "Decision") || children.Any(child => child.Status != (child.Kind == "Decision" ? "Decided" : "Completed")))
-					throw Invalid("A Phase or Subphase cannot complete before its children and decisions.");
-			}
+
 			if (kind == WorkItemKind.Phase)
 			{
 				if (item.ParentId is not null || !snapshot.Items.Any(child => child.Kind == "Subphase" && child.ParentId == item.Id))

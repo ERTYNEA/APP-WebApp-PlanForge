@@ -103,4 +103,5 @@
   <data name="Use skip 0–100000 and take 1–100." xml:space="preserve"><value>Use skip 0–100000 and take 1–100.</value></data>
   <data name="The agent changed while issuing this token. Reload and issue a new token." xml:space="preserve"><value>The agent changed while issuing this token. Reload and issue a new token.</value></data>
   <data name="The account changed while issuing this token. Sign in again before retrying." xml:space="preserve"><value>The account changed while issuing this token. Sign in again before retrying.</value></data>
+  <data name="Resolve pending decisions on this step before completion." xml:space="preserve"><value>Resolve pending decisions on this step before completion.</value></data>
 </root>

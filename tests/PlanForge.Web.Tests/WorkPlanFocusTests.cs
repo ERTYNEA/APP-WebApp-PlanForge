@@ -1,5 +1,6 @@
 namespace PlanForge.Web.Tests;
 
+using Bunit;
 using PlanForge.Contracts.Planning;
 using PlanForge.Web.Components.Planning;
 
@@ -22,7 +23,7 @@ public sealed class WorkPlanFocusTests
 	}
 
 	[Fact]
-	public void Render_WhenAssignedAgentHasAvatar_ShowsAuthenticatedAvatarRoute()
+	public async Task Render_WhenAssignedAgentHasAvatar_ShowsAuthenticatedAvatarRouteAsync()
 	{
 		Guid phase = Guid.NewGuid(), subphase = Guid.NewGuid(), agent = Guid.NewGuid();
 		var snapshot = new ProjectSnapshot(Guid.NewGuid(), 1, "Project", "", "InProgress", "PlanningOnly", DateTimeOffset.UtcNow,
@@ -34,6 +35,8 @@ public sealed class WorkPlanFocusTests
 		var component = context.Render<WorkPlanTree>(parameters => parameters
 			.Add(tree => tree.Snapshot, snapshot)
 			.Add(tree => tree.Agents, new[] { new PlanForge.Contracts.Agents.AgentProfile(agent, "Agent", "", true, true) }));
+		Assert.Equal(snapshot.Id.ToString(), component.Find("#plan-inspector").GetAttribute("data-selected-id"));
+		await component.Find($"button[data-select-id='{phase}']").ClickAsync(new());
 		Assert.Contains($"/files/agent-avatars/{agent}", component.Markup);
 	}
 

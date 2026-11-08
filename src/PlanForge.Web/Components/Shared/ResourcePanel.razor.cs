@@ -40,7 +40,8 @@ public partial class ResourcePanel : ApiPage
 		deleteTitle = null; deleteResource = null; skip = 0;
 		await LoadAsync(); await Changed.InvokeAsync();
 	}, "Resource cleanup completed");
-	private string resourceTitle = "";
+	private string resourceTitle = "", resourceOperation = "";
+	private Task ExecuteResourceAsync(string operation, Func<Task> action, string? message = null) { resourceOperation = operation; return ExecuteAsync(action, message); }
 	private List<ProjectSummary> projectOptions = [];
 	private List<PlanItem> phaseOptions = [];
 	private string linkProject = "", linkPhase = "";
@@ -51,19 +52,19 @@ public partial class ResourcePanel : ApiPage
 		ProjectSummaryPage page;
 		do { page = await Api.GetAsync<ProjectSummaryPage>($"projects/summary?skip={projectOptions.Count}&take=100", Token); projectOptions.AddRange(page.Items); } while (page.HasMore);
 	});
-	private Task OnLinkProjectChangedAsync() => ExecuteAsync(async () =>
+	private Task OnLinkProjectChangedAsync() => ExecuteResourceAsync("association", async () =>
 	{
 		linkPhase = ""; phaseOptions = [];
 		if (Guid.TryParse(linkProject, out Guid id)) phaseOptions = (await Api.GetAsync<ProjectSnapshot>($"projects/{id}", Token)).Items.Where(item => item.Kind == "Phase").ToList();
 	});
 	private Task OnAddAssociationAsync() => Guid.TryParse(linkProject, out Guid projectId) ? OnAssociationAsync(true, Guid.TryParse(linkPhase, out Guid phaseId) ? null : projectId, Guid.TryParse(linkPhase, out phaseId) ? phaseId : null) : Task.CompletedTask;
-	private Task OnAssociationAsync(bool attach, Guid? projectId, Guid? phaseId) => ExecuteAsync(async () =>
+	private Task OnAssociationAsync(bool attach, Guid? projectId, Guid? phaseId) => ExecuteResourceAsync(attach ? "association" : "unlink", async () =>
 	{
 		if (managed is null) return;
 		managed = await Api.SendAsync<ResourceProfile>(HttpMethod.Post, $"resources/{managed.Id}/links", new ResourceLinkRequest(managed.Revision, attach, projectId, phaseId), cancellationToken: Token);
 		await LoadAsync(); await Changed.InvokeAsync();
 	}, "Resource links updated");
-	private Task OnSaveTitleAsync() => ExecuteAsync(async () =>
+	private Task OnSaveTitleAsync() => ExecuteResourceAsync("title", async () =>
 	{
 		if (managed is null) return;
 		managed = await Api.SendAsync<ResourceProfile>(HttpMethod.Put, $"resources/{managed.Id}", new ResourceMetadataRequest(managed.Revision, resourceTitle), cancellationToken: Token);

@@ -94,6 +94,8 @@ jobs:
           assert not list(root.rglob('local.settings.json'))
           assert not list(root.rglob('*.PublishSettings'))
           print('Verified Functions payload and endpoint metadata.')
+      - name: Record actual API publication payload identity
+        run: python3 scripts/payload-fingerprint.py artifacts/api PlanForge.Api.dll
       - name: Reject superseded API publication
         shell: python
         run: |

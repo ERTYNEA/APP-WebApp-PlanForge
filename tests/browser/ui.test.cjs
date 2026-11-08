@@ -6,6 +6,27 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, '../../src/PlanForge.Web/wwwroot/ui.js'), 'utf8');
 
+for (const openerSurvives of [true, false]) {
+	test(`removed modal restores keyboard focus (opener survives: ${openerSurvives})`, () => {
+		let callback, disconnected = false, focused;
+		const opener = { isConnected: openerSurvives, focus: () => { focused = 'opener'; } };
+		const selected = { focus: () => { focused = 'selected'; } };
+		const dialog = { open: false, isConnected: true, showModal() { this.open = true; } };
+		const context = { window: {}, document: { activeElement: opener, body: {}, querySelector: () => selected }, MutationObserver: class {
+			constructor(handler) { callback = handler; }
+			observe() {}
+			disconnect() { disconnected = true; }
+		} };
+		vm.runInNewContext(source, context);
+		context.window.planForge.openDialog(dialog);
+		assert.equal(typeof callback, 'function', 'Modal removal must have a focus-restoration observer');
+		dialog.isConnected = false;
+		callback();
+		assert.equal(focused, openerSurvives ? 'opener' : 'selected');
+		assert.equal(disconnected, true);
+	});
+}
+
 function contrast(first, second) {
 	const luminance = hex => {
 		const channels = hex.match(/[a-f\d]{2}/gi).map(value => parseInt(value, 16) / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
@@ -24,6 +45,33 @@ function declarations(selector) {
 	assert.ok(block, `Missing CSS rule ${selector}`);
 	return Object.fromEntries([...block[2].matchAll(/([\w-]+)\s*:\s*([^;]+);/g)].map(match => [match[1], match[2].trim()]));
 }
+
+test('secondary and field interaction states stay coherent without decorative card hover', () => {
+	assert.equal(declarations('.quiet:hover:not(:disabled)').background, 'var(--pf-control-hover)');
+	assert.equal(declarations('.quiet:hover:not(:disabled)')['border-color'], 'var(--pf-primary)');
+	assert.equal(declarations('.primary:hover:not(:disabled)')['border-color'], 'var(--pf-primary-hover)');
+	const field = declarations('input:not([type=checkbox]):not([type=radio]):focus, select:focus, textarea:focus');
+	assert.equal(field.background, 'var(--pf-input-focus)');
+	assert.equal(field['border-color'], 'var(--pf-primary)');
+	assert.equal(field.outline, '1px solid var(--pf-primary)');
+	assert.equal(field['outline-offset'], '0');
+	assert.equal(declarations('.sidebar nav a.active:hover').background, 'var(--pf-selection)');
+	const css = fs.readFileSync(cssPath, 'utf8');
+	assert.doesNotMatch(css, /\.project-card:hover\s*\{/);
+	assert.doesNotMatch(css, /button:hover:not\(:disabled\)\s*\{/);
+	assert.match(css, /input:-webkit-autofill/);
+});
+
+test('destructive plan and credential actions consume the existing common danger variant', () => {
+	const root = path.join(__dirname, '../../src/PlanForge.Web/Components');
+	for (const [file, marker] of [['Planning/WorkPlanInspector.razor', 'Delete'], ['Pages/ProjectDetail.razor', 'Clean completed phases'], ['Shared/AgentTokenRow.razor', 'Revoke'], ['Shared/AgentTokenPanel.razor', 'Delete revoked tokens']]) {
+		const markup = fs.readFileSync(path.join(root, file), 'utf8');
+		const buttons = markup.match(/<button\b[^>]*>[\s\S]*?<\/button>/g) || [];
+		const button = buttons.find(button => button.includes(`T["${marker}"]`));
+		assert.ok(button, `${file}: ${marker} exists`);
+		assert.match(button, /class="(?:[^\"]*\s)?danger(?:\s[^\"]*)?"/, `${file}: ${marker} uses common danger`);
+	}
+});
 
 function resolved(value) {
 	assert.ok(value, 'Missing CSS value');
@@ -62,7 +110,7 @@ test('approved palette is applied through semantic tokens with accessible text a
 		['.primary', 'background', '--pf-primary'],
 		['.primary:hover:not(:disabled)', 'background', '--pf-primary-hover'],
 		['.sidebar nav a.active', 'background', '--pf-selection'],
-		['.step.is-current', 'background', '--pf-selection'],
+		['.plan-row.is-selected', 'background', '--pf-selection'],
 		['.badge.active', 'color', '--pf-emerald']
 	])
 		assert.equal(declarations(selector)[property], `var(${token})`, `${selector} must consume ${token}`);
@@ -143,6 +191,64 @@ test('profile navigation reserves stable inner spacing and uses semantic active 
 	assert.equal(declarations('.account-link.active')['border-color'], 'var(--pf-primary)');
 	assert.equal(declarations('.breadcrumb')['min-width'], '0');
 	assert.equal(declarations('.breadcrumb ol')['list-style'], 'none');
+});
+
+test('inspector sticks only when its real height fits a wide viewport', () => {
+	let height = 300;
+	let sticky;
+	const inspector = { getBoundingClientRect: () => ({ height }), classList: { toggle: (name, enabled) => { assert.equal(name, 'can-stick'); sticky = enabled; } } };
+	const context = { window: {}, innerWidth: 1400, innerHeight: 800, document: { getElementById: () => inspector } };
+	vm.runInNewContext(source, context);
+	assert.equal(typeof context.window.planForge.layoutInspector, 'function');
+	context.window.planForge.layoutInspector();
+	assert.equal(sticky, true);
+	height = 900;
+	context.window.planForge.layoutInspector();
+	assert.equal(sticky, false);
+	height = 300; context.innerWidth = 800;
+	context.window.planForge.layoutInspector();
+	assert.equal(sticky, false);
+});
+
+test('manual narrow-layout selection reveals offscreen inspector without an inner scroll', () => {
+	let options;
+	const inspector = { classList: { contains: () => false }, getBoundingClientRect: () => ({ top: 1200, bottom: 1600 }), scrollIntoView: value => { options = value; } };
+	const context = { window: {}, innerHeight: 800, matchMedia: () => ({ matches: true }), document: { getElementById: () => inspector } };
+	vm.runInNewContext(source, context);
+	assert.equal(typeof context.window.planForge.revealInspector, 'function');
+	context.window.planForge.revealInspector();
+	assert.equal(options.block, 'start');
+	assert.equal(options.behavior, 'instant');
+});
+
+test('registration validates exact confirmation before submit without replacing native required messages', () => {
+	const context = { window: {} };
+	vm.runInNewContext(source, context);
+	let focused = false;
+	const password = { value: 'CorrectPassword123!' };
+	const confirmation = { value: 'CorrectPassword123! ', setAttribute: () => {}, removeAttribute: () => {}, focus: () => { focused = true; } };
+	const error = { hidden: true };
+	const form = { elements: { namedItem: name => name === 'password' ? password : confirmation }, querySelector: () => error };
+	assert.equal(typeof context.window.planForge.validateRegistration, 'function');
+	assert.equal(context.window.planForge.validateRegistration(form), false);
+	assert.equal(error.hidden, false);
+	assert.equal(focused, true);
+	confirmation.value = password.value;
+	assert.equal(context.window.planForge.validateRegistration(form), true);
+	assert.equal(error.hidden, true);
+	confirmation.value = '';
+	assert.equal(context.window.planForge.validateRegistration(form), false);
+});
+
+test('registration listeners enforce confirmation under the existing no-inline-script CSP', () => {
+	const listeners = {};
+	const context = { window: {}, document: { addEventListener: (name, callback) => { listeners[name] = callback; } } };
+	vm.runInNewContext(source, context);
+	assert.equal(typeof listeners.submit, 'function');
+	let prevented = false;
+	context.window.planForge.validateRegistration = () => false;
+	listeners.submit({ target: { matches: () => true }, preventDefault: () => { prevented = true; } });
+	assert.equal(prevented, true);
 });
 
 test('download rejects a login redirect instead of downloading HTML as a successful export', async () => {

@@ -8,6 +8,24 @@ using System.Net.Http.Json;
 
 public sealed class AccountPageTests
 {
+	[Theory]
+	[InlineData("display-name", "   ")]
+	[InlineData("account-language", "unsupported")]
+	public async Task Profile_InvalidFieldHasAssociatedLocalErrorAndDoesNotSendAsync(string field, string value)
+	{
+		int writes = 0;
+		var profile = new UserProfile(Guid.NewGuid(), "test@example.test", "test", DateTimeOffset.UtcNow);
+		using var context = new ComponentTestContext(request => { if (request.Method != HttpMethod.Get) writes++; return Task.FromResult(ComponentTestContext.Json(profile)); });
+		var page = context.Render<Settings>();
+		page.Find("#" + field).Change(value);
+		await page.Find("#profile-form").SubmitAsync();
+		Assert.Equal(0, writes);
+		var control = page.Find("#" + field);
+		Assert.Equal("true", control.GetAttribute("aria-invalid"));
+		Assert.NotEmpty(control.GetAttribute("aria-describedby") ?? "");
+		Assert.NotNull(page.Find("#" + control.GetAttribute("aria-describedby")));
+	}
+
 	[Fact]
 	public async Task Save_WhenNameChanged_UpdatesOnlyDisplayNameAndKeepsSeparateAvatarAsync()
 	{

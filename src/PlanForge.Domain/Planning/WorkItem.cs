@@ -4,6 +4,7 @@ namespace PlanForge.Domain.Planning;
 public sealed class WorkItem
 {
 	public Guid Id { get; set; } = Guid.NewGuid();
+	public long CreationOrder { get; set; }
 	public Guid? AssignedAgentId { get; set; }
 	public AssignmentMode AssignmentMode { get; set; }
 	public Guid? CompletedBy { get; set; }

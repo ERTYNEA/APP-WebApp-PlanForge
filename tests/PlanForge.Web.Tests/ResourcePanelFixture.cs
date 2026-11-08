@@ -12,6 +12,7 @@ public sealed class ResourcePanelFixture : IDisposable
 			string path = request.RequestUri!.AbsolutePath;
 			if (request.Method != HttpMethod.Get)
 			{
+				if (FailMutation) return ComponentTestContext.Json(new { detail = "Resource fixture failure." }, System.Net.HttpStatusCode.BadRequest);
 				Body = request.Content is null ? null : await request.Content.ReadAsByteArrayAsync();
 				Headers = request.Headers.ToDictionary(header => header.Key, header => header.Value.Single());
 				Commands.Add((request.Method.Method, path));
@@ -22,6 +23,7 @@ public sealed class ResourcePanelFixture : IDisposable
 		});
 	}
 	public Guid ProjectId { get; } = Guid.NewGuid();
+	public bool FailMutation { get; set; }
 	public Guid PhaseId { get; } = Guid.NewGuid();
 	public ComponentTestContext Context { get; }
 	public ResourceProfile Resource { get; set; } = new(Guid.NewGuid(), "Test file", "test.txt", "text/plain", 3, "hash", 2, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, [], []);

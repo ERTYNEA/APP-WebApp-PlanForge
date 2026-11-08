@@ -1,44 +1,18 @@
 @inject IJSRuntime JavaScript
-<div class="work-plan-tree" aria-label="@T["Hierarchical work plan"]">
-	@foreach (PlanItem phase in Snapshot.Items.Where(item => item.Kind == "Phase").OrderBy(item => item.SortOrder))
-	{
-		<WorkPlanNode @key="phase.Id" Item="phase" Snapshot="Snapshot" Agents="Agents" Resources="Resources" Expanded="expanded" Toggle="OnToggle" Edit="Edit" Add="Add" Delete="Delete" AttachResources="AttachResources" Disabled="Disabled" />
-	}
+@inject PlanForge.Web.State.PlanExplorerState NavigationState
+<div class="plan-explorer">
+	<nav id="plan-structure" class="work-plan-tree" aria-label="@T["Hierarchical work plan"]">
+		<ul class="tree-roots">
+			<li data-item-id="@Snapshot.Id">
+				<div class="node-heading plan-row @(SelectedId is null ? "is-selected" : "")"><span class="tree-expander tree-leaf" aria-hidden="true">▦</span><button type="button" class="tree-select" @onclick="() => OnManualSelect(null)" aria-current="@(SelectedId is null ? "true" : null)" title="@Snapshot.Name"><span class="tree-title">@Snapshot.Name</span></button><span class="badge @PlanLabels.StatusClass(Snapshot.Status)">@T[Snapshot.Status]</span></div>
+				<ul class="tree-children">
+					@foreach (PlanItem phase in Snapshot.Items.Where(item => item.Kind == "Phase").OrderBy(item => item.SortOrder).ThenBy(item => item.Id))
+					{
+						<WorkPlanNode @key="phase.Id" Item="phase" Snapshot="Snapshot" Expanded="Expanded" SelectedId="SelectedId" Toggle="OnToggle" Select="id => OnManualSelect(id)" />
+					}
+				</ul>
+			</li>
+		</ul>
+	</nav>
+	<WorkPlanInspector Snapshot="Snapshot" Item="Selected" Agents="Agents" Resources="Resources" Edit="Edit" Add="Add" Delete="Delete" AttachResources="AttachResources" ProjectSettings="ProjectSettings" Select="OnManualSelect" Disabled="Disabled" />
 </div>
-@code {
-	[Parameter, EditorRequired] public ProjectSnapshot Snapshot { get; set; } = default!;
-	[Parameter] public IReadOnlyList<AgentProfile> Agents { get; set; } = [];
-	[Parameter] public IReadOnlyList<ResourceProfile> Resources { get; set; } = [];
-	[Parameter] public EventCallback<PlanItem> Edit { get; set; }
-	[Parameter] public EventCallback<PlanItem> Delete { get; set; }
-	[Parameter] public EventCallback<(string Kind, Guid? ParentId)> Add { get; set; }
-	[Parameter] public EventCallback<Guid> AttachResources { get; set; }
-	[Parameter] public bool Disabled { get; set; }
-	private readonly HashSet<Guid> expanded = [];
-	private Guid initializedProject;
-	private Guid? activeId;
-	private bool revealCurrent;
-	protected override async Task OnAfterRenderAsync(bool firstRender)
-	{
-		if (!revealCurrent || !activeId.HasValue) return;
-		revealCurrent = false;
-		await JavaScript.InvokeVoidAsync("planForge.revealCurrentWork", activeId.Value.ToString());
-	}
-	protected override void OnParametersSet()
-	{
-		if (initializedProject != Snapshot.Id) { expanded.Clear(); initializedProject = Snapshot.Id; activeId = null; }
-		PlanItem? active = PlanLabels.CurrentWork(Snapshot);
-		if (active is not null && activeId != active.Id)
-		{
-			activeId = active.Id;
-			revealCurrent = true;
-			Guid? id = active.Id;
-			for (int depth=0; depth<Snapshot.Items.Count && id.HasValue; depth++)
-			{
-				expanded.Add(id.Value);
-				id = Snapshot.Items.FirstOrDefault(item => item.Id == id)?.ParentId;
-			}
-		}
-	}
-	private void OnToggle(Guid id) { if (!expanded.Add(id)) expanded.Remove(id); }
-}

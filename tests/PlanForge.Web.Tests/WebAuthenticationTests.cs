@@ -61,10 +61,11 @@ public sealed class WebAuthenticationTests
 		string home = await client.GetStringAsync("/");
 		Assert.Contains("No projects yet", home);
 		Assert.Contains("New project", home);
-		Assert.Contains("Search projects", home);
+		Assert.DoesNotContain("Search projects", home);
+		Assert.Contains("Search projects", await client.GetStringAsync("/projects"));
 		Assert.DoesNotContain(LoginApiHandler.Token, home);
 		Assert.DoesNotContain("v@ProductVersion", home);
-		Assert.Contains("v0.2.0", home);
+		Assert.Contains("v0.3.0", home);
 	}
 
 	private sealed class LoginApiHandler : HttpMessageHandler
@@ -73,7 +74,7 @@ public sealed class WebAuthenticationTests
 		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 		{
 			var user = new UserProfile(Guid.Parse("11111111-1111-1111-1111-111111111111"), "test@example.test", "test", DateTimeOffset.UtcNow);
-			object body = request.RequestUri!.AbsolutePath.EndsWith("auth/login") ? new AccessGrant(Token, DateTimeOffset.UtcNow.AddDays(7), user) : request.RequestUri.AbsolutePath.EndsWith("auth/session") ? user : request.RequestUri.AbsolutePath.EndsWith("agents") ? Array.Empty<PlanForge.Contracts.Agents.AgentProfile>() : new { items = Array.Empty<object>(), total = 0, skip = 0, take = 50, hasMore = false };
+			object body = request.RequestUri!.AbsolutePath.EndsWith("auth/login") ? new AccessGrant(Token, DateTimeOffset.UtcNow.AddDays(7), user) : request.RequestUri.AbsolutePath.EndsWith("auth/session") ? user : request.RequestUri.AbsolutePath.EndsWith("dashboard") ? new PlanForge.Contracts.Planning.WorkspaceDashboard(0, 0, 0, 0, []) : request.RequestUri.AbsolutePath.EndsWith("agents") ? Array.Empty<PlanForge.Contracts.Agents.AgentProfile>() : new { items = Array.Empty<object>(), total = 0, skip = 0, take = 50, hasMore = false };
 			return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(body, body.GetType()) });
 		}
 	}
@@ -89,7 +90,7 @@ public sealed class WebAuthenticationTests
 		Assert.Contains("__RequestVerificationToken", html);
 		Assert.Contains("/account/login", html);
 		Assert.Contains("type=\"password\"", html);
-		Assert.Contains("0.2.0", html);
+		Assert.Contains("0.3.0", html);
 	}
 
 	[Fact]

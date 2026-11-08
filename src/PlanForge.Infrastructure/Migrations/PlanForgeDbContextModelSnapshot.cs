@@ -299,11 +299,19 @@ namespace PlanForge.Infrastructure.Migrations
                     b.Property<int>("Workflow")
                         .HasColumnType("int");
 
+                    b.Property<long>("WriteRevision")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L);
+
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerUserId", "UpdatedAt");
 
-                    b.ToTable("Projects");
+                    b.ToTable("Projects", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Projects_WriteRevision", "[WriteRevision] = [Revision]");
+                        });
                 });
 
             modelBuilder.Entity("PlanForge.Domain.Planning.ProjectChange", b =>
@@ -365,6 +373,11 @@ namespace PlanForge.Infrastructure.Migrations
                     b.Property<Guid?>("CompletedBy")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<long>("CreationOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L);
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(16000)
@@ -406,6 +419,8 @@ namespace PlanForge.Infrastructure.Migrations
                     b.HasIndex("AssignedAgentId");
 
                     b.HasIndex("ProjectId", "ParentId");
+
+                    b.HasIndex("Kind", "Status", "CreationOrder", "Id");
 
                     b.ToTable("WorkItems");
                 });

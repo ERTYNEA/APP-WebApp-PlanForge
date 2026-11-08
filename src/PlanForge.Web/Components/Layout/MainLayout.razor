@@ -20,7 +20,7 @@
 	@if(menuOpen) { <button class="nav-backdrop" aria-label="@T["Close navigation"]" @onclick="() => menuOpen=false"></button> }
 	<div class="main-shell">
 		<header class="topbar"><button class="mobile-menu quiet" @onclick="() => menuOpen = !menuOpen" aria-label="@T["Toggle navigation"]" aria-expanded="@menuOpen.ToString().ToLowerInvariant()">☰</button><Breadcrumbs /></header>
-		<main id="main-content">@Body</main>
+		<main id="main-content" tabindex="-1">@Body</main>
 		<div id="blazor-error-ui" role="alert">@T["The connection was interrupted."] <a href="" class="reload">@T["Reload"]</a><button class="dismiss" aria-label="@T["Dismiss"]">×</button></div>
 	</div>
 </div>

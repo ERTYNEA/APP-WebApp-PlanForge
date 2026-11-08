@@ -1,0 +1,12 @@
+@if (!string.IsNullOrWhiteSpace(EffectiveMessage))
+{
+	<div id="@Id" class="notice error form-error" role="alert">@EffectiveMessage @if (Conflict) { <strong>@T["Reload and reconcile. No changes were overwritten."]</strong> }</div>
+}
+@code {
+	[CascadingParameter(Name = "ModalError")] public string? ModalError { get; set; }
+	[Parameter] public string? Message { get; set; }
+	[Parameter] public string? Id { get; set; }
+	[Parameter] public bool Conflict { get; set; }
+	[Parameter] public bool UseModalError { get; set; } = true;
+	private string? EffectiveMessage => UseModalError ? Message ?? ModalError : Message;
+}

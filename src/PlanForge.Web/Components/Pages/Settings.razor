@@ -3,19 +3,27 @@
 @inherits ApiPage
 <PageTitle>@T["Account settings"] · PlanForge</PageTitle>
 <div class="page-heading"><div><div class="eyebrow">@T["Personal workspace"]</div><h1>@T["Account settings"]<span class="accent">.</span></h1><p class="muted">@T["Your identity, security and application information. No infrastructure credentials are exposed."]</p></div></div>
-<Feedback Error="@(Error ?? QueryError)" Toasts="Toasts" />
+<Feedback Error="@(profile is null ? Error : null)" Toasts="Toasts" />
 @if(profile is null) { <p role="status">@T["Loading account…"]</p> }
 else
 {
-	<div class="settings-grid"><section class="panel"><h2>@T["Profile"]</h2><p class="muted">@profile.Email</p><form id="profile-form" @onsubmit="OnSaveAsync" @onsubmit:preventDefault><label>@T["Display name"]<input id="display-name" @bind="displayName" required maxlength="80" autocomplete="name" /></label><label for="account-language">@T["Language"]</label><select id="account-language" @bind="language"><option value="en">@T["English"]</option></select><div class="form-actions"><button class="primary" disabled="@Busy">@T["Save profile"]</button></div></form><AvatarEditor ApiPath="users/me/avatar" ImageUrl="@($"/files/user-avatar/{profile.Id}")" HasAvatar="profile.HasAvatar" Changed="LoadAsync" /></section>
-	<section class="panel"><h2>@T["Password & sessions"]</h2><p class="muted">@T["Changing your password signs out every human session and revokes all your agent tokens. Other accounts are unaffected."]</p><form method="post" action="/account/password" data-enhance="false"><AntiforgeryToken /><label>@T["Current password"]<input type="password" name="currentPassword" required maxlength="128" autocomplete="current-password" /></label><label>@T["New password"]<input type="password" name="newPassword" required minlength="12" maxlength="128" autocomplete="new-password" /></label><label>@T["Confirm new password"]<input type="password" name="confirmPassword" required minlength="12" maxlength="128" autocomplete="new-password" /></label><div class="form-actions"><button class="danger" type="submit">@T["Change password & sign out"]</button></div></form></section>
+	<div class="settings-grid"><section class="panel"><h2>@T["Profile"]</h2><p class="muted">@profile.Email</p><form id="profile-form" @onsubmit="OnSaveAsync" @onsubmit:preventDefault><label>@T["Display name"]<input id="display-name" @bind="displayName" @bind:after="() => { nameError = null; ClearFeedback(); }" required maxlength="80" autocomplete="name" aria-invalid="@(nameError is null ? null : "true")" aria-describedby="@(nameError is null ? null : "display-name-error")" /></label>@if (nameError is not null) { <p id="display-name-error" class="field-error" role="alert">@nameError</p> }<label for="account-language">@T["Language"]</label><select id="account-language" @bind="language" @bind:after="() => { languageError = null; ClearFeedback(); }" aria-invalid="@(languageError is null ? null : "true")" aria-describedby="@(languageError is null ? null : "account-language-error")"><option value="en">@T["English"]</option></select>@if (languageError is not null) { <p id="account-language-error" class="field-error" role="alert">@languageError</p> }<FormError Message="@Error" UseModalError="false" Conflict="Conflict" /><div class="form-actions"><button class="primary" disabled="@Busy">@T["Save profile"]</button></div></form><AvatarEditor ApiPath="users/me/avatar" ImageUrl="@($"/files/user-avatar/{profile.Id}")" HasAvatar="profile.HasAvatar" Changed="LoadAsync" /></section>
+	<section class="panel"><h2>@T["Password & sessions"]</h2><p class="muted">@T["Changing your password signs out every human session and revokes all your agent tokens. Other accounts are unaffected."]</p><form method="post" action="/account/password" data-enhance="false"><AntiforgeryToken /><label>@T["Current password"]<input type="password" name="currentPassword" required maxlength="128" autocomplete="current-password" /></label><label>@T["New password"]<input type="password" name="newPassword" required minlength="12" maxlength="128" autocomplete="new-password" /></label><label>@T["Confirm new password"]<input type="password" name="confirmPassword" required minlength="12" maxlength="128" autocomplete="new-password" /></label><FormError Message="@QueryError" UseModalError="false" /><div class="form-actions"><button class="danger" type="submit">@T["Change password & sign out"]</button></div></form></section>
 	<section class="panel"><h2>@T["About PlanForge"]</h2><p>@T["Version"] <span class="mono">@ProductVersion.Informational</span></p><p class="muted">@T["Projects, hierarchical work plans and a reusable resource library. API access uses private, revocable 30-day agent credentials."]</p><a href="/agents">@T["Manage agents & tokens →"]</a></section></div>
 }
 @code {
 	[SupplyParameterFromQuery(Name="error")] public string? QueryError { get; set; }
 	private UserProfile? profile;
 	private string displayName="",language="en";
+	private string? nameError, languageError;
 	protected override Task OnInitializedAsync() => ExecuteAsync(LoadAsync);
 	private async Task LoadAsync() { profile=await Api.GetAsync<UserProfile>("users/me",Token); displayName=profile.DisplayName; language=profile.Language; }
-	private Task OnSaveAsync() => ExecuteAsync(async () => { profile=await Api.SendAsync<UserProfile>(HttpMethod.Put,"users/me",new UpdateProfileRequest(displayName,language),cancellationToken:Token); },"Profile updated");
+	private Task OnSaveAsync()
+	{
+		ClearFeedback();
+		nameError = string.IsNullOrWhiteSpace(displayName) || displayName.Length > 80 ? T["Enter a display name of 1–80 characters."].Value : null;
+		languageError = language != "en" ? T["Choose a supported language."].Value : null;
+		if (nameError is not null || languageError is not null) return Task.CompletedTask;
+		return ExecuteAsync(async () => { profile=await Api.SendAsync<UserProfile>(HttpMethod.Put,"users/me",new UpdateProfileRequest(displayName,language),cancellationToken:Token); },"Profile updated");
+	}
 }

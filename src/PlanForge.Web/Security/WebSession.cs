@@ -37,6 +37,8 @@ public static class WebSession
 		string errorPath = operation == "password" ? "settings" : operation;
 		try
 		{
+			if (operation == "register" && (string.IsNullOrEmpty(form["confirmPassword"].ToString()) || !string.Equals(form["password"].ToString(), form["confirmPassword"].ToString(), StringComparison.Ordinal)))
+				return Results.LocalRedirect("/register?passwordMismatch=true");
 			if (operation == "password")
 			{
 				string? token = context.User.FindFirst(TokenClaim)?.Value;

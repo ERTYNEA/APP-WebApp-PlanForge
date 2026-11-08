@@ -16,7 +16,7 @@ public sealed class PlanPersistenceTests
 	[InlineData("invalid-status")]
 	[InlineData("duplicate-order")]
 	[InlineData("blank-title")]
-	[InlineData("premature-parent-completion")]
+
 	[InlineData("decision-without-resolution")]
 	[InlineData("invalid-evidence")]
 	public async Task SaveAsync_WhenInvalidSnapshot_RejectsBeforeAnyWriteAsync(string invalid)
@@ -37,7 +37,7 @@ public sealed class PlanPersistenceTests
 			case "invalid-status": items[1] = items[1] with { Status = "93" }; break;
 			case "duplicate-order": items.Add(items[1] with { Id = Guid.NewGuid() }); break;
 			case "blank-title": items[1] = items[1] with { Title = " " }; break;
-			case "premature-parent-completion": items[0] = items[0] with { Status = "Completed" }; break;
+
 			case "decision-without-resolution": items.Add(new(Guid.NewGuid(), "Decision", phase, 0, "Question?", Status: "Completed")); break;
 			case "invalid-evidence": items.Add(new(Guid.NewGuid(), "Step", subphase, 0, "Step", Evidence: "Invented")); break;
 		}

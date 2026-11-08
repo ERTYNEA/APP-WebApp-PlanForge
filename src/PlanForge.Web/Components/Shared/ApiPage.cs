@@ -16,9 +16,11 @@ public abstract class ApiPage : ComponentBase, IAsyncDisposable
 	[Inject] protected IJSRuntime JavaScript { get; set; } = default!;
 	protected bool Busy { get; private set; }
 	protected bool Conflict { get; private set; }
+	protected virtual bool HasOpenOperation => false;
 	protected string? Error { get; set; }
 	protected CancellationToken Token { get; }
 	protected List<string> Toasts { get; } = [];
+	protected void ClearFeedback() { Error = null; Conflict = false; }
 
 	protected async Task ExecuteAsync(Func<Task> action, string? message = null)
 	{
@@ -79,7 +81,7 @@ public abstract class ApiPage : ComponentBase, IAsyncDisposable
 		try
 		{
 			while (await timer.WaitForNextTickAsync(Token))
-				await InvokeAsync(async () => { if (!Busy) await ExecuteAsync(refresh); StateHasChanged(); });
+				await InvokeAsync(async () => { if (!Busy && !HasOpenOperation) await ExecuteAsync(refresh); StateHasChanged(); });
 		}
 		catch (OperationCanceledException) when (Token.IsCancellationRequested) { /* Expected navigation cancellation. */ }
 	}

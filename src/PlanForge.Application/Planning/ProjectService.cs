@@ -7,6 +7,8 @@ using PlanForge.Domain.Planning;
 
 public sealed class ProjectService(IProjectStore store, TimeProvider timeProvider)
 {
+	public Task<WorkspaceDashboard> GetDashboardAsync(AuthenticatedActor actor, CancellationToken cancellationToken = default)
+		=> store.GetDashboardAsync(actor.UserId, cancellationToken);
 	public async Task<ProjectSnapshot> CreateAsync(AuthenticatedActor actor, CreateProjectRequest request, CancellationToken cancellationToken = default)
 	{
 		if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 160 || request.Description is null || request.Description.Length > 8000 || !Enum.TryParse(request.Workflow, out DevelopmentWorkflow workflow) || !Enum.IsDefined(workflow))
@@ -43,12 +45,6 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 			throw new PlanForgeException(400, "Project ID must match the target.");
 		if (aggregate.Project.Revision != snapshot.Revision)
 			throw new PlanForgeException(409, "The project changed. Reload the current revision before retrying.");
-		snapshot = snapshot with
-		{
-			Status = aggregate.Project.Status == WorkStatus.Completed && snapshot.Status == "Completed" ? "Pending" : snapshot.Status,
-			Items = snapshot.Items?.Select(item => item is not null && item.Kind is "Phase" or "Subphase" && item.Status == "Completed" && aggregate.Items.Any(previous => previous.Id == item.Id && previous.Status == WorkStatus.Completed)
-				? item with { Status = "Pending" } : item!).ToList()!
-		};
 		PlanSnapshotValidator.Validate(snapshot);
 		snapshot = PlanProgress.Recalculate(snapshot with
 		{
@@ -99,6 +95,8 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 				}
 				else
 				{
+					if (snapshot.Items.Any(decision => decision.Kind == "Decision" && decision.ParentId == item.Id && decision.Status == "Pending"))
+						throw new PlanForgeException(400, "Resolve pending decisions on this step before completion.");
 					CompletionEvidence evidence = PlanSnapshotValidator.ParseEnum<CompletionEvidence>(input.Evidence ?? string.Empty);
 					if (!CompletionPolicy.CanComplete(workflow, evidence, actor.IsHuman))
 						throw new PlanForgeException(400, "This workflow requires owner approval, confirmed merge or confirmed push before completion.");
@@ -136,5 +134,5 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 
 	private static ProjectSnapshot ToSnapshot(ProjectAggregate aggregate)
 		=> new(aggregate.Project.Id, aggregate.Project.Revision, aggregate.Project.Name, aggregate.Project.Description, aggregate.Project.Status.ToString(), aggregate.Project.Workflow.ToString(), new DateTimeOffset(DateTime.SpecifyKind(aggregate.Project.UpdatedAt, DateTimeKind.Utc)),
-			aggregate.Items.Select(item => new PlanItem(item.Id, item.Kind.ToString(), item.ParentId, item.SortOrder, item.Title, item.Description, item.Kind == WorkItemKind.Decision && item.Status == WorkStatus.Completed ? "Decided" : item.Status.ToString(), item.AssignmentMode.ToString(), item.AssignedAgentId, item.Resolution, item.Evidence?.ToString(), item.CompletedBy, item.CompletedAt)).ToList());
+			aggregate.Items.Select(item => new PlanItem(item.Id, item.Kind.ToString(), item.ParentId, item.SortOrder, item.Title, item.Description, item.Kind == WorkItemKind.Decision && item.Status == WorkStatus.Completed ? "Decided" : item.Status.ToString(), item.AssignmentMode.ToString(), item.AssignedAgentId, item.Resolution, item.Evidence?.ToString(), item.CompletedBy, item.CompletedAt, item.CreationOrder)).ToList());
 }
