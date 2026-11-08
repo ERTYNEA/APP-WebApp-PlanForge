@@ -25,3 +25,11 @@ The CSV is bounded to 1 MiB including a supplied BOM, and at most 5000 plan item
 5. A successful atomic import increments revision once and emits the actor-correct event. A stale revision returns 409 with no partial changes; reload, compare and reconcile instead of automatically retrying an overwrite.
 
 The pure codec preserves all supported snapshot fields and never authorizes, persists, rewrites closure evidence or generates IDs. The application layer owns authorization, safe replacement, concurrency and workflow policy. CSV fields are untrusted user text, not spreadsheet formulas to execute; the Web must escape their display.
+
+## v0.3.0 compatibility and navigation
+
+Schema1 and the exact public columns are unchanged. Project/Phase/Subphase Status remains a validated enum for compatibility with v0.2.0 exports, but importing it does not impose parent state: the application recalculates effective states from descendants and scoped pending decisions. Step manual states, workflow evidence, human approval and Decision resolution validation remain authoritative. Export shows the actual calculated parent values.
+
+CreationOrder is intentionally absent from CSV. Reimporting a retained Step ID preserves its immutable stored age, even after editing or reordering; omitted IDs require the same explicit replacement permission. New IDs receive the import transaction's new creation-event order, with canonical GUID ties, not arbitrary supplied historical dates. Historical negative ranks are reconstructed and documented in architecture/deployment, not fabricated timestamps.
+
+After successful import, the Web refreshes its authorized snapshot and selects the oldest InProgress Step, otherwise oldest Pending, otherwise the project, revealing its ancestors and using reduced-motion-aware page scrolling. Failed parsing or409 leaves the importer open with persistent contextual feedback and does not change the graph.

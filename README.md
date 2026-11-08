@@ -2,7 +2,7 @@
 
 <img src="src/PlanForge.Web/wwwroot/favicon.svg" alt="PlanForge symbol" width="64" height="64" />
 
-Version **0.2.0** · MIT licensed
+Version **0.3.0** · MIT licensed
 
 ## About PlanForge
 
@@ -78,13 +78,14 @@ Recent activity is bounded project-change history, not a complete perpetual audi
 
 Licensed under [MIT](LICENSE).
 
-## What's New — v0.2.0
+## What's New — v0.3.0
 
-- **Refined visual identity:** a single canonical geometric P-hammer symbol, dark near-neutral surfaces and restrained parchment accents, with distinct success, warning and danger states.
-- **Clearer navigation:** one account-settings entry through the bottom profile row, contextual clickable breadcrumbs with real project names, and consistent native-select arrow spacing. Project-specific Settings remain available.
-- **Localization foundation:** application-owned UI and safe error messages use English `.resx` resources. The account's English language preference persists; native browser validation and user content are unchanged.
-- **Safer agent lifecycle:** optional raster avatar upload during creation, honest recovery if that upload is not confirmed, explicit linked-token consequences for deactivation/reactivation, and confirmed physical deletion. Deletion removes the profile, avatar and every linked credential while preserving work, resources and the names in actual retained activity; affected assignments and revisions are reconciled transactionally.
-- **Clearer token management:** visible Personal/Agent types, bounded valid-token pages, collapsed paginated revoked/expired history, working renewal/revocation controls, and confirmed manual cleanup that preserves valid credentials and other accounts.
-- **Security hardening:** explicitly Secure production antiforgery cookies, exact Web-to-API destination checks, disabled automatic redirects, and generation/transaction gates covering concurrent credential issuance and revocation. These changes do not claim to determine or remove an external Safe Browsing classification.
+- **A focused plan explorer:** compact hierarchical rows and a contextual inspector replace nested card forms, preserving editing, moves, decisions, assignments, evidence and resources. One natural page scroll adapts to desktop and mobile; deep links, CSV imports and completed Steps reveal the appropriate work without disrupting manual exploration.
+- **A useful Home, a complete Projects catalog:** see project count, literal Pending steps, weighted overall progress and up to three eligible Steps ordered by immutable creation age. Every recently updated project remains reachable through pagination; Projects keeps its search, filters, sorting and management actions.
+- **Trustworthy plan state and age:** Project, Phase and Subphase status now follows actual descendants and pending decisions automatically; only Steps have manual status. Stable creation order survives edits, moves and retained-ID imports. Historical order is explicitly reconstructed, not presented as certified creation dates; the public CSV schema remains compatible.
+- **Clearer, safer forms:** registration requires matching password confirmation in the browser and Web BFF without storing or forwarding a second secret. Errors stay with their field, operation or confirmation dialog, and closing dialogs restores useful keyboard focus.
+- **Consistent controls and token history:** shared hover, focus, disabled and destructive states preserve the approved logo and palette. Token history has clearer spacing, accessible disclosure focus, no empty-list border and centered pagination only when needed.
 
-Release verification includes automated regressions, controlled SQL Server rollback/lifecycle checks, local and published browser flows, migration history, protected non-test data fingerprints, and continuity of prepublication sessions, credentials and resource bytes. No README screenshots are included in this version.
+Published and verified with 431 passing .NET tests, 14 pipeline tests, 16 Node tests, controlled SQL Server checks and real local/published browser flows. Ordered publication applies the additive migration before API and Web; prepublication sessions, credentials, resource bytes and protected non-test data were verified. No product screenshots are included.
+
+[Full changelog](./CHANGELOG.md)
