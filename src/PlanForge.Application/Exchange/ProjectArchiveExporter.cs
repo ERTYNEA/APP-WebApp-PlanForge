@@ -39,9 +39,9 @@ public sealed class ProjectArchiveExporter(ProjectService projects, LibraryServi
 					string path = $"resources/{resource.Id:D}/{LibraryService.SafeFileName(resource.FileName)}";
 					await WriteEntryAsync(archive, path, file.Content, cancellationToken);
 					manifestResources.Add(new(resource.Id, resource.FileName, resource.ContentType, resource.Size, resource.Sha256, path,
-						resource.Projects.Any(link => link.ProjectId == projectId), resource.Phases.Where(link => link.ProjectId == projectId).Select(link => link.PhaseId).Distinct().ToList()));
+						resource.Projects.Any(link => link.ProjectId == projectId), resource.Phases.Where(link => link.ProjectId == projectId).Select(link => link.PhaseId).Distinct().ToList(), resource.Items.Where(link => link.ProjectId == projectId).ToList()));
 				}
-				await WriteEntryAsync(archive, "manifest.json", JsonSerializer.SerializeToUtf8Bytes(new { schemaVersion = 1, projectId, revision = project.Revision, exportedAt, resources = manifestResources }, jsonOptions), cancellationToken);
+				await WriteEntryAsync(archive, "manifest.json", JsonSerializer.SerializeToUtf8Bytes(new { schemaVersion = 2, projectId, revision = project.Revision, exportedAt, resources = manifestResources }, jsonOptions), cancellationToken);
 			}
 			if ((await projects.GetAsync(actor, projectId, cancellationToken)).Revision != project.Revision)
 				throw new PlanForgeException(409, "The project changed during export. Reload and export the current revision.");
@@ -60,7 +60,7 @@ public sealed class ProjectArchiveExporter(ProjectService projects, LibraryServi
 	private static string CreateReadme(ProjectSnapshot project, DateTimeOffset exportedAt)
 	{
 		Dictionary<Guid, PlanItem> items = project.Items.ToDictionary(item => item.Id);
-		PlanItem? step = project.Items.Where(item => item.Kind == "Step").OrderBy(item => item.Status == "InProgress" ? 0 : item.Status == "Blocked" ? 1 : item.Status == "Pending" ? 2 : 3).ThenBy(item => item.SortOrder).FirstOrDefault();
+		PlanItem? step = project.Items.Where(item => item.Kind == "Step").OrderBy(item => item.EffectiveStatus == "InProgress" ? 0 : item.EffectiveStatus == "Blocked" ? 1 : item.EffectiveStatus == "Pending" ? 2 : 3).ThenBy(item => item.SortOrder).FirstOrDefault();
 		PlanItem? subphase = step?.ParentId is Guid subphaseId && items.TryGetValue(subphaseId, out PlanItem? parent) ? parent : null;
 		PlanItem? phase = subphase?.ParentId is Guid phaseId && items.TryGetValue(phaseId, out PlanItem? ancestor) ? ancestor : project.Items.FirstOrDefault(item => item.Kind == "Phase");
 		System.Globalization.CultureInfo culture = System.Globalization.CultureInfo.GetCultureInfo("en");

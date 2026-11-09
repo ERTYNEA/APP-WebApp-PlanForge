@@ -9,6 +9,9 @@ using PlanForge.Web.State;
 
 public partial class WorkPlanTree
 {
+	private HashSet<Guid> branches = [];
+	private bool hadSelection;
+	private List<Guid> selectionAncestors = [];
 	private Guid initializedProject;
 	private bool inspectSelection;
 	private long observedSelectionEpoch;
@@ -24,6 +27,7 @@ public partial class WorkPlanTree
 	[Parameter] public bool Disabled { get; set; }
 	[Parameter] public EventCallback<PlanItem> Edit { get; set; }
 	[Parameter] public EventCallback ProjectSettings { get; set; }
+	[Parameter] public EventCallback Reload { get; set; }
 	[Parameter] public Guid? RequestedStepId { get; set; }
 	[Parameter] public IReadOnlyList<ResourceProfile> Resources { get; set; } = [];
 	[Parameter] public long SelectionEpoch { get; set; }
@@ -49,22 +53,26 @@ public partial class WorkPlanTree
 
 	protected override void OnParametersSet()
 	{
+		HashSet<Guid> parents = Snapshot.Items.Where(item => item.Kind != "Decision" && item.ParentId.HasValue).Select(item => item.ParentId!.Value).ToHashSet();
+		branches = Snapshot.Items.Where(item => item.Kind is "Phase" or "Subphase" && parents.Contains(item.Id)).Select(item => item.Id).ToHashSet();
 		if (initializedProject != Snapshot.Id)
 		{
 			initializedProject = Snapshot.Id;
+			hadSelection = false;
+			selectionAncestors = [];
 			state = NavigationState.Get(Snapshot.Id);
 			observedSelectionEpoch = SelectionEpoch;
 			requestedStepSeen = null;
 			if (RequestedStepId is null && state.Initialized && (SelectedId is null || Selected is not null))
 			{
-				OnSelect(SelectedId);
+				RememberSelectionPath();
 				return;
 			}
 		}
 		if (observedSelectionEpoch != SelectionEpoch)
 		{
 			observedSelectionEpoch = SelectionEpoch;
-			if (CompletedItemId is null || CompletedItemId == SelectedId && Selected?.Status is not ("Pending" or "InProgress"))
+			if (CompletedItemId is null || CompletedItemId == SelectedId && Selected?.EffectiveStatus is not ("Pending" or "InProgress"))
 			{
 				Expanded.RemoveWhere(id => !state.ManuallyToggled.Contains(id));
 				OnSelect(DefaultSelection());
@@ -81,12 +89,34 @@ public partial class WorkPlanTree
 			}
 		}
 		if (state.Initialized && (SelectedId is null || Selected is not null))
+		{
+			RememberSelectionPath();
 			return;
+		}
+		if (state.Initialized && hadSelection)
+		{
+			SelectedId = selectionAncestors.Where(id => Snapshot.Items.Any(item => item.Id == id)).Select(id => (Guid?)id).FirstOrDefault();
+			revealSelection = false;
+			inspectSelection = false;
+			RememberSelectionPath();
+			return;
+		}
 		OnSelect(DefaultSelection());
 	}
 
-	private Guid? DefaultSelection() => Snapshot.Items.Where(item => item.Kind == "Step" && item.Status is "InProgress" or "Pending")
-		.OrderBy(item => item.Status == "InProgress" ? 0 : 1).ThenBy(item => item.CreationOrder).ThenBy(item => item.Id).FirstOrDefault()?.Id;
+	private Guid? DefaultSelection() => Snapshot.GetEligibleSteps().FirstOrDefault()?.Id;
+
+	private void OnExpandAll()
+	{
+		Expanded.UnionWith(branches);
+		state.ManuallyToggled.UnionWith(branches);
+	}
+
+	private void OnCollapseAll()
+	{
+		Expanded.ExceptWith(branches);
+		state.ManuallyToggled.UnionWith(branches);
+	}
 
 	private void OnManualSelect(Guid? id)
 	{
@@ -99,10 +129,18 @@ public partial class WorkPlanTree
 		SelectedId = id;
 		state.Initialized = true;
 		revealSelection = true;
+		RememberSelectionPath();
+		Expanded.UnionWith(selectionAncestors);
+	}
+
+	private void RememberSelectionPath()
+	{
+		hadSelection = Selected is not null;
+		selectionAncestors = [];
 		Guid? ancestor = Selected?.ParentId;
 		for (int depth = 0; depth < Snapshot.Items.Count && ancestor.HasValue; depth++)
 		{
-			Expanded.Add(ancestor.Value);
+			selectionAncestors.Add(ancestor.Value);
 			ancestor = Snapshot.Items.FirstOrDefault(item => item.Id == ancestor)?.ParentId;
 		}
 	}

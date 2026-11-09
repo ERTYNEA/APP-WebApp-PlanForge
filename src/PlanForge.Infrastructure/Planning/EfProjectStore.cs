@@ -27,7 +27,7 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 									  where project.OwnerUserId == ownerId && subphase.ProjectId == project.Id && phase.ProjectId == project.Id
 										  && subphase.Kind == WorkItemKind.Subphase && phase.Kind == WorkItemKind.Phase
 										  && (step.Status == WorkStatus.Pending || step.Status == WorkStatus.InProgress)
-									  orderby step.CreationOrder, step.Id.ToString()
+									  orderby step.CreationOrder, phase.SortOrder, subphase.SortOrder, step.SortOrder, project.Id.ToString(), step.Id.ToString()
 									  select new FocusStep(project.Id, project.Revision, project.Name, step.Id, step.Title, phase.Id, phase.Title, subphase.Id, subphase.Title, step.Status.ToString(), step.CreationOrder))
 			.Take(3).ToListAsync(cancellationToken);
 		return new WorkspaceDashboard(projectCount, counts?.Pending ?? 0, counts?.Completed ?? 0, counts?.Total ?? 0, next);
@@ -93,7 +93,7 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 	public async Task CreateAsync(Project project, CancellationToken cancellationToken)
 	{
 		database.Projects.Add(project);
-		database.Entry(project).Property<long>("WriteRevision").CurrentValue = project.Revision;
+		database.Entry(project).Property<long>("WriteRevision").CurrentValue = project.Revision + 1;
 		await database.SaveChangesAsync(cancellationToken);
 		database.Entry(project).State = EntityState.Detached;
 	}
@@ -101,7 +101,7 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 	public async Task DeleteAsync(Guid ownerId, Guid projectId, long expectedRevision, CancellationToken cancellationToken)
 	{
 		await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
-		int locked = await database.Projects.Where(project => project.Id == projectId && project.OwnerUserId == ownerId && project.Revision == expectedRevision).ExecuteUpdateAsync(setters => setters.SetProperty(project => project.Revision, expectedRevision + 1).SetProperty(project => EF.Property<long>(project, "WriteRevision"), expectedRevision + 1), cancellationToken);
+		int locked = await database.Projects.Where(project => project.Id == projectId && project.OwnerUserId == ownerId && project.Revision == expectedRevision).ExecuteUpdateAsync(setters => setters.SetProperty(project => project.Revision, expectedRevision + 1).SetProperty(project => EF.Property<long>(project, "WriteRevision"), expectedRevision + 2), cancellationToken);
 		if (locked != 1)
 			throw new PlanForgeException(409, "The project changed. Reload before deleting.");
 		List<Guid> directResources = await database.ProjectResources.Where(link => link.ProjectId == projectId).Select(link => link.ResourceId).ToListAsync(cancellationToken);
@@ -132,7 +132,7 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 		Project project = aggregate.Project;
 		int changed = await database.Projects.Where(current => current.Id == project.Id && current.OwnerUserId == project.OwnerUserId && current.Revision == expectedRevision)
 			.ExecuteUpdateAsync(setters => setters.SetProperty(current => current.Revision, expectedRevision + 1)
-				.SetProperty(current => EF.Property<long>(current, "WriteRevision"), expectedRevision + 1)
+				.SetProperty(current => EF.Property<long>(current, "WriteRevision"), expectedRevision + 2)
 				.SetProperty(current => current.Name, project.Name).SetProperty(current => current.Description, project.Description)
 				.SetProperty(current => current.Workflow, project.Workflow).SetProperty(current => current.Status, project.Status)
 				.SetProperty(current => current.UpdatedAt, project.UpdatedAt), cancellationToken);
@@ -186,10 +186,10 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 
 	private async Task RemoveItemsAsync(Guid ownerId, Guid projectId, List<Guid> retained, CancellationToken cancellationToken)
 	{
-		List<Guid> removedPhases = await database.WorkItems.Where(item => item.ProjectId == projectId && !retained.Contains(item.Id) && item.Kind == WorkItemKind.Phase).Select(item => item.Id).ToListAsync(cancellationToken);
-		List<Guid> resources = await database.PhaseResources.Where(link => removedPhases.Contains(link.PhaseId)).Select(link => link.ResourceId).Distinct().ToListAsync(cancellationToken);
+		List<Guid> removedItems = await database.WorkItems.Where(item => item.ProjectId == projectId && !retained.Contains(item.Id) && item.Kind != WorkItemKind.Decision).Select(item => item.Id).ToListAsync(cancellationToken);
+		List<Guid> resources = await database.PhaseResources.Where(link => removedItems.Contains(link.PhaseId)).Select(link => link.ResourceId).Distinct().ToListAsync(cancellationToken);
 		await TouchResourcesAsync(ownerId, resources, cancellationToken);
-		await database.PhaseResources.Where(link => removedPhases.Contains(link.PhaseId)).ExecuteDeleteAsync(cancellationToken);
+		await database.PhaseResources.Where(link => removedItems.Contains(link.PhaseId)).ExecuteDeleteAsync(cancellationToken);
 		foreach (WorkItemKind kind in new[] { WorkItemKind.Decision, WorkItemKind.Step, WorkItemKind.Subphase, WorkItemKind.Phase })
 			await database.WorkItems.Where(item => item.ProjectId == projectId && !retained.Contains(item.Id) && item.Kind == kind).ExecuteDeleteAsync(cancellationToken);
 	}

@@ -57,7 +57,7 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 				throw new PlanForgeException(400, "An assigned agent is unavailable in this account.");
 		DateTimeOffset now = timeProvider.GetUtcNow();
 		DevelopmentWorkflow workflow = PlanSnapshotValidator.ParseEnum<DevelopmentWorkflow>(snapshot.Workflow);
-		if (workflow != aggregate.Project.Workflow && (!actor.IsHuman || snapshot.Items.Any(item => item.Kind == "Step" && item.Status == "Completed" && !aggregate.Items.Any(old => old.Id == item.Id && old.Status == WorkStatus.Completed))))
+		if (workflow != aggregate.Project.Workflow && (!actor.IsHuman || snapshot.Items.Any(item => item.Kind == "Step" && item.Status == "Completed" && !aggregate.Items.Any(old => old.Id == item.Id && (old.ManualStatus ?? old.Status) == WorkStatus.Completed))))
 			throw new PlanForgeException(400, "Only the owner may change workflow, separately from completing work.");
 		aggregate.Project.Name = snapshot.Name;
 		aggregate.Project.Description = snapshot.Description;
@@ -69,11 +69,12 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 			Id = item.Id,
 			ProjectId = projectId,
 			Kind = Enum.Parse<WorkItemKind>(item.Kind),
-			ParentId = item.ParentId,
+			ParentId = item.Kind == "Decision" && item.ParentId == projectId ? null : item.ParentId,
 			SortOrder = item.SortOrder,
 			Title = item.Title,
 			Description = item.Description,
-			Status = item.Kind == "Decision" && item.Status == "Decided" ? WorkStatus.Completed : Enum.Parse<WorkStatus>(item.Status),
+			Status = item.Kind == "Decision" && item.Status == "Decided" ? WorkStatus.Completed : Enum.Parse<WorkStatus>(item.EffectiveStatus),
+			ManualStatus = item.Kind == "Step" ? Enum.Parse<WorkStatus>(item.Status) : null,
 			AssignmentMode = Enum.Parse<AssignmentMode>(item.AssignmentMode),
 			AssignedAgentId = item.AssignedAgentId,
 			Resolution = item.Resolution,
@@ -85,9 +86,9 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 			WorkItem? previous = aggregate.Items.SingleOrDefault(candidate => candidate.Id == item.Id);
 			if (previous is not null && previous.Kind != item.Kind)
 				throw new PlanForgeException(400, "A record type cannot change. Create a new record instead.");
-			if (item.Status == WorkStatus.Completed && item.Kind == WorkItemKind.Step)
+			if (input.Status == "Completed" && item.Kind == WorkItemKind.Step)
 			{
-				if (previous?.Status == WorkStatus.Completed)
+				if (previous is not null && (previous.ManualStatus ?? previous.Status) == WorkStatus.Completed)
 				{
 					item.Evidence = previous.Evidence;
 					item.CompletedAt = previous.CompletedAt;
@@ -133,6 +134,6 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 	}
 
 	private static ProjectSnapshot ToSnapshot(ProjectAggregate aggregate)
-		=> new(aggregate.Project.Id, aggregate.Project.Revision, aggregate.Project.Name, aggregate.Project.Description, aggregate.Project.Status.ToString(), aggregate.Project.Workflow.ToString(), new DateTimeOffset(DateTime.SpecifyKind(aggregate.Project.UpdatedAt, DateTimeKind.Utc)),
-			aggregate.Items.Select(item => new PlanItem(item.Id, item.Kind.ToString(), item.ParentId, item.SortOrder, item.Title, item.Description, item.Kind == WorkItemKind.Decision && item.Status == WorkStatus.Completed ? "Decided" : item.Status.ToString(), item.AssignmentMode.ToString(), item.AssignedAgentId, item.Resolution, item.Evidence?.ToString(), item.CompletedBy, item.CompletedAt, item.CreationOrder)).ToList());
+		=> PlanProgress.Recalculate(new(aggregate.Project.Id, aggregate.Project.Revision, aggregate.Project.Name, aggregate.Project.Description, aggregate.Project.Status.ToString(), aggregate.Project.Workflow.ToString(), new DateTimeOffset(DateTime.SpecifyKind(aggregate.Project.UpdatedAt, DateTimeKind.Utc)),
+			aggregate.Items.Select(item => new PlanItem(item.Id, item.Kind.ToString(), item.Kind == WorkItemKind.Decision && item.ParentId is null ? aggregate.Project.Id : item.ParentId, item.SortOrder, item.Title, item.Description, item.Kind == WorkItemKind.Decision && item.Status == WorkStatus.Completed ? "Decided" : (item.ManualStatus ?? item.Status).ToString(), item.AssignmentMode.ToString(), item.AssignedAgentId, item.Resolution, item.Evidence?.ToString(), item.CompletedBy, item.CompletedAt, item.CreationOrder)).ToList()));
 }

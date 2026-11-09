@@ -35,7 +35,9 @@ public sealed class ResourceFunctions(LibraryService library, ResourceLimits lim
 			runner.AcquireBudget("upload:" + actor.UserId, 20, TimeSpan.FromMinutes(1));
 			Guid? projectId = ReadOptionalId(request, "X-Project-Id");
 			Guid? phaseId = ReadOptionalId(request, "X-Phase-Id");
-			await library.ValidateTargetsAsync(actor, projectId, phaseId, request.FunctionContext.CancellationToken);
+			Guid? subphaseId = ReadOptionalId(request, "X-Subphase-Id");
+			Guid? stepId = ReadOptionalId(request, "X-Step-Id");
+			await library.ValidateTargetsAsync(actor, projectId, phaseId, request.FunctionContext.CancellationToken, subphaseId, stepId);
 			string fileName = Uri.UnescapeDataString(ReadHeader(request, "X-File-Name"));
 			string title = Uri.UnescapeDataString(ReadHeader(request, "X-Resource-Title"));
 			if (string.IsNullOrWhiteSpace(title))
@@ -43,7 +45,7 @@ public sealed class ResourceFunctions(LibraryService library, ResourceLimits lim
 			string contentType = ReadHeader(request, "Content-Type").Split(';')[0].Trim();
 			if (contentType.Length == 0)
 				contentType = "application/octet-stream";
-			return await library.UploadAsync(actor, new ResourceUploadRequest(fileName, title, contentType, projectId, phaseId), await runner.ReadBytesAsync(request, limits.MaximumFileBytes), request.FunctionContext.CancellationToken);
+			return await library.UploadAsync(actor, new ResourceUploadRequest(fileName, title, contentType, projectId, phaseId, subphaseId, stepId), await runner.ReadBytesAsync(request, limits.MaximumFileBytes), request.FunctionContext.CancellationToken);
 		}, request.Method == "POST" ? 201 : 200);
 
 	[Function("Resource")]
@@ -95,6 +97,14 @@ public sealed class ResourceFunctions(LibraryService library, ResourceLimits lim
 	[Function("PhaseResources")]
 	public Task<HttpResponseData> PhaseResourcesAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "v1/projects/{projectId:guid}/phases/{phaseId:guid}/resources")] HttpRequestData request, Guid projectId, Guid phaseId)
 		=> runner.ExecuteAsync(request, async () => await library.ListProjectAsync(await ReadActorAsync(request), projectId, phaseId, request.FunctionContext.CancellationToken));
+
+	[Function("SubphaseResources")]
+	public Task<HttpResponseData> SubphaseResourcesAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "v1/projects/{projectId:guid}/subphases/{subphaseId:guid}/resources")] HttpRequestData request, Guid projectId, Guid subphaseId)
+		=> runner.ExecuteAsync(request, async () => await library.ListProjectAsync(await ReadActorAsync(request), projectId, subphaseId, request.FunctionContext.CancellationToken, "Subphase"));
+
+	[Function("StepResources")]
+	public Task<HttpResponseData> StepResourcesAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "v1/projects/{projectId:guid}/steps/{stepId:guid}/resources")] HttpRequestData request, Guid projectId, Guid stepId)
+		=> runner.ExecuteAsync(request, async () => await library.ListProjectAsync(await ReadActorAsync(request), projectId, stepId, request.FunctionContext.CancellationToken, "Step"));
 
 	private static int ParsePageValue(string? value, int fallback, int minimum, int maximum)
 	{

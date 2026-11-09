@@ -13,6 +13,7 @@ public sealed class PlanPersistenceTests
 	[InlineData("missing-subphase")]
 	[InlineData("wrong-parent")]
 	[InlineData("duplicate-id")]
+	[InlineData("project-id-collision")]
 	[InlineData("invalid-status")]
 	[InlineData("duplicate-order")]
 	[InlineData("blank-title")]
@@ -34,6 +35,7 @@ public sealed class PlanPersistenceTests
 			case "missing-subphase": items.RemoveAt(1); break;
 			case "wrong-parent": items[1] = items[1] with { ParentId = Guid.NewGuid() }; break;
 			case "duplicate-id": items.Add(items[1]); break;
+			case "project-id-collision": items[0] = items[0] with { Id = project.Id }; items[1] = items[1] with { ParentId = project.Id }; break;
 			case "invalid-status": items[1] = items[1] with { Status = "93" }; break;
 			case "duplicate-order": items.Add(items[1] with { Id = Guid.NewGuid() }); break;
 			case "blank-title": items[1] = items[1] with { Title = " " }; break;

@@ -10,6 +10,29 @@ using System.Text.RegularExpressions;
 public sealed class RegistrationConfirmationTests
 {
 	[Fact]
+	public async Task RegistrationHelp_BelongsToPasswordAndConfirmationUsesTheSameLabelStructureAsync()
+	{
+		await using var app = new WebApplicationFactory<Program>();
+		using var client = app.CreateClient();
+		var parser = new AngleSharp.Html.Parser.HtmlParser();
+		var register = parser.ParseDocument(await client.GetStringAsync("/register"));
+		var password = register.QuerySelector("input[name=password]")!;
+		var help = register.QuerySelector("#password-requirements");
+		Assert.NotNull(help);
+		Assert.Equal("Use 12–128 characters.", help.TextContent);
+		Assert.Equal("password-requirements", password.GetAttribute("aria-describedby"));
+		Assert.Same(password.Closest("label"), help.Closest("label"));
+		var confirmation = register.QuerySelector("#confirm-password")!;
+		Assert.NotNull(confirmation.Closest("label"));
+		Assert.StartsWith("Confirm password", confirmation.Closest("label")!.TextContent);
+		Assert.Single(register.QuerySelectorAll("input[name=confirmPassword]"));
+		Assert.DoesNotContain("No external identity provider", register.DocumentElement.TextContent);
+		var login = parser.ParseDocument(await client.GetStringAsync("/login"));
+		Assert.Null(login.QuerySelector("#password-requirements, input[name=confirmPassword]"));
+		Assert.Equal("current-password", login.QuerySelector("input[name=password]")!.GetAttribute("autocomplete"));
+	}
+
+	[Fact]
 	public async Task Register_ExactConfirmationForwardsOnlyOriginalPasswordAndPreservesNativeConstraintsAsync()
 	{
 		var handler = new RegistrationHandler();

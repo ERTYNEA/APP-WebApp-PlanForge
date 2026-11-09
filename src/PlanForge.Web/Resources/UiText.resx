@@ -516,8 +516,8 @@
 	<data name="Upload file" xml:space="preserve">
 		<value>Upload file</value>
 	</data>
-	<data name="Use 12–128 characters. No external identity provider required." xml:space="preserve">
-		<value>Use 12–128 characters. No external identity provider required.</value>
+	<data name="Use 12–128 characters." xml:space="preserve">
+		<value>Use 12–128 characters.</value>
 	</data>
 	<data name="Version" xml:space="preserve">
 		<value>Version</value>
@@ -782,4 +782,24 @@
   <data name="No pending or in-progress steps. Open a project to review its plan." xml:space="preserve"><value>No pending or in-progress steps. Open a project to review its plan.</value></data>
   <data name="Recent project pages" xml:space="preserve"><value>Recent project pages</value></data>
   <data name="All projects" xml:space="preserve"><value>All projects</value></data>
+  <data name="Add phase" xml:space="preserve"><value>Add phase</value></data>
+  <data name="Blocked by pending decisions on this step." xml:space="preserve"><value>Blocked by pending decisions on this step.</value></data>
+  <data name="Delete decision" xml:space="preserve"><value>Delete decision</value></data>
+  <data name="Direct" xml:space="preserve"><value>Direct</value></data>
+  <data name="Edit decision" xml:space="preserve"><value>Edit decision</value></data>
+  <data name="Inherited from {0}: {1}" xml:space="preserve"><value>Inherited from {0}: {1}</value></data>
+  <data name="Status updates automatically as work progresses." xml:space="preserve"><value>Status updates automatically as work progresses.</value></data>
+  <data name="Track questions and decisions that need resolution." xml:space="preserve"><value>Track questions and decisions that need resolution.</value></data>
+  <data name="Work status" xml:space="preserve"><value>Work status</value></data>
+  <data name="Subphase resources" xml:space="preserve"><value>Subphase resources</value></data>
+  <data name="Step resources" xml:space="preserve"><value>Step resources</value></data>
+  <data name="Position" xml:space="preserve"><value>Position</value></data>
+  <data name="{0}: {1} · {2}" xml:space="preserve"><value>{0}: {1} · {2}</value></data>
+  <data name="{0}: {1}" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Creates a direct link at this level. Descendants inherit it; existing links remain unchanged." xml:space="preserve"><value>Creates a direct link at this level. Descendants inherit it; existing links remain unchanged.</value></data>
+  <data name="Linked directly to this node; descendants inherit it." xml:space="preserve"><value>Linked directly to this node; descendants inherit it.</value></data>
+  <data name="One library. Direct links at every plan level. Files survive plan deletion." xml:space="preserve"><value>One library. Direct links at every plan level. Files survive plan deletion.</value></data>
+  <data name="Expand all" xml:space="preserve"><value>Expand all</value></data>
+  <data name="Collapse all" xml:space="preserve"><value>Collapse all</value></data>
+  <data name="Open project" xml:space="preserve"><value>Open project</value></data>
 </root>

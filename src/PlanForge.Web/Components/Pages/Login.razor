@@ -13,13 +13,12 @@
 		<AntiforgeryToken />
 		@if (IsRegister) { <label>@T["Display name"]<input name="displayName" autocomplete="name" maxlength="80" required /></label> }
 		<label>@T["Email address"]<input type="email" name="email" autocomplete="username" maxlength="256" required /></label>
-		<label>@T["Password"]<input type="password" name="password" autocomplete="@(IsRegister ? "new-password" : "current-password")" minlength="12" maxlength="128" required /></label>
+		<label>@T["Password"]<input type="password" name="password" autocomplete="@(IsRegister ? "new-password" : "current-password")" minlength="12" maxlength="128" required aria-describedby='@(IsRegister ? "password-requirements" : null)' />@if (IsRegister) { <small id="password-requirements" class="muted">@T["Use 12–128 characters."]</small> }</label>
 		@if (IsRegister)
 		{
-			<label for="confirm-password">@T["Confirm password"]</label>
-			<input id="confirm-password" type="password" name="confirmPassword" autocomplete="new-password" minlength="12" maxlength="128" required aria-invalid="@(PasswordMismatch ? "true" : null)" aria-describedby="@(PasswordMismatch ? "password-confirmation-error" : null)" />
+			<label for="confirm-password">@T["Confirm password"]
+			<input id="confirm-password" type="password" name="confirmPassword" autocomplete="new-password" minlength="12" maxlength="128" required aria-invalid="@(PasswordMismatch ? "true" : null)" aria-describedby="@(PasswordMismatch ? "password-confirmation-error" : null)" /></label>
 			<div id="password-confirmation-error" class="field-error" role="alert" hidden="@(!PasswordMismatch)">@T["Passwords do not match."]</div>
-			<small class="muted">@T["Use 12–128 characters. No external identity provider required."]</small>
 		}
 		@if (!string.IsNullOrEmpty(Error)) { <div class="notice error" role="alert">@Error</div> }
 		<button class="primary full" type="submit">@T[IsRegister ? "Create account" : "Sign in"] <span>→</span></button>

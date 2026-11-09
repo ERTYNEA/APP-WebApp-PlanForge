@@ -12,8 +12,11 @@ using PlanForge.Infrastructure.Planning;
 
 public sealed class EfLibraryStore(PlanForgeDbContext database) : ILibraryStore
 {
-	public async Task ValidateTargetsAsync(Guid ownerId, Guid? projectId, Guid? phaseId, CancellationToken cancellationToken)
-		=> await ResolveTargetsAsync(ownerId, projectId, phaseId, cancellationToken);
+	public async Task ValidateTargetsAsync(Guid ownerId, Guid? projectId, Guid? phaseId, CancellationToken cancellationToken, Guid? subphaseId = null, Guid? stepId = null)
+	{
+		var target = ResolveUploadTarget(phaseId, subphaseId, stepId);
+		await ResolveTargetsAsync(ownerId, projectId, target.Id, cancellationToken, target.Kind);
+	}
 
 	public async Task<int> CleanOrphansAsync(Guid ownerId, IReadOnlyList<Guid> resourceIds, CancellationToken cancellationToken)
 	{
@@ -60,16 +63,28 @@ public sealed class EfLibraryStore(PlanForgeDbContext database) : ILibraryStore
 		return await LoadProfilesAsync(ownerId, null, cancellationToken);
 	}
 
-	public async Task<IReadOnlyList<ResourceProfile>> ListProjectAsync(Guid ownerId, Guid projectId, Guid? phaseId, CancellationToken cancellationToken)
+	public async Task<IReadOnlyList<ResourceProfile>> ListProjectAsync(Guid ownerId, Guid projectId, Guid? phaseId, CancellationToken cancellationToken, string itemKind = "Phase")
 	{
 		await using var transaction = await database.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
-		HashSet<Guid> parents = await ResolveTargetsAsync(ownerId, projectId, phaseId, cancellationToken);
-		if (phaseId.HasValue && parents.Count != 1)
-			throw new PlanForgeException(404, "Phase not found in this project.");
-		List<Guid> direct = phaseId.HasValue ? [] : await database.ProjectResources.Where(link => link.ProjectId == projectId).Select(link => link.ResourceId).ToListAsync(cancellationToken);
+		if (!await database.Projects.AnyAsync(project => project.Id == projectId && project.OwnerUserId == ownerId, cancellationToken))
+			throw new PlanForgeException(404, "Project not found.");
+		var nodes = await database.WorkItems.AsNoTracking().Where(item => item.ProjectId == projectId && item.Kind != WorkItemKind.Decision)
+			.Select(item => new { item.Id, item.ParentId, item.Kind }).ToListAsync(cancellationToken);
+		HashSet<Guid> ancestors = [];
+		if (phaseId is Guid selectedId)
+		{
+			var selected = nodes.SingleOrDefault(item => item.Id == selectedId && item.Kind.ToString() == itemKind);
+			if (selected is null)
+				throw new PlanForgeException(404, "Plan record not found.");
+			Guid? current = selectedId;
+			Dictionary<Guid, Guid?> parents = nodes.ToDictionary(item => item.Id, item => item.ParentId);
+			while (current is Guid id && ancestors.Add(id) && parents.TryGetValue(id, out Guid? parent))
+				current = parent;
+		}
+		List<Guid> direct = await database.ProjectResources.Where(link => link.ProjectId == projectId).Select(link => link.ResourceId).ToListAsync(cancellationToken);
 		List<Guid> phases = await (from link in database.PhaseResources
-								   join phase in database.WorkItems on link.PhaseId equals phase.Id
-								   where phase.ProjectId == projectId && phase.Kind == WorkItemKind.Phase && (!phaseId.HasValue || phase.Id == phaseId)
+								   join node in database.WorkItems on link.PhaseId equals node.Id
+								   where node.ProjectId == projectId && node.Kind != WorkItemKind.Decision && (!phaseId.HasValue || ancestors.Contains(node.Id))
 								   select link.ResourceId).ToListAsync(cancellationToken);
 		return await LoadProfilesAsync(ownerId, direct.Concat(phases).Distinct().ToList(), cancellationToken);
 	}
@@ -85,7 +100,9 @@ public sealed class EfLibraryStore(PlanForgeDbContext database) : ILibraryStore
 	{
 		await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
 		await RequireResourceAsync(actor.UserId, resourceId, cancellationToken);
-		HashSet<Guid> projects = await ResolveTargetsAsync(actor.UserId, request.ProjectId, request.PhaseId, cancellationToken);
+		Guid? itemId = request.PhaseId ?? request.SubphaseId ?? request.StepId;
+		WorkItemKind kind = request.SubphaseId.HasValue ? WorkItemKind.Subphase : request.StepId.HasValue ? WorkItemKind.Step : WorkItemKind.Phase;
+		HashSet<Guid> projects = await ResolveTargetsAsync(actor.UserId, request.ProjectId, itemId, cancellationToken, kind);
 		foreach (Guid project in projects.Order())
 			await ProjectEventWriter.TouchAsync(database, actor, project, cancellationToken);
 		await LockResourceAsync(actor.UserId, resourceId, request.Revision, cancellationToken);
@@ -96,7 +113,7 @@ public sealed class EfLibraryStore(PlanForgeDbContext database) : ILibraryStore
 			else if (!request.Attach)
 				await database.ProjectResources.Where(link => link.ProjectId == projectId && link.ResourceId == resourceId).ExecuteDeleteAsync(cancellationToken);
 		}
-		if (request.PhaseId is Guid phaseId)
+		if (itemId is Guid phaseId)
 		{
 			if (request.Attach && !await database.PhaseResources.AnyAsync(link => link.PhaseId == phaseId && link.ResourceId == resourceId, cancellationToken))
 				database.PhaseResources.Add(new PhaseResource { PhaseId = phaseId, ResourceId = resourceId });
@@ -122,10 +139,11 @@ public sealed class EfLibraryStore(PlanForgeDbContext database) : ILibraryStore
 		return profile;
 	}
 
-	public async Task<ResourceProfile> UploadAsync(AuthenticatedActor actor, Resource resource, Guid? projectId, Guid? phaseId, ResourceLimits limits, CancellationToken cancellationToken)
+	public async Task<ResourceProfile> UploadAsync(AuthenticatedActor actor, Resource resource, Guid? projectId, Guid? phaseId, ResourceLimits limits, CancellationToken cancellationToken, Guid? subphaseId = null, Guid? stepId = null)
 	{
 		await using var transaction = await database.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
-		HashSet<Guid> touchedProjects = await ResolveTargetsAsync(actor.UserId, projectId, phaseId, cancellationToken);
+		var target = ResolveUploadTarget(phaseId, subphaseId, stepId);
+		HashSet<Guid> touchedProjects = await ResolveTargetsAsync(actor.UserId, projectId, target.Id, cancellationToken, target.Kind);
 		long ownerBytes = await database.Resources.Where(item => item.OwnerUserId == actor.UserId).SumAsync(item => (long?)item.Size, cancellationToken) ?? 0;
 		long globalBytes = await database.Resources.SumAsync(item => (long?)item.Size, cancellationToken) ?? 0;
 		if (ownerBytes + resource.Size > limits.OwnerBudgetBytes || globalBytes + resource.Size > limits.GlobalBudgetBytes)
@@ -135,7 +153,7 @@ public sealed class EfLibraryStore(PlanForgeDbContext database) : ILibraryStore
 		database.Resources.Add(resource);
 		if (projectId is Guid project)
 			database.ProjectResources.Add(new ProjectResource { ProjectId = project, ResourceId = resource.Id });
-		if (phaseId is Guid phase)
+		if (target.Id is Guid phase)
 			database.PhaseResources.Add(new PhaseResource { PhaseId = phase, ResourceId = resource.Id });
 		await database.SaveChangesAsync(cancellationToken);
 		foreach (Guid touchedProject in touchedProjects)
@@ -206,10 +224,22 @@ public sealed class EfLibraryStore(PlanForgeDbContext database) : ILibraryStore
 								join project in database.Projects on phase.ProjectId equals project.Id
 								where ids.Contains(link.ResourceId) && project.OwnerUserId == ownerId && phase.Kind == WorkItemKind.Phase
 								select new { link.ResourceId, Association = new PhaseResourceAssociation(phase.Id, phase.Title, project.Id, project.Name) }).ToListAsync(cancellationToken);
-		return resources.Select(resource => new ResourceProfile(resource.Id, resource.Title, resource.FileName, resource.ContentType, resource.Size, resource.Sha256, resource.Revision, resource.CreatedAt, resource.UpdatedAt, projectLinks.Where(link => link.ResourceId == resource.Id).Select(link => link.Association).ToList(), phaseLinks.Where(link => link.ResourceId == resource.Id).Select(link => link.Association).ToList())).ToList();
+		var itemLinks = await (from link in database.PhaseResources
+							   join item in database.WorkItems on link.PhaseId equals item.Id
+							   join project in database.Projects on item.ProjectId equals project.Id
+							   where ids.Contains(link.ResourceId) && project.OwnerUserId == ownerId && item.Kind != WorkItemKind.Decision
+							   select new { link.ResourceId, Association = new PlanItemResourceAssociation(item.Id, item.Title, item.Kind.ToString(), project.Id, project.Name) }).ToListAsync(cancellationToken);
+		return resources.Select(resource => new ResourceProfile(resource.Id, resource.Title, resource.FileName, resource.ContentType, resource.Size, resource.Sha256, resource.Revision, resource.CreatedAt, resource.UpdatedAt, projectLinks.Where(link => link.ResourceId == resource.Id).Select(link => link.Association).ToList(), phaseLinks.Where(link => link.ResourceId == resource.Id).Select(link => link.Association).ToList()) { Items = itemLinks.Where(link => link.ResourceId == resource.Id).Select(link => link.Association).ToList() }).ToList();
 	}
 
-	private async Task<HashSet<Guid>> ResolveTargetsAsync(Guid ownerId, Guid? projectId, Guid? phaseId, CancellationToken cancellationToken)
+	private static (Guid? Id, WorkItemKind Kind) ResolveUploadTarget(Guid? phaseId, Guid? subphaseId, Guid? stepId)
+	{
+		if (new[] { phaseId, subphaseId, stepId }.Count(id => id.HasValue) > 1)
+			throw new PlanForgeException(400, "Choose at most one structural resource target.");
+		return (phaseId ?? subphaseId ?? stepId, subphaseId.HasValue ? WorkItemKind.Subphase : stepId.HasValue ? WorkItemKind.Step : WorkItemKind.Phase);
+	}
+
+	private async Task<HashSet<Guid>> ResolveTargetsAsync(Guid ownerId, Guid? projectId, Guid? phaseId, CancellationToken cancellationToken, WorkItemKind kind = WorkItemKind.Phase)
 	{
 		HashSet<Guid> projects = [];
 		if (projectId is Guid project)
@@ -222,10 +252,10 @@ public sealed class EfLibraryStore(PlanForgeDbContext database) : ILibraryStore
 		{
 			Guid? parentProject = await (from item in database.WorkItems
 										 join parent in database.Projects on item.ProjectId equals parent.Id
-										 where item.Id == phase && item.Kind == WorkItemKind.Phase && parent.OwnerUserId == ownerId
+										 where item.Id == phase && item.Kind == kind && parent.OwnerUserId == ownerId
 										 select (Guid?)parent.Id).SingleOrDefaultAsync(cancellationToken);
-			if (parentProject is null)
-				throw new PlanForgeException(404, "Phase not found.");
+			if (parentProject is null || projectId.HasValue && parentProject != projectId)
+				throw new PlanForgeException(404, "Plan record not found.");
 			projects.Add(parentProject.Value);
 		}
 		return projects;

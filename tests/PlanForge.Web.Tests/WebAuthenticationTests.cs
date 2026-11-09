@@ -65,7 +65,7 @@ public sealed class WebAuthenticationTests
 		Assert.Contains("Search projects", await client.GetStringAsync("/projects"));
 		Assert.DoesNotContain(LoginApiHandler.Token, home);
 		Assert.DoesNotContain("v@ProductVersion", home);
-		Assert.Contains("v0.3.0", home);
+		Assert.Contains("v0.4.0", home);
 	}
 
 	private sealed class LoginApiHandler : HttpMessageHandler
@@ -90,7 +90,7 @@ public sealed class WebAuthenticationTests
 		Assert.Contains("__RequestVerificationToken", html);
 		Assert.Contains("/account/login", html);
 		Assert.Contains("type=\"password\"", html);
-		Assert.Contains("0.3.0", html);
+		Assert.Contains("0.4.0", html);
 	}
 
 	[Fact]

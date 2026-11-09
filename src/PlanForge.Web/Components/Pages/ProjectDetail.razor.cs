@@ -77,9 +77,9 @@ public partial class ProjectDetail : ApiPage
 	[Parameter] public Guid Id { get; set; }
 
 	private bool showResources;
-	private Guid? resourcePhase;
-	private void OnProjectResources() { resourcePhase = null; showSettings = false; showResources = true; }
-	private void OnPhaseResources(Guid phaseId) { resourcePhase = phaseId; showResources = true; }
+	private PlanItem? resourceItem;
+	private void OnProjectResources() { resourceItem = null; showSettings = false; showResources = true; }
+	private void OnNodeResources(Guid nodeId) { resourceItem = project!.Items.SingleOrDefault(item => item.Id == nodeId); showResources = true; }
 	private Task OnResourcesChangedAsync() => ExecuteAsync(LoadAsync);
 	private ProjectChangeCursor cursor = new();
 	private Guid loadedProject;
@@ -122,7 +122,14 @@ public partial class ProjectDetail : ApiPage
 
 	private void OnAdd((string Kind, Guid? ParentId) target) => OnEdit(new PlanItem(Guid.Empty, target.Kind, target.ParentId, project!.Items.Count(item => item.Kind == target.Kind && item.ParentId == target.ParentId), ""));
 
-	private void OnAddPhase() => OnAdd(("Phase", null));
+	private bool HasPendingStepDecision => editingId.HasValue && project!.Items.Any(item => item.Kind == "Decision" && item.ParentId == editingId && item.Status == "Pending");
+
+	private void OnParentChanged()
+	{
+		Guid? parent = Guid.TryParse(itemParent, out Guid id) ? id : null;
+		itemOrder = project!.Items.Count(item => item.Kind == itemKind && item.ParentId == parent && item.Id != editingId) + 1;
+	}
+
 
 	private void OnEdit(PlanItem item)
 	{
@@ -132,7 +139,7 @@ public partial class ProjectDetail : ApiPage
 		itemTitle = item.Title;
 		itemDescription = item.Description;
 		itemParent = item.ParentId?.ToString() ?? "";
-		itemOrder = item.SortOrder;
+		itemOrder = item.SortOrder + 1;
 		itemStatus = item.Status;
 		itemAssignment = item.AssignmentMode;
 		itemAgent = item.AssignedAgentId?.ToString() ?? "";
@@ -144,7 +151,7 @@ public partial class ProjectDetail : ApiPage
 	private Task OnSaveItemAsync() => ExecuteAsync(async () =>
 	{
 		bool completing = itemKind == "Step" && editingId.HasValue && itemStatus == "Completed" && project!.Items.Any(item => item.Id == editingId && item.Status != "Completed");
-		var command = new PlanItemCommand(project!.Revision, itemTitle, Guid.TryParse(itemParent, out Guid parent) ? parent : null, itemOrder, itemDescription, itemStatus, itemAssignment, itemAssignment == "Override" && Guid.TryParse(itemAgent, out Guid agent) ? agent : null, itemResolution, string.IsNullOrEmpty(itemEvidence) ? null : itemEvidence);
+		var command = new PlanItemCommand(project!.Revision, itemTitle, Guid.TryParse(itemParent, out Guid parent) ? parent : null, itemOrder.HasValue ? itemOrder.Value - 1 : null, itemDescription, itemStatus, itemAssignment, itemAssignment == "Override" && Guid.TryParse(itemAgent, out Guid agent) ? agent : null, itemResolution, string.IsNullOrEmpty(itemEvidence) ? null : itemEvidence);
 		string path = $"projects/{Id}/{PlanLabels.RouteKind(itemKind)}" + (editingId.HasValue ? $"/{editingId}" : "");
 		project = await Api.SendAsync<ProjectSnapshot>(editingId.HasValue ? HttpMethod.Put : HttpMethod.Post, path, command, cancellationToken: Token);
 		if (completing && project.Items.Any(item => item.Id == editingId && item.Status == "Completed")) { completedItemId = editingId; selectionEpoch++; }

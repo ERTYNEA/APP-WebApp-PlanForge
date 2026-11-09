@@ -64,13 +64,37 @@ test('secondary and field interaction states stay coherent without decorative ca
 
 test('destructive plan and credential actions consume the existing common danger variant', () => {
 	const root = path.join(__dirname, '../../src/PlanForge.Web/Components');
-	for (const [file, marker] of [['Planning/WorkPlanInspector.razor', 'Delete'], ['Pages/ProjectDetail.razor', 'Clean completed phases'], ['Shared/AgentTokenRow.razor', 'Revoke'], ['Shared/AgentTokenPanel.razor', 'Delete revoked tokens']]) {
+	for (const [file, marker] of [['Planning/WorkPlanInspector.razor', 'Delete {0}'], ['Pages/ProjectDetail.razor', 'Clean completed phases'], ['Shared/AgentTokenRow.razor', 'Revoke'], ['Shared/AgentTokenPanel.razor', 'Delete revoked tokens']]) {
 		const markup = fs.readFileSync(path.join(root, file), 'utf8');
 		const buttons = markup.match(/<button\b[^>]*>[\s\S]*?<\/button>/g) || [];
-		const button = buttons.find(button => button.includes(`T["${marker}"]`));
+		const button = buttons.find(button => button.includes(`T["${marker}"`));
 		assert.ok(button, `${file}: ${marker} exists`);
 		assert.match(button, /class="(?:[^\"]*\s)?danger(?:\s[^\"]*)?"/, `${file}: ${marker} uses common danger`);
 	}
+});
+
+test('v04 inspector keeps readable content and integrated decision rows with stable spacing', () => {
+	assert.equal(declarations('.inspector-decision').background, 'transparent');
+	assert.equal(declarations('.inspector-decision')['border-top'], '1px solid var(--pf-border)');
+	assert.equal(declarations('.inspector-metadata')['margin-top'], '16px');
+	assert.equal(declarations('.selection-path button')['white-space'], 'normal');
+	assert.equal(declarations('.plan-edit-form').gap, '16px');
+	assert.equal(declarations('.inspector-section-heading').display, 'flex');
+});
+
+test('tree keyboard focus is composed on one row surface with a child fallback', () => {
+	assert.equal(declarations('.plan-row:has(> button:focus-visible)').outline, '2px solid var(--pf-focus)');
+	assert.equal(declarations('.plan-row:has(> button:focus-visible)')['outline-offset'], '-2px');
+	assert.equal(declarations('.plan-row:has(> button:focus-visible) > button:focus-visible').outline, 'none');
+	assert.equal(declarations('.toolbar-divider').background, 'var(--pf-border)');
+});
+
+test('sidebar focus has one composed contour and destructive section dividers stay neutral', () => {
+	const focus = declarations('.sidebar nav a:focus-visible, .account-link:focus-visible');
+	assert.equal(focus.outline, '2px solid var(--pf-focus)');
+	assert.equal(focus['outline-offset'], '-2px');
+	assert.equal(declarations('.danger-zone')['border-top'], '1px solid var(--pf-border)');
+	assert.equal(declarations('.danger-zone h3').color, 'var(--pf-red)');
 });
 
 function resolved(value) {

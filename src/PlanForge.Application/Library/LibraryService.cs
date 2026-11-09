@@ -39,13 +39,13 @@ public sealed class LibraryService(ILibraryStore store, ResourceLimits limits, T
 			throw new PlanForgeException(400, "Provide a supported MIME type, safe filename and title of up to 240 characters.");
 		DateTimeOffset now = timeProvider.GetUtcNow();
 		var resource = new Resource { OwnerUserId = actor.UserId, FileName = SafeFileName(request.FileName), Title = request.Title.Trim(), ContentType = request.ContentType.ToLowerInvariant(), Content = content, Size = content.LongLength, Sha256 = Convert.ToHexString(SHA256.HashData(content)), CreatedAt = now, UpdatedAt = now };
-		return await store.UploadAsync(actor, resource, request.ProjectId, request.PhaseId, limits, cancellationToken);
+		return await store.UploadAsync(actor, resource, request.ProjectId, request.PhaseId, limits, cancellationToken, request.SubphaseId, request.StepId);
 	}
 
 	public Task<ResourceProfile> SetLinkAsync(AuthenticatedActor actor, Guid resourceId, ResourceLinkRequest request, CancellationToken cancellationToken = default)
 	{
-		if (request.ProjectId.HasValue == request.PhaseId.HasValue)
-			throw new PlanForgeException(400, "Choose exactly one project or phase link.");
+		if (new[] { request.ProjectId, request.PhaseId, request.SubphaseId, request.StepId }.Count(id => id.HasValue) != 1)
+			throw new PlanForgeException(400, "Choose exactly one project, phase, subphase or step link.");
 		return store.SetLinkAsync(actor, resourceId, request, cancellationToken);
 	}
 	public Task<int> CleanOrphansAsync(AuthenticatedActor actor, CleanOrphansRequest request, CancellationToken cancellationToken = default)
@@ -67,13 +67,13 @@ public sealed class LibraryService(ILibraryStore store, ResourceLimits limits, T
 		return store.DeleteAsync(actor, resourceId, revision, cancellationToken);
 	}
 
-	public Task<IReadOnlyList<ResourceProfile>> ListProjectAsync(AuthenticatedActor actor, Guid projectId, Guid? phaseId = null, CancellationToken cancellationToken = default)
-		=> store.ListProjectAsync(actor.UserId, projectId, phaseId, cancellationToken);
+	public Task<IReadOnlyList<ResourceProfile>> ListProjectAsync(AuthenticatedActor actor, Guid projectId, Guid? phaseId = null, CancellationToken cancellationToken = default, string itemKind = "Phase")
+		=> store.ListProjectAsync(actor.UserId, projectId, phaseId, cancellationToken, itemKind);
 	public Task<ResourceUsage> UsageAsync(AuthenticatedActor actor, CancellationToken cancellationToken = default)
 		=> store.UsageAsync(actor.UserId, limits, cancellationToken);
 
-	public Task ValidateTargetsAsync(AuthenticatedActor actor, Guid? projectId, Guid? phaseId, CancellationToken cancellationToken = default)
-		=> store.ValidateTargetsAsync(actor.UserId, projectId, phaseId, cancellationToken);
+	public Task ValidateTargetsAsync(AuthenticatedActor actor, Guid? projectId, Guid? phaseId, CancellationToken cancellationToken = default, Guid? subphaseId = null, Guid? stepId = null)
+		=> store.ValidateTargetsAsync(actor.UserId, projectId, phaseId, cancellationToken, subphaseId, stepId);
 
 	public async Task<ResourceProfile> GetAsync(AuthenticatedActor actor, Guid resourceId, CancellationToken cancellationToken = default)
 		=> await store.GetAsync(actor.UserId, resourceId, cancellationToken) ?? throw new PlanForgeException(404, "Resource not found.");

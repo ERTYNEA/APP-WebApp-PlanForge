@@ -9,6 +9,22 @@ using PlanForge.Web.Components.Pages;
 public sealed class HomeFocusTests
 {
 	[Fact]
+	public void Projects_CardHasOnlyOneQueryFreeOpenLinkAndPlainTitle()
+	{
+		Guid id = Guid.NewGuid();
+		using var context = new ComponentTestContext(_ => Task.FromResult(ComponentTestContext.Json(new ProjectSummaryPage([Summary(id)], 1, 0, 100, false))));
+		context.Services.GetRequiredService<NavigationManager>().NavigateTo("/projects");
+		var page = context.Render<Projects>();
+		var card = page.Find(".project-card");
+		Assert.Empty(card.QuerySelectorAll("h2 a"));
+		var link = Assert.Single(card.QuerySelectorAll("a"));
+		Assert.Equal($"/projects/{id}", link.GetAttribute("href"));
+		Assert.Equal("Open project →", link.TextContent);
+		Assert.DoesNotContain("Settings", card.TextContent);
+		Assert.False(card.HasAttribute("onclick"));
+	}
+
+	[Fact]
 	public void Home_ShowsThreeRealMetricsAndOrderedDeepLinksWithoutFetchingTrees()
 	{
 		Guid projectId = Guid.NewGuid(), firstStep = Guid.NewGuid();
@@ -66,7 +82,7 @@ public sealed class HomeFocusTests
 			return Task.FromResult(ComponentTestContext.Json(new ProjectSummaryPage([Summary(Guid.NewGuid())], 1, 0, 100, false)));
 		});
 		context.Services.GetRequiredService<NavigationManager>().NavigateTo("/projects");
-		var page = context.Render<Home>();
+		var page = context.Render<Projects>();
 		Assert.Single(page.FindAll(".project-card"));
 		Assert.Empty(page.FindAll("#workspace-metrics, #next-in-focus, #recent-projects"));
 		page.Find("input[aria-label='Search projects']").Input("No match");

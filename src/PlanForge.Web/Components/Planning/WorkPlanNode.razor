@@ -6,7 +6,7 @@
 		}
 		else { <span class="tree-expander tree-leaf" aria-hidden="true">−</span> }
 		<button type="button" class="tree-select" data-select-id="@Item.Id" @onclick="() => Select.InvokeAsync(Item.Id)" aria-current="@(SelectedId == Item.Id ? "true" : null)" title="@Item.Title"><span class="node-kind" aria-hidden="true">@(Item.Kind == "Phase" ? "▱" : Item.Kind == "Subphase" ? "◈" : "○")</span><span class="tree-title">@Item.Title</span></button>
-		<span class="badge @PlanLabels.StatusClass(Item.Status)">@T[Item.Status]</span>
+		<span class="badge @PlanLabels.StatusClass(Item.EffectiveStatus)">@T[Item.EffectiveStatus]</span>
 	</div>
 	@if (Children.Count > 0 && Expanded.Contains(Item.Id))
 	{

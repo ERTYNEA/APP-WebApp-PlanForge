@@ -36,6 +36,21 @@ public sealed class PlanWriteFenceTests
 		Assert.Empty(await fixture.Database.Projects.ToListAsync());
 	}
 
+	[Fact]
+	public async Task Version03Writer_CannotOverwriteVersion04CalculatedStatesAsync()
+	{
+		await using var fixture = new AccountDatabaseFixture();
+		var grant = await fixture.Service.RegisterAsync(new RegisterRequest("v04-fence@example.test", "CorrectPassword123!", "test"));
+		var actor = await fixture.Service.AuthenticateAsync(grant.Token);
+		var projects = new ProjectService(new EfProjectStore(fixture.Database), TimeProvider.System);
+		var snapshot = await projects.CreateAsync(actor, new("Fence fixture"));
+		await using var transaction = await fixture.Database.Database.BeginTransactionAsync();
+		var exception = await Assert.ThrowsAsync<SqliteException>(() => fixture.Database.Database.ExecuteSqlInterpolatedAsync($"UPDATE Projects SET Revision = Revision + 1, WriteRevision = Revision + 1 WHERE Id = {snapshot.Id}"));
+		Assert.Equal(19, exception.SqliteErrorCode);
+		await transaction.RollbackAsync();
+		Assert.Equal(snapshot.Revision, (await projects.GetAsync(actor, snapshot.Id)).Revision);
+	}
+
 	private static string Canonical(ProjectSnapshot snapshot)
 		=> JsonSerializer.Serialize(snapshot with { Items = snapshot.Items.OrderBy(item => item.Id).ToList() });
 }

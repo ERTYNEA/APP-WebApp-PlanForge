@@ -37,12 +37,14 @@ public sealed class ProjectDeletionTests
 	{
 		using var fixture = new ProjectPageFixture { Conflict = true };
 		var page = fixture.Context.Render<ProjectDetail>(parameters => parameters.Add(component => component.Id, fixture.Project.Id));
+		await page.Find(".tree-roots > li > .plan-row .tree-select").ClickAsync(new());
 		await page.FindAll("button").Single(button => button.TextContent.Contains("Add phase", StringComparison.Ordinal)).ClickAsync(new());
 		page.Find("#item-title").Change("Stale phase");
 		await page.Find("dialog form").SubmitAsync();
 		Assert.Single(fixture.Commands);
 		Assert.Contains("Reload and reconcile", page.Markup);
-		Assert.Contains("Revision 5", page.Markup);
+		Assert.DoesNotContain("Revision 5", page.Markup);
+		Assert.Equal(5, fixture.Project.Revision);
 		Assert.NotEmpty(page.FindAll("dialog"));
 	}
 }

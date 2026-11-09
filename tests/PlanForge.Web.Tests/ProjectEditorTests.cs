@@ -65,7 +65,7 @@ public sealed class ProjectEditorTests
 		await page.Find($"button[data-select-id='{(kind == "Decision" ? target.ParentId : target.Id)}']").ClickAsync(new());
 		await page.Find($"button[aria-label='Edit {kind.ToLowerInvariant()} {target.Title}']").ClickAsync(new());
 		page.Find("#item-title").Change("Edited title");
-		page.Find("#item-order").Change("2");
+		page.Find("#item-order").Change("3");
 		if (kind is "Step" or "Decision") page.Find("#item-status").Change(kind == "Decision" ? "Decided" : "Completed");
 		else Assert.Empty(page.FindAll("#item-status"));
 		if (kind == "Decision") page.Find("#item-resolution").Change("Verified decision");

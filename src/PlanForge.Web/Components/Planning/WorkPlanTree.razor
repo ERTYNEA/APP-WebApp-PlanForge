@@ -1,5 +1,10 @@
 @inject IJSRuntime JavaScript
 @inject PlanForge.Web.State.PlanExplorerState NavigationState
+<div class="section-heading work-plan-heading"><div><h2>@T["Work plan"]</h2><span class="muted small">@T["Phases → Subphases → Steps · Updates automatically"]</span></div><div class="toolbar plan-tree-controls">
+	<button type="button" class="quiet" data-plan-action="expand-all" @onclick="OnExpandAll" disabled="@(Disabled || branches.All(Expanded.Contains))"><span aria-hidden="true">⇊</span> @T["Expand all"]</button>
+	<button type="button" class="quiet" data-plan-action="collapse-all" @onclick="OnCollapseAll" disabled="@(Disabled || !branches.Any(Expanded.Contains))"><span aria-hidden="true">⇈</span> @T["Collapse all"]</button>
+	<span class="toolbar-divider" aria-hidden="true"></span><button type="button" class="quiet" @onclick="Reload" disabled="@Disabled">@T["↻ Reload"]</button>
+</div></div>
 <div class="plan-explorer">
 	<nav id="plan-structure" class="work-plan-tree" aria-label="@T["Hierarchical work plan"]">
 		<ul class="tree-roots">
@@ -13,6 +18,7 @@
 				</ul>
 			</li>
 		</ul>
+		@if (!Snapshot.Items.Any(item => item.Kind == "Phase")) { <p class="muted small">@T["Add a phase to build your work plan. Every phase includes a real subphase."]</p> }
 	</nav>
 	<WorkPlanInspector Snapshot="Snapshot" Item="Selected" Agents="Agents" Resources="Resources" Edit="Edit" Add="Add" Delete="Delete" AttachResources="AttachResources" ProjectSettings="ProjectSettings" Select="OnManualSelect" Disabled="Disabled" />
 </div>

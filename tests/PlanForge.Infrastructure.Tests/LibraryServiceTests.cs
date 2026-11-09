@@ -104,10 +104,10 @@ public sealed class LibraryServiceTests
 		ResourceProfile direct = await library.UploadAsync(actor, new("direct.bin", "Direct", "application/octet-stream", project.Id), [2]);
 		await library.UploadAsync(actor, new("orphan.bin", "Orphan", "application/octet-stream"), [3]);
 		Assert.Equal(2, (await library.ListProjectAsync(actor, project.Id)).Count);
-		Assert.Equal(phaseOnly.Id, (await library.ListProjectAsync(actor, project.Id, phase)).Single().Id);
+		Assert.Equal(new[] { phaseOnly.Id, direct.Id }.Order(), (await library.ListProjectAsync(actor, project.Id, phase)).Select(item => item.Id).Order());
 		await library.SetLinkAsync(actor, phaseOnly.Id, new(phaseOnly.Revision, true, ProjectId: project.Id));
 		Assert.Equal(2, (await library.ListProjectAsync(actor, project.Id)).Count);
-		Assert.DoesNotContain(await library.ListProjectAsync(actor, project.Id, phase), item => item.Id == direct.Id);
+		Assert.Contains(await library.ListProjectAsync(actor, project.Id, phase), item => item.Id == direct.Id);
 	}
 
 	[Fact]

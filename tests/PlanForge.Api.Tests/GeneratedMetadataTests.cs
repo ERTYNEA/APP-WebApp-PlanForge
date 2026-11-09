@@ -14,7 +14,7 @@ public sealed class GeneratedMetadataTests
 		var metadata = await provider.GetFunctionMetadataAsync(string.Empty);
 
 		string[] names = metadata.Select(item => item.Name!).Order(StringComparer.Ordinal).ToArray();
-		Assert.Equal(new[] { "Agent", "AgentAvatar", "AgentTokens", "Agents", "ChangePassword", "CleanAgentTokens", "CleanCompletedPhases", "CleanOrphanResources", "Decisions", "DownloadResource", "ExportProjectArchive", "ExportWorkPlan", "Health", "ImportWorkPlan", "Login", "Logout", "PhaseResources", "Phases", "Project", "ProjectChanges", "ProjectResources", "ProjectSummaries", "Projects", "Readiness", "Register", "RenewAgentToken", "Resource", "ResourceLinks", "ResourceUsage", "Resources", "RevokeAgentToken", "Session", "Settings", "Steps", "Subphases", "UserAvatar", "UserProfile", "WorkspaceDashboard" }.Order(StringComparer.Ordinal), names);
+		Assert.Equal(new[] { "Agent", "AgentAvatar", "AgentTokens", "Agents", "ChangePassword", "CleanAgentTokens", "CleanCompletedPhases", "CleanOrphanResources", "Decisions", "DownloadResource", "ExportProjectArchive", "ExportWorkPlan", "Health", "ImportWorkPlan", "Login", "Logout", "PhaseResources", "Phases", "Project", "ProjectChanges", "ProjectResources", "ProjectSummaries", "Projects", "Readiness", "Register", "RenewAgentToken", "Resource", "ResourceLinks", "ResourceUsage", "Resources", "RevokeAgentToken", "Session", "Settings", "StepResources", "Steps", "SubphaseResources", "Subphases", "UserAvatar", "UserProfile", "WorkspaceDashboard" }.Order(StringComparer.Ordinal), names);
 		Assert.All(metadata, item => Assert.NotEmpty(item.RawBindings!));
 	}
 }

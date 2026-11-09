@@ -84,6 +84,7 @@ public sealed class ContextualFeedbackTests
 	{
 		using var fixture = new ProjectPageFixture { Conflict = true };
 		var page = fixture.Context.Render<ProjectDetail>(parameters => parameters.Add(component => component.Id, fixture.Project.Id));
+		if (!settings) await page.Find(".tree-roots > li > .plan-row .tree-select").ClickAsync(new());
 		await page.FindAll("button").Single(button => settings ? button.TextContent == "Settings" : button.TextContent.Contains("Add phase", StringComparison.Ordinal)).ClickAsync(new());
 		if (settings) page.Find("#project-name").Change("Retained unsaved name");
 		else page.Find("#item-title").Change("Retained unsaved name");

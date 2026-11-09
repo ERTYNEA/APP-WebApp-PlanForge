@@ -13,12 +13,14 @@ public static class PlanSnapshotValidator
 			throw Invalid("Provide a project name and a plan of at most 5000 records.");
 		ParseEnum<DevelopmentWorkflow>(snapshot.Workflow);
 		ParseEnum<WorkStatus>(snapshot.Status);
-		if (snapshot.Items.Any(item => item is null || item.Id == Guid.Empty) || snapshot.Items.Select(item => item.Id).Distinct().Count() != snapshot.Items.Count)
+		if (snapshot.Id == Guid.Empty || snapshot.Items.Any(item => item is null || item.Id == Guid.Empty || item.Id == snapshot.Id) || snapshot.Items.Select(item => item.Id).Distinct().Count() != snapshot.Items.Count)
 			throw Invalid("Plan record IDs must be nonempty and unique.");
 		Dictionary<Guid, PlanItem> items = snapshot.Items.ToDictionary(item => item.Id);
 		foreach (PlanItem item in snapshot.Items)
 		{
 			WorkItemKind kind = ParseEnum<WorkItemKind>(item.Kind);
+			if (kind == WorkItemKind.Step && item.Status == "Blocked")
+				throw Invalid("Blocked is calculated from pending decisions. Choose Pending, InProgress or Completed for a step.");
 			if (kind != WorkItemKind.Decision)
 				ParseEnum<WorkStatus>(item.Status);
 			if (item.Evidence is not null)
@@ -36,7 +38,7 @@ public static class PlanSnapshotValidator
 				if (item.ParentId is not null || !snapshot.Items.Any(child => child.Kind == "Subphase" && child.ParentId == item.Id))
 					throw Invalid("Every Phase must have at least one Subphase and no parent.");
 			}
-			else
+			else if (!(kind == WorkItemKind.Decision && item.ParentId == snapshot.Id))
 			{
 				if (item.ParentId is null || !items.TryGetValue(item.ParentId.Value, out PlanItem? parent) || (kind == WorkItemKind.Subphase && parent.Kind != "Phase") || (kind == WorkItemKind.Step && parent.Kind != "Subphase") || (kind == WorkItemKind.Decision && parent.Kind is not ("Phase" or "Subphase" or "Step")))
 					throw Invalid("Each plan record must belong to the required parent in this project.");

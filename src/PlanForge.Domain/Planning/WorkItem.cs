@@ -12,6 +12,7 @@ public sealed class WorkItem
 	public string Description { get; set; } = string.Empty;
 	public CompletionEvidence? Evidence { get; set; }
 	public WorkItemKind Kind { get; set; }
+	public WorkStatus? ManualStatus { get; set; }
 	public Guid? ParentId { get; set; }
 	public Guid ProjectId { get; set; }
 	public string Resolution { get; set; } = string.Empty;

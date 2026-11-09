@@ -1,5 +1,6 @@
 namespace PlanForge.Web.Components.Pages;
 
+using Microsoft.AspNetCore.Components;
 using PlanForge.Contracts.Planning;
 using PlanForge.Web.Components.Shared;
 using PlanForge.Web.State;
@@ -15,7 +16,7 @@ public partial class Home : ApiPage
 	private bool showCreate;
 
 	protected override bool HasOpenOperation => showCreate;
-	private bool IsManagement => new Uri(Navigation.Uri).AbsolutePath == "/projects";
+	[Parameter] public bool IsManagement { get; set; }
 	private IEnumerable<ProjectSummary> Filtered => (projects ?? []).Where(project => (status.Length == 0 || project.Status == status) && project.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
 		.OrderBy(project => sort == "name" ? project.Name : "").ThenByDescending(project => sort == "progress" ? project.Progress : 0).ThenByDescending(project => project.UpdatedAt).ThenBy(project => project.Id);
 

@@ -310,7 +310,7 @@ namespace PlanForge.Infrastructure.Migrations
 
                     b.ToTable("Projects", null, t =>
                         {
-                            t.HasCheckConstraint("CK_Projects_WriteRevision", "[WriteRevision] = [Revision]");
+                            t.HasCheckConstraint("CK_Projects_WriteRevision", "[WriteRevision] = [Revision] + 1");
                         });
                 });
 
@@ -387,6 +387,9 @@ namespace PlanForge.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ManualStatus")
                         .HasColumnType("int");
 
                     b.Property<Guid?>("ParentId")

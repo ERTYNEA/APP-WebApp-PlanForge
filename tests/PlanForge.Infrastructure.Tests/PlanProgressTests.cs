@@ -6,14 +6,14 @@ using PlanForge.Contracts.Planning;
 public sealed class PlanProgressTests
 {
 	[Theory]
-	[InlineData("Phase", "Pending", "Completed", "InProgress")]
-	[InlineData("Subphase", "Pending", "Completed", "InProgress")]
-	[InlineData("Step", "Pending", "Completed", "InProgress")]
+	[InlineData("Phase", "Pending", "Completed", "Blocked")]
+	[InlineData("Subphase", "Pending", "Completed", "Blocked")]
+	[InlineData("Step", "Pending", "Completed", "Blocked")]
 	[InlineData("Step", "Decided", "Completed", "Completed")]
-	[InlineData("Subphase", "Pending", "Pending", "Pending")]
+	[InlineData("Subphase", "Pending", "Pending", "Blocked")]
 	[InlineData("Phase", "Decided", "Pending", "Pending")]
 	[InlineData("Step", "Pending", "Blocked", "Blocked")]
-	public void Recalculate_PendingDecisionPreventsClosureWithoutInventingWorkOrBlocking(string scope, string decisionStatus, string stepStatus, string expected)
+	public void Recalculate_PendingDecisionBlocksUpwardWithoutChangingBaseWork(string scope, string decisionStatus, string stepStatus, string expected)
 	{
 		Guid phase = Guid.NewGuid(), subphase = Guid.NewGuid(), step = Guid.NewGuid();
 		var snapshot = new ProjectSnapshot(Guid.NewGuid(), 1, "Project", "", "Pending", "PlanningOnly", DateTimeOffset.UtcNow,

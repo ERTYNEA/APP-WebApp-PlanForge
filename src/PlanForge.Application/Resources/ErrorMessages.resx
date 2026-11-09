@@ -104,4 +104,7 @@
   <data name="The agent changed while issuing this token. Reload and issue a new token." xml:space="preserve"><value>The agent changed while issuing this token. Reload and issue a new token.</value></data>
   <data name="The account changed while issuing this token. Sign in again before retrying." xml:space="preserve"><value>The account changed while issuing this token. Sign in again before retrying.</value></data>
   <data name="Resolve pending decisions on this step before completion." xml:space="preserve"><value>Resolve pending decisions on this step before completion.</value></data>
+  <data name="Blocked is calculated from pending decisions. Choose Pending, InProgress or Completed for a step." xml:space="preserve"><value>Blocked is calculated from pending decisions. Choose Pending, InProgress or Completed for a step.</value></data>
+  <data name="Choose exactly one project, phase, subphase or step link." xml:space="preserve"><value>Choose exactly one project, phase, subphase or step link.</value></data>
+  <data name="Choose at most one structural resource target." xml:space="preserve"><value>Choose at most one structural resource target.</value></data>
 </root>

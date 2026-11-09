@@ -13,7 +13,7 @@ internal static class ProjectEventWriter
 	{
 		int changed = await database.Projects.Where(project => project.Id == projectId && project.OwnerUserId == actor.UserId)
 			.ExecuteUpdateAsync(setters => setters.SetProperty(project => project.Revision, project => project.Revision + 1)
-				.SetProperty(project => EF.Property<long>(project, "WriteRevision"), project => project.Revision + 1)
+				.SetProperty(project => EF.Property<long>(project, "WriteRevision"), project => project.Revision + 2)
 				.SetProperty(project => project.UpdatedAt, DateTime.UtcNow), cancellationToken);
 		if (changed != 1)
 			throw new PlanForgeException(404, "Project not found.");

@@ -6,15 +6,13 @@
 else
 {
 	<PageTitle>@project.Name · PlanForge</PageTitle>
-	<div class="page-heading project-heading"><div><a href="/projects">@T["← All projects"]</a><h1>@project.Name<span class="accent">.</span></h1><p class="user-text muted">@project.Description</p></div><div class="toolbar"><button class="quiet" @onclick="() => { ClearFeedback(); showImport=true; }" disabled="@Busy">@T["Import CSV"]</button><button class="quiet" @onclick='() => OnExportAsync("csv")' disabled="@Busy">@T["Export CSV"]</button><button class="primary" @onclick='() => OnExportAsync("projects")' disabled="@Busy">@T["Export project"]</button><button class="quiet" @onclick="OnSettings" disabled="@Busy">@T["Settings"]</button></div></div>
-	<div class="project-overview"><span class="badge @PlanLabels.StatusClass(project.Status)">@T[project.Status]</span><span class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</span><span class="mono muted">@T["Revision {0}", project.Revision]</span><span class="progress-summary">@T["{0}% complete", project.Progress]</span><progress value="@project.Progress" max="100" aria-label="@T["Project progress"]"></progress></div>
-	<div class="section-heading"><div><h2>@T["Work plan"]</h2><span class="muted small">@T["Phases → Subphases → Steps · Updates automatically"]</span></div><div class="toolbar"><button class="quiet" @onclick="() => ExecuteAsync(LoadAsync)" disabled="@Busy">@T["↻ Reload"]</button><button class="primary" @onclick="OnAddPhase" disabled="@Busy">@T["+ Add phase"]</button></div></div>
-	@if (project.Items.Count == 0) { <section class="empty-state"><h2>@T["A clear start"]</h2><p>@T["Add a phase to build your work plan. Every phase includes a real subphase."]</p></section> }
-	<WorkPlanTree Snapshot="project" Agents="agents" Resources="resources" Edit="OnEdit" Add="OnAdd" Delete="OnDeleteItem" AttachResources="OnPhaseResources" ProjectSettings="OnSettings" RequestedStepId="RequestedStepId" SelectionEpoch="selectionEpoch" CompletedItemId="completedItemId" Disabled="Busy" />
+	<div class="page-heading project-heading"><div><a href="/projects">@T["← All projects"]</a><h1>@project.Name<span class="accent">.</span></h1></div><div class="toolbar"><button class="quiet" @onclick="() => { ClearFeedback(); showImport=true; }" disabled="@Busy">@T["Import CSV"]</button><button class="quiet" @onclick='() => OnExportAsync("csv")' disabled="@Busy">@T["Export CSV"]</button><button class="primary" @onclick='() => OnExportAsync("projects")' disabled="@Busy">@T["Export project"]</button><button class="quiet" @onclick="OnSettings" disabled="@Busy">@T["Settings"]</button></div></div>
+	<div class="project-overview"><span class="badge @PlanLabels.StatusClass(project.Status)">@T[project.Status]</span><span class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</span><span class="progress-summary">@T["{0}% complete", project.Progress]</span><progress value="@project.Progress" max="100" aria-label="@T["Project progress"]"></progress></div>
+	<WorkPlanTree Reload="() => ExecuteAsync(LoadAsync)" Snapshot="project" Agents="agents" Resources="resources" Edit="OnEdit" Add="OnAdd" Delete="OnDeleteItem" AttachResources="OnNodeResources" ProjectSettings="OnSettings" RequestedStepId="RequestedStepId" SelectionEpoch="selectionEpoch" CompletedItemId="completedItemId" Disabled="Busy" />
 }
 @if(showResources)
 {
-	<Modal Title="@T[resourcePhase.HasValue ? "Phase resources" : "Project resources"]" Close="() => { ClearFeedback(); showResources=false; }"><ResourcePanel ProjectId="Id" PhaseId="resourcePhase" Changed="OnResourcesChangedAsync" /></Modal>
+	<Modal Title="@T[(resourceItem?.Kind ?? "Project") + " resources"]" Close="() => { ClearFeedback(); showResources=false; }"><ResourcePanel ProjectId="Id" PhaseId='@(resourceItem?.Kind == "Phase" ? resourceItem.Id : (Guid?)null)' SubphaseId='@(resourceItem?.Kind == "Subphase" ? resourceItem.Id : (Guid?)null)' StepId='@(resourceItem?.Kind == "Step" ? resourceItem.Id : (Guid?)null)' Changed="OnResourcesChangedAsync" /></Modal>
 }
 @if(showImport)
 {
@@ -23,7 +21,7 @@ else
 @if(showSettings)
 {
 	<Modal Title='@T["Project settings"]' Error="@Error" Close="() => { ClearFeedback(); showSettings=false; }"><form id="project-settings-form" @onsubmit="OnSaveSettingsAsync" @onsubmit:preventDefault>
-		<label>@T["Name"]<input id="project-name" @bind="projectName" required maxlength="160" /></label><label>@T["Purpose"]<textarea @bind="projectDescription" maxlength="8000" rows="3"></textarea></label><p class="muted small">@T["Status is calculated from the plan."] <span class="badge @PlanLabels.StatusClass(project!.Status)">@T[project.Status]</span></p><div class="form-grid"><label>@T["Development workflow"]<select id="project-workflow" @bind="projectWorkflow">@foreach(string value in PlanLabels.Workflows) { <option value="@value">@PlanLabels.Workflow(value)</option> }</select></label></div><p class="muted small">@T["Changing workflow never silently closes pending steps. Library resources survive project and phase deletion."]</p>
+		<label for="project-name">@T["Name"]<input id="project-name" @bind="projectName" required maxlength="160" /></label><label for="project-description">@T["Description"]<textarea id="project-description" @bind="projectDescription" maxlength="8000" rows="3"></textarea></label><p class="muted small calculated-status"><span class="badge @PlanLabels.StatusClass(project!.Status)">@T[project.Status]</span><span>@T["Status updates automatically as work progresses."]</span></p><div class="form-grid"><label>@T["Development workflow"]<select id="project-workflow" @bind="projectWorkflow">@foreach(string value in PlanLabels.Workflows) { <option value="@value">@PlanLabels.Workflow(value)</option> }</select></label></div><p class="muted small">@T["Changing workflow never silently closes pending steps. Library resources survive project and phase deletion."]</p>
 		<FormError Conflict="Conflict" /><div class="form-actions"><button type="button" class="quiet" @onclick="() => { ClearFeedback(); showSettings=false; }">@T["Cancel"]</button><button class="primary" disabled="@Busy">@T["Save settings"]</button></div>
 	</form><div class="settings-resources"><button class="quiet" @onclick="OnProjectResources">@T["Manage project resources"]</button></div><div class="danger-zone"><h3>@T["Permanent actions"]</h3><button class="danger" @onclick="OnCleanCompleted" disabled="@Busy">@T["Clean completed phases"]</button><button class="danger" @onclick="OnDeleteProject" disabled="@Busy">@T["Delete project"]</button></div></Modal>
 }
@@ -34,23 +32,29 @@ else
 @if (showItem)
 {
 	<Modal Title='@T[editingId.HasValue ? "Edit {0}" : "New {0}",T[itemKind.ToLowerInvariant()]]' Error="@Error" Close="() => { ClearFeedback(); showItem = false; }">
-		<form @onsubmit="OnSaveItemAsync" @onsubmit:preventDefault>
-			<label for="item-title">@T["Title"]</label><input id="item-title" @bind="itemTitle" required maxlength="240" autofocus />
-			<label for="item-description">@T["Description"]</label><textarea id="item-description" @bind="itemDescription" maxlength="8000" rows="3"></textarea>
-			<div class="form-grid">@if (itemKind is "Step" or "Decision") { <label>@T["Status"]<select id="item-status" @bind="itemStatus">@foreach(string value in itemKind=="Decision" ? new[]{"Pending","Decided"} : new[]{"Pending","InProgress","Blocked","Completed"}) { <option value="@value">@T[value]</option> }</select></label> } else { <p class="muted small">@T["Status is calculated from the plan."] <span class="badge @PlanLabels.StatusClass(itemStatus)">@T[itemStatus]</span></p> }<label>@T["Order (zero-based)"]<input id="item-order" type="number" @bind="itemOrder" min="0" /></label></div>
+		<form class="plan-edit-form" @onsubmit="OnSaveItemAsync" @onsubmit:preventDefault>
+			<label for="item-title">@T["Title"]<input id="item-title" @bind="itemTitle" required maxlength="240" autofocus /></label>
+			<label for="item-description">@T["Description"]<textarea id="item-description" @bind="itemDescription" maxlength="8000" rows="3"></textarea></label>
+			@if (itemKind is "Step" or "Decision")
+			{
+				<label for="item-status">@T["Status"]<select id="item-status" @bind="itemStatus">@foreach (string value in itemKind == "Decision" ? new[] { "Pending", "Decided" } : new[] { "Pending", "InProgress", "Completed" }) { <option value="@value" disabled='@(itemKind == "Step" && value == "Completed" && itemStatus != "Completed" && HasPendingStepDecision)'>@T[value]</option> }</select></label>
+				@if (itemKind == "Step" && HasPendingStepDecision) { <p class="notice warning small" id="item-effective-state"><span class="badge error">@T["Blocked"]</span> @T["Blocked by pending decisions on this step."] @T["Work status"]: @T[itemStatus]</p> }
+			}
+			else { <p class="muted small calculated-status"><span class="badge @PlanLabels.StatusClass(itemStatus)">@T[itemStatus]</span><span>@T["Status updates automatically as work progresses."]</span></p> }
 			@if (itemKind != "Phase")
 			{
-				<label>@T["Parent / move to"]<select id="item-parent" @bind="itemParent">@foreach(PlanItem parent in project!.Items.Where(item=>itemKind=="Decision" ? item.Kind!="Decision" : item.Kind==(itemKind=="Subphase" ? "Phase" : "Subphase"))) { <option value="@parent.Id">@T[parent.Kind.ToLowerInvariant()]: @parent.Title</option> }</select></label>
+				<label for="item-parent">@T["Parent / move to"]<select id="item-parent" @bind="itemParent" @bind:after="OnParentChanged">@if (itemKind == "Decision") { <option value="@project!.Id">@T["Project"]: @project.Name</option> }@foreach(PlanItem parent in project!.Items.Where(item=>itemKind=="Decision" ? item.Kind!="Decision" : item.Kind==(itemKind=="Subphase" ? "Phase" : "Subphase"))) { <option value="@parent.Id">@T[parent.Kind.ToLowerInvariant()]: @parent.Title</option> }</select></label>
 			}
-			@if(itemKind=="Decision") { <label>@T["Resolution"]<textarea id="item-resolution" @bind="itemResolution" maxlength="8000" required="@(itemStatus=="Decided")"></textarea></label> }
+			<label for="item-order">@T["Position"]<input id="item-order" type="number" @bind="itemOrder" min="1" required /></label>
+			@if(itemKind=="Decision") { <label for="item-resolution">@T["Resolution"]<textarea id="item-resolution" @bind="itemResolution" maxlength="8000" rows="3" required="@(itemStatus=="Decided")"></textarea></label> }
 			else
 			{
-				<div class="form-grid"><label>@T["Agent assignment"]<select id="item-assignment" @bind="itemAssignment"><option value="Inherit">@T["Inherit from parent"]</option><option value="Override">@T["Override agent"]</option><option value="Unassigned">@T["Explicitly unassigned"]</option></select></label>
-				@if(itemAssignment=="Override") { <label>@T["Agent"]<select id="item-agent" @bind="itemAgent" required><option value="">@T["Choose agent"]</option>@foreach(AgentProfile agent in agents.Where(agent=>agent.IsActive || agent.Id.ToString()==itemAgent)) { <option value="@agent.Id">@agent.Name@(agent.IsActive ? "" : " ("+T["Inactive"].Value+")")</option> }</select></label> }</div>
+				<div class="form-grid"><label for="item-assignment">@T["Agent assignment"]<select id="item-assignment" @bind="itemAssignment"><option value="Inherit">@T["Inherit from parent"]</option><option value="Override">@T["Override agent"]</option><option value="Unassigned">@T["Explicitly unassigned"]</option></select></label>
+				@if(itemAssignment=="Override") { <label for="item-agent">@T["Agent"]<select id="item-agent" @bind="itemAgent" required><option value="">@T["Choose agent"]</option>@foreach(AgentProfile agent in agents.Where(agent=>agent.IsActive || agent.Id.ToString()==itemAgent)) { <option value="@agent.Id">@agent.Name@(agent.IsActive ? "" : " ("+T["Inactive"].Value+")")</option> }</select></label> }</div>
 			}
 			@if(itemKind=="Step")
 			{
-				<label>@T["Closure evidence"]<select id="item-evidence" @bind="itemEvidence"><option value="">@T["No confirmation"]</option><option value="WorkDone">@T["Work done (not approval, merge or push)"]</option><option value="OwnerApproved">@T["I approve this work as owner"]</option><option value="MergeConfirmed">@T["Merge confirmed"]</option><option value="PushConfirmed">@T["Successful push confirmed"]</option></select></label><p class="muted small">@T["{0} is enforced by the API. Record only evidence you have actually verified.", PlanLabels.Workflow(project!.Workflow)]</p>
+				<label for="item-evidence">@T["Closure evidence"]<select id="item-evidence" @bind="itemEvidence"><option value="">@T["No confirmation"]</option><option value="WorkDone">@T["Work done (not approval, merge or push)"]</option><option value="OwnerApproved">@T["I approve this work as owner"]</option><option value="MergeConfirmed">@T["Merge confirmed"]</option><option value="PushConfirmed">@T["Successful push confirmed"]</option></select></label><p class="muted small">@T["{0} is enforced by the API. Record only evidence you have actually verified.", PlanLabels.Workflow(project!.Workflow)]</p>
 			}
 			<FormError Conflict="Conflict" /><div class="form-actions"><button type="button" class="quiet" @onclick="() => { ClearFeedback(); showItem = false; }">@T["Cancel"]</button><button class="primary" disabled="@Busy">@T["Save {0}", T[itemKind.ToLowerInvariant()]]</button></div>
 		</form>

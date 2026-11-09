@@ -31,7 +31,8 @@ public sealed class ProjectDetailTests
 		await page.Find("dialog form").SubmitAsync();
 		page.WaitForAssertion(() => Assert.Equal(7, sent?.Revision));
 		Assert.Equal("New real phase", sent!.Title);
-		Assert.Contains("Revision 8", page.Markup);
+		Assert.DoesNotContain("Revision 8", page.Markup);
+		Assert.Equal(8, page.FindComponent<PlanForge.Web.Components.Planning.WorkPlanTree>().Instance.Snapshot.Revision);
 		Assert.Contains("New real phase", page.Markup);
 		Assert.Empty(page.FindAll("dialog"));
 	}
@@ -46,10 +47,12 @@ public sealed class ProjectDetailTests
 		page.WaitForAssertion(() => Assert.Contains("Engine upgrade", page.Markup));
 		Assert.Contains("Current code step", page.Markup);
 		Assert.Contains("Direct to Main", page.Markup);
-		Assert.Contains("Add phase", page.Markup);
+		page.Find(".tree-roots > li > .plan-row .tree-select").Click();
+		Assert.Contains("Add phase", page.Find(".inspector-actions").TextContent);
 		Assert.Contains("Export project", page.Markup);
 		Assert.Contains("Import CSV", page.Markup);
-		Assert.Contains("Revision 7", page.Markup);
+		Assert.DoesNotContain("Revision 7", page.Markup);
+		Assert.Equal(7, page.FindComponent<PlanForge.Web.Components.Planning.WorkPlanTree>().Instance.Snapshot.Revision);
 		Assert.Contains("of steps complete", page.Markup);
 	}
 }

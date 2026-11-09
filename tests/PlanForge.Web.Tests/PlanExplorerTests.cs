@@ -77,7 +77,7 @@ public sealed class PlanExplorerTests
 		Assert.Empty(tree.FindAll(".work-plan-tree input, .work-plan-tree textarea, .node-body"));
 		await tree.Find($"button[data-select-id='{phase}']").ClickAsync(new());
 		Assert.Equal(phase.ToString(), tree.Find("#plan-inspector").GetAttribute("data-selected-id"));
-		Assert.Contains("Status is calculated from the plan.", tree.Find("#plan-inspector").TextContent);
+		Assert.Contains("Status updates automatically as work progresses.", tree.Find("#plan-inspector").TextContent);
 		Assert.Single(tree.FindAll(".work-plan-tree [aria-current=true]"));
 	}
 }
