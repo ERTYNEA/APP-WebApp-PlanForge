@@ -2,6 +2,23 @@
 
 All published release notes are retained here, newest first. The root README introduces only the latest stable release. Historical entries describe their original verification scope, not the current test counts.
 
+## [0.4.0] — 2026-11-09
+
+### Added
+
+- Pending Decisions at the real Project root, Phase, Subphase or Step now derive effective Blocked upward without blocking innocent descendants or siblings. Steps retain their underlying work state and valid closure evidence; resolving or deleting the last cause restores that state. Manual Step Blocked is rejected consistently by Web, REST and CSV.
+- Reusable resources can be attached directly at all four plan levels and inherited downward without copying files or links. Effective lists deduplicate by resource ID, show direct/inherited origins and permit scoped unlinking only of the current direct association. ZIP manifest schema 2 retains original typed associations and includes each binary once.
+- Expand all and Collapse all beside Reload, complete current-node inspector breadcrumbs, full single descriptions and integrated Decisions/Resources actions at every level. Compact editors use clear one-based Position, specific action labels and consistent calculated-state badges and explanations.
+
+### Changed
+
+- Equal-age Steps now follow actual hierarchy positions before identifiers. Intentional Web CSV imports reselect eligible work with reduced-motion-aware reveal, while passive API updates preserve selection, deliberate collapse, focus and scroll; deletion falls back to a surviving ancestor.
+- Distinct Home/Projects route lifetimes remove the measured direct-pair polling delay without adding a spinner or skeleton. Projects cards have one query-free Open project link and plain titles. Sidebar/tree focus uses one composed contour, destructive-zone separators are neutral, and registration places accurate password-length help under Password without adding another confirmation field or changing Login.
+
+### Publication and verification
+
+Functional source `5c4cab6fc2bee5acd3111991391d05050d9823e8` was published through successful ordered run 42570455512: Tests → SQL → API → Web. Both deployed components report 0.4.0 plus that exact source. The ninth migration preserves Step base state and reconciles effective blocking with a transactional version04 revision-writer fence; protected accounts, agents and original credentials remain intact. Verification includes 486 passing .NET tests, 19 Node tests, 14 pipeline tests, generated SQL Server cases, real local/published Chromium, 64 deployed API behavior assertions and additional resource-concurrency/orphan checks. Prepublication human sessions, the protected Web cookie and exact resource bytes survive observed process replacement. Only exact controlled fixtures and newly authorized temporary sessions were cleaned up. Native-touch protocol attempts are not physical-device certification; see the documented accessibility and runtime limits. No README screenshots are included.
+
 ## [0.3.0] — 2026-11-08
 
 ### Added

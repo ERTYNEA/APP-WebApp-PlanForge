@@ -2,7 +2,7 @@
 
 <img src="src/PlanForge.Web/wwwroot/favicon.svg" alt="PlanForge symbol" width="64" height="64" />
 
-Version **0.3.0** · MIT licensed
+Version **0.4.0** · MIT licensed
 
 ## About PlanForge
 
@@ -18,7 +18,7 @@ PlanForge turns a project into a clear, structured work plan. It brings the work
 
 ### Keep supporting material reusable
 
-The **Library** stores files independently of a single plan. A resource can be linked directly to a project, to a Phase only, or reused through multiple associations. Removing a project or Phase removes its links—not the Library file itself. Assigned and orphan filters make the remaining relationships visible; permanent cleanup requires explicit confirmation.
+The **Library** stores files independently of a single plan. A resource can be linked directly to a Project, Phase, Subphase or Step and reused through multiple associations. Descendants inherit availability without copied files or links. Removing a project or structural node removes its links—not the Library file itself. Assigned and orphan filters make the remaining relationships visible; permanent cleanup requires explicit confirmation.
 
 Export a plan as UTF-8 semicolon `work-plan.csv`, or download a project ZIP containing its plan, readable summary, resource-association manifest and linked files, including Phase-only resources. Imports preserve stable IDs, validate the whole snapshot and reject stale revisions instead of silently overwriting newer work.
 
@@ -78,14 +78,14 @@ Recent activity is bounded project-change history, not a complete perpetual audi
 
 Licensed under [MIT](LICENSE).
 
-## What's New — v0.3.0
+## What's New — v0.4.0
 
-- **A focused plan explorer:** compact hierarchical rows and a contextual inspector replace nested card forms, preserving editing, moves, decisions, assignments, evidence and resources. One natural page scroll adapts to desktop and mobile; deep links, CSV imports and completed Steps reveal the appropriate work without disrupting manual exploration.
-- **A useful Home, a complete Projects catalog:** see project count, literal Pending steps, weighted overall progress and up to three eligible Steps ordered by immutable creation age. Every recently updated project remains reachable through pagination; Projects keeps its search, filters, sorting and management actions.
-- **Trustworthy plan state and age:** Project, Phase and Subphase status now follows actual descendants and pending decisions automatically; only Steps have manual status. Stable creation order survives edits, moves and retained-ID imports. Historical order is explicitly reconstructed, not presented as certified creation dates; the public CSV schema remains compatible.
-- **Clearer, safer forms:** registration requires matching password confirmation in the browser and Web BFF without storing or forwarding a second secret. Errors stay with their field, operation or confirmation dialog, and closing dialogs restores useful keyboard focus.
-- **Consistent controls and token history:** shared hover, focus, disabled and destructive states preserve the approved logo and palette. Token history has clearer spacing, accessible disclosure focus, no empty-list border and centered pagination only when needed.
+- **Decisions explain what is blocked:** a Pending Decision at Project, Phase, Subphase or Step blocks that scope and its ancestors—not innocent siblings or descendants. Steps keep their underlying work state and valid evidence, restored when the last blocker is resolved or removed. Blocked is calculated, never a manual Step choice.
+- **Resources follow the plan hierarchy:** attach an existing Library file directly at any level, inherit it downward and see its direct/inherited origins without duplicate cards, binaries or stored descendant links. Scoped unlinking cannot remove an ancestor's association; ZIP exports retain the original typed link map and each file once.
+- **A clearer inspector and compact editors:** complete current-node breadcrumbs, one full description, integrated Decisions/Resources sections, specific actions at every level and readable one-based Position. Expand all and Collapse all sit beside Reload without changing selection or deliberate exploration.
+- **Predictable focus and navigation:** equal-age Steps follow actual hierarchy positions before identifiers. Manual Web imports reveal eligible work when needed; passive API updates preserve selection, collapse, focus and scroll. The Home↔Projects polling delay is fixed without a spinner or skeleton, and each Projects card has one Open project link.
+- **Consistent interaction details:** sidebar/tree keyboard focus uses one composed contour, destructive-section dividers are neutral and registration places accurate password-length help under Password. The existing confirmation field, Login, logo, palette, owner isolation and workflow evidence are preserved.
 
-Published and verified with 431 passing .NET tests, 14 pipeline tests, 16 Node tests, controlled SQL Server checks and real local/published browser flows. Ordered publication applies the additive migration before API and Web; prepublication sessions, credentials, resource bytes and protected non-test data were verified. No product screenshots are included.
+Published on 2026-11-09 and verified with 486 passing .NET tests, 19 Node tests, 14 pipeline tests, controlled SQL Server checks and real local/published browser flows. Ordered publication applies the ninth migration before API and Web; retained sessions, protected cookies, original account/agent credentials and exact resource bytes were verified across observed process replacement. See the acceptance documentation for native-touch, accessibility and restart verification limits. No README screenshots are included.
 
 [Full changelog](./CHANGELOG.md)
