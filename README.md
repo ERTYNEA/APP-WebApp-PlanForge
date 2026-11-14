@@ -2,7 +2,7 @@
 
 <img src="src/PlanForge.Web/wwwroot/favicon.svg" alt="PlanForge symbol" width="64" height="64" />
 
-Version **0.4.0** · MIT licensed
+Version **0.5.0** · MIT licensed
 
 ## About PlanForge
 
@@ -78,14 +78,12 @@ Recent activity is bounded project-change history, not a complete perpetual audi
 
 Licensed under [MIT](LICENSE).
 
-## What's New — v0.4.0
+## What's New — v0.5.0
 
-- **Decisions explain what is blocked:** a Pending Decision at Project, Phase, Subphase or Step blocks that scope and its ancestors—not innocent siblings or descendants. Steps keep their underlying work state and valid evidence, restored when the last blocker is resolved or removed. Blocked is calculated, never a manual Step choice.
-- **Resources follow the plan hierarchy:** attach an existing Library file directly at any level, inherit it downward and see its direct/inherited origins without duplicate cards, binaries or stored descendant links. Scoped unlinking cannot remove an ancestor's association; ZIP exports retain the original typed link map and each file once.
-- **A clearer inspector and compact editors:** complete current-node breadcrumbs, one full description, integrated Decisions/Resources sections, specific actions at every level and readable one-based Position. Expand all and Collapse all sit beside Reload without changing selection or deliberate exploration.
-- **Predictable focus and navigation:** equal-age Steps follow actual hierarchy positions before identifiers. Manual Web imports reveal eligible work when needed; passive API updates preserve selection, collapse, focus and scroll. The Home↔Projects polling delay is fixed without a spinner or skeleton, and each Projects card has one Open project link.
-- **Consistent interaction details:** sidebar/tree keyboard focus uses one composed contour, destructive-section dividers are neutral and registration places accurate password-length help under Password. The existing confirmation field, Login, logo, palette, owner isolation and workflow evidence are preserved.
+- **Clear confirmation guidance (REG-02):** `Enter the same password again.` now appears beneath Confirm password with the same spacing as the existing `Use 12–128 characters.` help. Accessible mismatch feedback, native constraints and Login are preserved; no second password reaches the API.
+- **A complete workspace overview (HOME-01):** four responsive Projects, Phases, Subphases and Steps cards show totals and all four effective-state counts, including zeros. Overall progress occupies its own full-width band; Next in focus, Recently updated and the Projects catalog keep their existing behavior.
+- **Know when the current state began (PLAN-04):** the inspector shows a persistent, server-assigned effective-state entry date beside each Project/Phase/Subphase/Step badge, formatted in your browser's local timezone. Real state changes update it; unrelated edits and unchanged CSV imports do not. Historical dates remain honestly unavailable rather than inferred.
 
-Published on 2026-11-09 and verified with 486 passing .NET tests, 19 Node tests, 14 pipeline tests, controlled SQL Server checks and real local/published browser flows. Ordered publication applies the ninth migration before API and Web; retained sessions, protected cookies, original account/agent credentials and exact resource bytes were verified across observed process replacement. See the acceptance documentation for native-touch, accessibility and restart verification limits. No README screenshots are included.
+Published on 2026-11-14 and verified with 506 passing .NET tests, 23 Node tests, 14 pipeline tests, real isolated local Blazor QA and focused public HTTPS browser/API checks after ordered Actions publication. The tenth additive migration preserves legacy data and unknown dates. No isolated live SQL Server test environment was available; see the acceptance documentation for the precise provider, migration, accessibility and runtime verification limits. Temporary QA servers and sessions were closed selectively; no product screenshots are included.
 
 [Full changelog](./CHANGELOG.md)

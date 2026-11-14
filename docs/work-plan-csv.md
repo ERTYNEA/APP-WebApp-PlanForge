@@ -24,7 +24,11 @@ The CSV is bounded to 1 MiB including a supplied BOM, and at most 5000 plan item
 4. Missing existing records fail unless `X-PlanForge-Replace: true` explicitly authorizes a full replacement. This is an intentional deletion contract, not a patch format. Removing Phases removes only their links; physical Library resources survive and remain assigned elsewhere or become orphaned.
 5. A successful atomic import increments revision once and emits the actor-correct event. A stale revision returns 409 with no partial changes; reload, compare and reconcile instead of automatically retrying an overwrite.
 
-The pure codec preserves all supported snapshot fields and never authorizes, persists, rewrites closure evidence or generates IDs. The application layer owns authorization, safe replacement, concurrency and workflow policy. CSV fields are untrusted user text, not spreadsheet formulas to execute; the Web must escape their display.
+The pure codec preserves all schema1-supported snapshot fields and never authorizes, persists, rewrites closure evidence or generates IDs. The application layer owns authorization, safe replacement, concurrency and workflow policy. CSV fields are untrusted user text, not spreadsheet formulas to execute; the Web must escape their display.
+
+## v0.5.0 state-entry dates without a CSV schema change
+
+The exact 19 schema1 columns remain unchanged. `EffectiveStatusChangedAt` is intentionally absent, distinct from the existing UpdatedAt and CompletedAt fields. Exporting/importing an unchanged effective state for a retained ID preserves its stored date exactly; a real effective-state transition receives the one server clock instant for that transaction. New structural IDs receive their initial final-state date. Client files cannot assert historical dates. Legacy unknown dates remain null until a real change; export events and refreshes do not manufacture them. Manual Web and authenticated API imports share this common write path, ownership, revision and atomicity contract.
 
 ## v0.4.0 compatible schema and navigation
 

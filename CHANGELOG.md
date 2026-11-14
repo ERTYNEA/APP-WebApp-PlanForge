@@ -2,6 +2,23 @@
 
 All published release notes are retained here, newest first. The root README introduces only the latest stable release. Historical entries describe their original verification scope, not the current test counts.
 
+## [0.5.0] — 2026-11-14
+
+### Added
+
+- REG-02: registration now shows exactly `Enter the same password again.` beneath Confirm password, matching the existing help spacing. Normal help and mismatch errors remain simultaneously accessible; native constraints, exact confirmation, the 12–128-character policy and Login are unchanged. No second password is persisted or forwarded.
+- PLAN-04: persistent server-assigned UTC entry dates for the current effective Project/Phase/Subphase/Step state, displayed beside the inspector badge in browser-local time. Real transitions—including blocking, restoration and reversal—receive a new instant; irrelevant edits, hidden base changes under Blocked and unchanged retained-ID snapshots/CSV preserve exact dates. Historical unknowns remain null and display `Status date unavailable`; UpdatedAt, CompletedAt and immutable creation age retain their original meanings.
+
+### Changed
+
+- HOME-01: four equal-height Projects/Phases/Subphases/Steps cards show totals and fixed Pending/In progress/Blocked/Completed breakdowns, including zeros. Three owner-filtered Serializable SQL queries supply coherent effective-state aggregates. Available-container 4/2/1 layouts and a separate full-width weighted Overall progress band preserve Next in focus, Recently updated and Projects behavior.
+
+### Publication and verification
+
+Functional source `fbd213e28ffbbe7cddc1c01b2b6e93f86d949e4f` is served by API and Web as 0.5.0, published through unchanged run 43561511298. Tests → tenth additive SQL migration → API succeeded; one Web preflight read timeout before publication was resolved by a single Web-only failed-job rerun, without changing workflows, secrets or Azure configuration. The migration adds two nullable datetimeoffset columns without fabricated legacy dates or destructive changes.
+
+Verification includes 506 passing .NET tests (10 Domain / 259 Infrastructure / 48 API / 189 Web), 23 Node tests and 14 pipeline tests, real isolated local Blazor/handler-adapter browser QA, 2000-Step relational query-count checks, revision/rollback/CSV/security regressions and focused postpublication HTTPS browser/API checks. No isolated live SQL Server test environment was accessible: provider SQL/model checks, actual SQLite legacy expansion, real Actions production migration and public SQL-backed HTTP behavior are distinct evidence, not a fabricated prepublication SQL Server run. Existing QA sessions/cookies and exact resource bytes survived observed worker/Web replacement. Only operation-owned fixtures and new temporary sessions were cleaned up; local QA servers/process groups and ports were verified closed, with Hermes/Codex intact. No product screenshots or independent physical-device/accessibility/PITR certification are claimed.
+
 ## [0.4.0] — 2026-11-09
 
 ### Added
