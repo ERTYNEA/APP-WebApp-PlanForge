@@ -27,6 +27,19 @@ for (const openerSurvives of [true, false]) {
 	});
 }
 
+for (const [zone, iso, expected] of [
+	['America/New_York', '2026-11-01T05:30:00Z', 'Nov 1, 2026 · 01:30'],
+	['America/New_York', '2026-11-01T06:30:00Z', 'Nov 1, 2026 · 01:30'],
+	['Asia/Tokyo', '2026-11-14T23:42:00Z', 'Nov 15, 2026 · 08:42']
+]) {
+	test(`status date uses browser zone ${zone} for ${iso}`, () => {
+		const context = { window: {}, Intl: { DateTimeFormat: function(locale, options) { return new Intl.DateTimeFormat(locale, { ...options, timeZone: zone }); } } };
+		vm.runInNewContext(source, context);
+		assert.equal(typeof context.window.planForge.formatStatusDate, 'function');
+		assert.equal(context.window.planForge.formatStatusDate(iso), expected);
+	});
+}
+
 function contrast(first, second) {
 	const luminance = hex => {
 		const channels = hex.match(/[a-f\d]{2}/gi).map(value => parseInt(value, 16) / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
@@ -262,6 +275,19 @@ test('registration validates exact confirmation before submit without replacing 
 	assert.equal(error.hidden, true);
 	confirmation.value = '';
 	assert.equal(context.window.planForge.validateRegistration(form), false);
+});
+
+test('registration retains normal help in both valid and mismatch aria descriptions', () => {
+	const context = { window: {} };
+	vm.runInNewContext(source, context);
+	const attributes = {};
+	const confirmation = { value: 'Different', setAttribute: (key, value) => { attributes[key] = value; }, removeAttribute: key => { delete attributes[key]; }, focus() {} };
+	const form = { elements: { namedItem: name => name === 'password' ? { value: 'CorrectPassword123!' } : confirmation }, querySelector: () => ({ hidden: true }) };
+	context.window.planForge.validateRegistration(form);
+	assert.equal(attributes['aria-describedby'], 'password-confirmation-help password-confirmation-error');
+	confirmation.value = 'CorrectPassword123!';
+	context.window.planForge.validateRegistration(form);
+	assert.equal(attributes['aria-describedby'], 'password-confirmation-help');
 });
 
 test('registration listeners enforce confirmation under the existing no-inline-script CSP', () => {

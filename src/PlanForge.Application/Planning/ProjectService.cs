@@ -14,7 +14,7 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 		if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Length > 160 || request.Description is null || request.Description.Length > 8000 || !Enum.TryParse(request.Workflow, out DevelopmentWorkflow workflow) || !Enum.IsDefined(workflow))
 			throw new PlanForgeException(400, "Provide a project name, description and valid development workflow.");
 		DateTimeOffset now = timeProvider.GetUtcNow();
-		var project = new Project { Name = request.Name.Trim(), Description = request.Description, Workflow = workflow, OwnerUserId = actor.UserId, CreatedAt = now, UpdatedAt = now.UtcDateTime };
+		var project = new Project { Name = request.Name.Trim(), Description = request.Description, Workflow = workflow, OwnerUserId = actor.UserId, CreatedAt = now, UpdatedAt = now.UtcDateTime, EffectiveStatusChangedAt = now };
 		await store.CreateAsync(project, cancellationToken);
 		return ToSnapshot(new ProjectAggregate(project, []));
 	}
@@ -61,6 +61,8 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 			throw new PlanForgeException(400, "Only the owner may change workflow, separately from completing work.");
 		aggregate.Project.Name = snapshot.Name;
 		aggregate.Project.Description = snapshot.Description;
+		if (aggregate.Project.Status.ToString() != snapshot.Status)
+			aggregate.Project.EffectiveStatusChangedAt = now;
 		aggregate.Project.Status = Enum.Parse<WorkStatus>(snapshot.Status);
 		aggregate.Project.Workflow = Enum.Parse<DevelopmentWorkflow>(snapshot.Workflow);
 		aggregate.Project.UpdatedAt = now.UtcDateTime;
@@ -86,6 +88,8 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 			WorkItem? previous = aggregate.Items.SingleOrDefault(candidate => candidate.Id == item.Id);
 			if (previous is not null && previous.Kind != item.Kind)
 				throw new PlanForgeException(400, "A record type cannot change. Create a new record instead.");
+			if (item.Kind != WorkItemKind.Decision)
+				item.EffectiveStatusChangedAt = previous is null || previous.Status != item.Status ? now : previous.EffectiveStatusChangedAt;
 			if (input.Status == "Completed" && item.Kind == WorkItemKind.Step)
 			{
 				if (previous is not null && (previous.ManualStatus ?? previous.Status) == WorkStatus.Completed)
@@ -135,5 +139,6 @@ public sealed class ProjectService(IProjectStore store, TimeProvider timeProvide
 
 	private static ProjectSnapshot ToSnapshot(ProjectAggregate aggregate)
 		=> PlanProgress.Recalculate(new(aggregate.Project.Id, aggregate.Project.Revision, aggregate.Project.Name, aggregate.Project.Description, aggregate.Project.Status.ToString(), aggregate.Project.Workflow.ToString(), new DateTimeOffset(DateTime.SpecifyKind(aggregate.Project.UpdatedAt, DateTimeKind.Utc)),
-			aggregate.Items.Select(item => new PlanItem(item.Id, item.Kind.ToString(), item.Kind == WorkItemKind.Decision && item.ParentId is null ? aggregate.Project.Id : item.ParentId, item.SortOrder, item.Title, item.Description, item.Kind == WorkItemKind.Decision && item.Status == WorkStatus.Completed ? "Decided" : (item.ManualStatus ?? item.Status).ToString(), item.AssignmentMode.ToString(), item.AssignedAgentId, item.Resolution, item.Evidence?.ToString(), item.CompletedBy, item.CompletedAt, item.CreationOrder)).ToList()));
+			aggregate.Items.Select(item => new PlanItem(item.Id, item.Kind.ToString(), item.Kind == WorkItemKind.Decision && item.ParentId is null ? aggregate.Project.Id : item.ParentId, item.SortOrder, item.Title, item.Description, item.Kind == WorkItemKind.Decision && item.Status == WorkStatus.Completed ? "Decided" : (item.ManualStatus ?? item.Status).ToString(), item.AssignmentMode.ToString(), item.AssignedAgentId, item.Resolution, item.Evidence?.ToString(), item.CompletedBy, item.CompletedAt, item.CreationOrder) { EffectiveStatusChangedAt = item.EffectiveStatusChangedAt }).ToList())
+		{ EffectiveStatusChangedAt = aggregate.Project.EffectiveStatusChangedAt });
 }

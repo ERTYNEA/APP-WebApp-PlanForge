@@ -1,4 +1,10 @@
 window.planForge = {
+	formatStatusDate: iso => {
+		const date = new Date(iso);
+		const day = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(date);
+		const time = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(date);
+		return `${day} · ${time}`;
+	},
 	revealInspector: () => {
 		const inspector = document.getElementById("plan-inspector");
 		if (!inspector || inspector.classList.contains("can-stick")) return;
@@ -19,10 +25,10 @@ window.planForge = {
 		if (error) error.hidden = valid;
 		if (valid) {
 			confirmation.removeAttribute("aria-invalid");
-			confirmation.removeAttribute("aria-describedby");
+			confirmation.setAttribute("aria-describedby", "password-confirmation-help");
 		} else {
 			confirmation.setAttribute("aria-invalid", "true");
-			confirmation.setAttribute("aria-describedby", "password-confirmation-error");
+			confirmation.setAttribute("aria-describedby", "password-confirmation-help password-confirmation-error");
 			confirmation.focus();
 		}
 		return valid;

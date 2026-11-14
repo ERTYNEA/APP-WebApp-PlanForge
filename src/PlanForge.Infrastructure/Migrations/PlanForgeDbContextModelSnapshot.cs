@@ -275,6 +275,9 @@ namespace PlanForge.Infrastructure.Migrations
                         .HasMaxLength(8000)
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTimeOffset?>("EffectiveStatusChangedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(160)
@@ -382,6 +385,9 @@ namespace PlanForge.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(16000)
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("EffectiveStatusChangedAt")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<int?>("Evidence")
                         .HasColumnType("int");

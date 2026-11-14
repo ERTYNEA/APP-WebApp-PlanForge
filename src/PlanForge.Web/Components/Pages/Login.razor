@@ -17,7 +17,7 @@
 		@if (IsRegister)
 		{
 			<label for="confirm-password">@T["Confirm password"]
-			<input id="confirm-password" type="password" name="confirmPassword" autocomplete="new-password" minlength="12" maxlength="128" required aria-invalid="@(PasswordMismatch ? "true" : null)" aria-describedby="@(PasswordMismatch ? "password-confirmation-error" : null)" /></label>
+			<input id="confirm-password" type="password" name="confirmPassword" autocomplete="new-password" minlength="12" maxlength="128" required aria-invalid="@(PasswordMismatch ? "true" : null)" aria-describedby='@(PasswordMismatch ? "password-confirmation-help password-confirmation-error" : "password-confirmation-help")' /><small id="password-confirmation-help" class="muted">@T["Enter the same password again."]</small></label>
 			<div id="password-confirmation-error" class="field-error" role="alert" hidden="@(!PasswordMismatch)">@T["Passwords do not match."]</div>
 		}
 		@if (!string.IsNullOrEmpty(Error)) { <div class="notice error" role="alert">@Error</div> }

@@ -25,7 +25,7 @@ public sealed class HomeFocusTests
 	}
 
 	[Fact]
-	public void Home_ShowsThreeRealMetricsAndOrderedDeepLinksWithoutFetchingTrees()
+	public void Home_ShowsFourCategoriesAndOrderedDeepLinksWithoutFetchingTrees()
 	{
 		Guid projectId = Guid.NewGuid(), firstStep = Guid.NewGuid();
 		var focus = new FocusStep(projectId, 4, "Project name", firstStep, "Oldest pending", Guid.NewGuid(), "Phase name", Guid.NewGuid(), "Subphase name", "Pending", 1);
@@ -41,9 +41,15 @@ public sealed class HomeFocusTests
 			return Task.FromResult(ComponentTestContext.Json(response));
 		});
 		var page = context.Render<Home>();
-		Assert.Equal(3, page.FindAll("#workspace-metrics > div").Count);
-		Assert.Contains("20%", page.Find("[data-metric=progress]").TextContent);
-		Assert.Contains("2", page.Find("[data-metric=pending]").TextContent);
+		Assert.Equal(4, page.FindAll("#workspace-metrics > article").Count);
+		foreach (var card in page.FindAll("#workspace-metrics > article"))
+		{
+			Assert.Equal(4, card.QuerySelectorAll("dl > div").Length);
+			Assert.Equal(new[] { "Pending", "In progress", "Blocked", "Completed" }, card.QuerySelectorAll("dt").Select(element => element.TextContent.Trim()));
+		}
+		Assert.Contains("20%", page.Find("#overall-progress").TextContent);
+		Assert.Contains("1 of 5 steps completed", page.Find("#overall-progress").TextContent);
+		Assert.Equal("20", page.Find("#overall-progress progress").GetAttribute("value"));
 		Assert.Equal($"/projects/{projectId}?step={firstStep}", page.Find("#next-in-focus a").GetAttribute("href"));
 		Assert.Contains("Phase name", page.Find("#next-in-focus").TextContent);
 		Assert.Contains("Subphase name", page.Find("#next-in-focus").TextContent);
@@ -88,6 +94,20 @@ public sealed class HomeFocusTests
 		page.Find("input[aria-label='Search projects']").Input("No match");
 		Assert.Empty(page.FindAll(".project-card"));
 		Assert.Contains("No projects match", page.Markup);
+	}
+
+	[Fact]
+	public void Home_EmptyWorkspaceKeepsSixteenZeroRowsAndProgress()
+	{
+		using var context = new ComponentTestContext(request => Task.FromResult(ComponentTestContext.Json(
+			request.RequestUri!.AbsolutePath.EndsWith("/dashboard", StringComparison.Ordinal) ? (object)new WorkspaceDashboard(0, 0, 0, 0, []) : new ProjectSummaryPage([], 0, 0, 25, false))));
+		var page = context.Render<Home>();
+		Assert.Equal(4, page.FindAll("#workspace-metrics > article").Count);
+		Assert.All(page.FindAll("#workspace-metrics dd"), value => Assert.Equal("0", value.TextContent));
+		Assert.Equal(16, page.FindAll("#workspace-metrics dd").Count);
+		Assert.Contains("0 of 0 steps completed", page.Find("#overall-progress").TextContent);
+		Assert.Equal("0", page.Find("#overall-progress progress").GetAttribute("value"));
+		Assert.NotNull(page.Find("#next-in-focus"));
 	}
 
 	private static ProjectSummary Summary(Guid id) => new(id, 4, "Project name", "", "Pending", "PlanningOnly", DateTimeOffset.UtcNow, 1, 5, 1, 0, 20, 0);

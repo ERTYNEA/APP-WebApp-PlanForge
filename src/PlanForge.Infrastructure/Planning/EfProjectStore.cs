@@ -3,8 +3,8 @@ namespace PlanForge.Infrastructure.Planning;
 using Microsoft.EntityFrameworkCore;
 using PlanForge.Application.Common;
 using PlanForge.Application.Planning;
-using PlanForge.Domain.Planning;
 using PlanForge.Contracts.Planning;
+using PlanForge.Domain.Planning;
 using PlanForge.Infrastructure.Database;
 
 public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
@@ -12,14 +12,25 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 	public async Task<WorkspaceDashboard> GetDashboardAsync(Guid ownerId, CancellationToken cancellationToken)
 	{
 		await using var transaction = await database.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
-		int projectCount = await database.Projects.CountAsync(project => project.OwnerUserId == ownerId, cancellationToken);
-		IQueryable<WorkItem> steps = database.WorkItems.AsNoTracking().Where(item => item.Kind == WorkItemKind.Step && database.Projects.Any(project => project.Id == item.ProjectId && project.OwnerUserId == ownerId));
-		var counts = await steps.GroupBy(item => 1).Select(group => new
-		{
-			Total = group.Count(),
-			Pending = group.Count(item => item.Status == WorkStatus.Pending),
-			Completed = group.Count(item => item.Status == WorkStatus.Completed)
-		}).SingleOrDefaultAsync(cancellationToken);
+		// Constant-size SQL aggregates share one serializable read boundary with focus candidates.
+		StatusCounts projects = await database.Projects.AsNoTracking().Where(project => project.OwnerUserId == ownerId)
+			.GroupBy(project => 1).Select(group => new StatusCounts(
+				group.Count(project => project.Status == WorkStatus.Pending), group.Count(project => project.Status == WorkStatus.InProgress),
+				group.Count(project => project.Status == WorkStatus.Blocked), group.Count(project => project.Status == WorkStatus.Completed)))
+			.SingleOrDefaultAsync(cancellationToken) ?? new(0, 0, 0, 0);
+		IQueryable<WorkItem> ownedItems = database.WorkItems.AsNoTracking().Where(item => database.Projects.Any(project => project.Id == item.ProjectId && project.OwnerUserId == ownerId));
+		var categories = await ownedItems.Where(item => item.Kind != WorkItemKind.Decision).GroupBy(item => item.Kind)
+			.Select(group => new
+			{
+				Kind = group.Key,
+				Pending = group.Count(item => item.Status == WorkStatus.Pending),
+				InProgress = group.Count(item => item.Status == WorkStatus.InProgress),
+				Blocked = group.Count(item => item.Status == WorkStatus.Blocked),
+				Completed = group.Count(item => item.Status == WorkStatus.Completed)
+			}).ToListAsync(cancellationToken);
+		Dictionary<WorkItemKind, StatusCounts> counts = categories.ToDictionary(category => category.Kind, category => new StatusCounts(category.Pending, category.InProgress, category.Blocked, category.Completed));
+		StatusCounts stepCounts = counts.GetValueOrDefault(WorkItemKind.Step) ?? new(0, 0, 0, 0);
+		IQueryable<WorkItem> steps = ownedItems.Where(item => item.Kind == WorkItemKind.Step);
 		List<FocusStep> next = await (from step in steps
 									  join project in database.Projects on step.ProjectId equals project.Id
 									  join subphase in database.WorkItems on step.ParentId equals (Guid?)subphase.Id
@@ -30,7 +41,13 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 									  orderby step.CreationOrder, phase.SortOrder, subphase.SortOrder, step.SortOrder, project.Id.ToString(), step.Id.ToString()
 									  select new FocusStep(project.Id, project.Revision, project.Name, step.Id, step.Title, phase.Id, phase.Title, subphase.Id, subphase.Title, step.Status.ToString(), step.CreationOrder))
 			.Take(3).ToListAsync(cancellationToken);
-		return new WorkspaceDashboard(projectCount, counts?.Pending ?? 0, counts?.Completed ?? 0, counts?.Total ?? 0, next);
+		return new WorkspaceDashboard(projects.Total, stepCounts.Pending, stepCounts.Completed, stepCounts.Total, next)
+		{
+			Projects = projects,
+			Phases = counts.GetValueOrDefault(WorkItemKind.Phase) ?? new(0, 0, 0, 0),
+			Subphases = counts.GetValueOrDefault(WorkItemKind.Subphase) ?? new(0, 0, 0, 0),
+			Steps = stepCounts
+		};
 	}
 	public async Task<ProjectSummaryPage> ListSummariesAsync(Guid ownerId, int skip, int take, CancellationToken cancellationToken)
 	{
@@ -135,6 +152,7 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 				.SetProperty(current => EF.Property<long>(current, "WriteRevision"), expectedRevision + 2)
 				.SetProperty(current => current.Name, project.Name).SetProperty(current => current.Description, project.Description)
 				.SetProperty(current => current.Workflow, project.Workflow).SetProperty(current => current.Status, project.Status)
+				.SetProperty(current => current.EffectiveStatusChangedAt, project.EffectiveStatusChangedAt)
 				.SetProperty(current => current.UpdatedAt, project.UpdatedAt), cancellationToken);
 		if (changed != 1)
 			throw new PlanForgeException(409, "The project changed. Reload before retrying.");

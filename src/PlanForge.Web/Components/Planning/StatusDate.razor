@@ -1,0 +1,9 @@
+@inject IJSRuntime JavaScript
+@if (Value is DateTimeOffset date)
+{
+	<span class="status-date muted small"><span aria-hidden="true">◷</span> <time datetime="@date.ToUniversalTime().ToString("O")" title="@date.ToUniversalTime().ToString("O")">@T["Since {0}",localDate ?? "…"]</time></span>
+}
+else
+{
+	<span class="status-date muted small">@T["Status date unavailable"]</span>
+}

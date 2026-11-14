@@ -43,6 +43,10 @@ public sealed class PlanRevisionTests
 		Assert.Equal(409, (await Assert.ThrowsAsync<PlanForgeException>(() => service.SaveAsync(actor, second.Id, collision))).StatusCode);
 		Assert.Equal(1, (await service.GetAsync(actor, second.Id)).Revision);
 		Assert.Empty((await service.GetAsync(actor, second.Id)).Items);
+		Assert.Equal(second.EffectiveStatusChangedAt, (await service.GetAsync(actor, second.Id)).EffectiveStatusChangedAt);
+		Assert.Equal(first.EffectiveStatusChangedAt, (await service.GetAsync(actor, first.Id)).EffectiveStatusChangedAt);
+		ProjectSnapshot preserved = await service.GetAsync(actor, first.Id);
+		Assert.All(first.Items, item => Assert.Equal(item.EffectiveStatusChangedAt, preserved.Items.Single(saved => saved.Id == item.Id).EffectiveStatusChangedAt));
 		Assert.Equal("Original", (await service.GetAsync(actor, first.Id)).Items.Single(item => item.Id == phase).Title);
 		Assert.Single(fixture.Database.ProjectChanges);
 	}

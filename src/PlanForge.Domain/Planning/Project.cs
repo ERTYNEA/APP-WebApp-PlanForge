@@ -5,6 +5,7 @@ public sealed class Project
 	public Guid Id { get; set; } = Guid.NewGuid();
 	public DateTimeOffset CreatedAt { get; set; }
 	public string Description { get; set; } = string.Empty;
+	public DateTimeOffset? EffectiveStatusChangedAt { get; set; }
 	public string Name { get; set; } = string.Empty;
 	public Guid OwnerUserId { get; set; }
 	public long Revision { get; set; } = 1;

@@ -24,6 +24,13 @@ public sealed class RegistrationConfirmationTests
 		Assert.Same(password.Closest("label"), help.Closest("label"));
 		var confirmation = register.QuerySelector("#confirm-password")!;
 		Assert.NotNull(confirmation.Closest("label"));
+		var confirmationHelp = register.QuerySelector("#password-confirmation-help");
+		Assert.NotNull(confirmationHelp);
+		Assert.Equal("Enter the same password again.", confirmationHelp.TextContent);
+		Assert.Same(confirmation.Closest("label"), confirmationHelp.Closest("label"));
+		Assert.Equal("password-confirmation-help", confirmation.GetAttribute("aria-describedby"));
+		var mismatch = parser.ParseDocument(await client.GetStringAsync("/register?passwordMismatch=true"));
+		Assert.Equal("password-confirmation-help password-confirmation-error", mismatch.QuerySelector("#confirm-password")!.GetAttribute("aria-describedby"));
 		Assert.StartsWith("Confirm password", confirmation.Closest("label")!.TextContent);
 		Assert.Single(register.QuerySelectorAll("input[name=confirmPassword]"));
 		Assert.DoesNotContain("No external identity provider", register.DocumentElement.TextContent);

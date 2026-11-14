@@ -11,7 +11,27 @@
 @if (projects is null) { <p class="loading" role="status">@T["Loading your workspace…"]</p> }
 else if (!IsManagement && dashboard is not null)
 {
-	<dl id="workspace-metrics" class="workspace-metrics"><div data-metric="projects"><dt>@T["Projects"]</dt><dd>@dashboard.ProjectCount</dd></div><div data-metric="pending"><dt>@T["Pending steps"]</dt><dd>@dashboard.PendingSteps</dd></div><div data-metric="progress"><dt>@T["Overall progress"]</dt><dd>@dashboard.Progress%</dd></div></dl>
+	<div class="workspace-overview">
+		<div id="workspace-metrics" class="workspace-metrics">
+			@foreach ((string label, StatusCounts counts) in new[] { ("Projects", dashboard.Projects), ("Phases", dashboard.Phases), ("Subphases", dashboard.Subphases), ("Steps", dashboard.Steps) })
+			{
+				<article class="metric-card" data-metric="@label.ToLowerInvariant()" aria-labelledby="@($"metric-{label.ToLowerInvariant()}")">
+					<div class="metric-heading"><h2 id="@($"metric-{label.ToLowerInvariant()}")">@T[label]</h2><strong class="metric-total">@counts.Total</strong></div>
+					<dl>
+						@foreach ((string statusLabel, string statusClass, int count) in new[] { ("Pending", "pending", counts.Pending), ("In progress", "active", counts.InProgress), ("Blocked", "error", counts.Blocked), ("Completed", "success", counts.Completed) })
+						{
+							<div><dt><span class="metric-dot @statusClass" aria-hidden="true"></span>@T[statusLabel]</dt><dd>@count</dd></div>
+						}
+					</dl>
+				</article>
+			}
+		</div>
+		<section id="overall-progress" class="panel workspace-progress" aria-labelledby="overall-progress-title">
+			<div class="progress-caption"><h2 id="overall-progress-title">@T["Overall progress"]</h2><strong>@dashboard.Progress%</strong></div>
+			<progress value="@dashboard.Progress" max="100" aria-label='@T["Overall progress"]'></progress>
+			<p class="muted small">@T["{0} of {1} steps completed",dashboard.CompletedSteps,dashboard.TotalSteps]</p>
+		</section>
+	</div>
 	<section id="next-in-focus"><div class="section-heading"><h2>@T["NEXT IN FOCUS"]</h2><button class="quiet" @onclick="() => ExecuteAsync(LoadAsync)" disabled="@Busy">@T["↻ Refresh"]</button></div>
 		@if (dashboard.NextSteps.Count == 0) { <p class="muted">@T["No pending or in-progress steps. Open a project to review its plan."]</p> }
 		else

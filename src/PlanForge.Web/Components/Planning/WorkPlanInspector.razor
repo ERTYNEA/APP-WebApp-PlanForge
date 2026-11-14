@@ -10,7 +10,10 @@
 	</nav>
 	<div class="section-label">@T[Item is null ? "Project" : Item.Kind.ToLowerInvariant()]</div>
 	<h3 class="user-text">@(Item?.Title ?? Snapshot.Name)</h3>
-	<span class="badge @PlanLabels.StatusClass(Item?.EffectiveStatus ?? Snapshot.Status)">@T[Item?.EffectiveStatus ?? Snapshot.Status]</span>
+	<div class="inspector-status">
+		<span class="badge @PlanLabels.StatusClass(Item?.EffectiveStatus ?? Snapshot.Status)">@T[Item?.EffectiveStatus ?? Snapshot.Status]</span>
+		<StatusDate Value="@(Item is null ? Snapshot.EffectiveStatusChangedAt : Item.EffectiveStatusChangedAt)" />
+	</div>
 	@if (Item is null || Item.Kind is "Phase" or "Subphase") { <p class="muted small calculated-status">@T["Status updates automatically as work progresses."]</p> }
 	@if (!string.IsNullOrWhiteSpace(Description)) { <p class="user-text inspector-description">@Description</p> }
 	<div class="inspector-metadata">

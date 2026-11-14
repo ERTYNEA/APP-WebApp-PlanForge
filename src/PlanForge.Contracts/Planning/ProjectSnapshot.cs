@@ -2,6 +2,9 @@ namespace PlanForge.Contracts.Planning;
 
 public sealed record ProjectSnapshot(Guid Id, long Revision, string Name, string Description, string Status, string Workflow, DateTimeOffset UpdatedAt, IReadOnlyList<PlanItem> Items)
 {
+	/// <summary>Server-assigned UTC entry into the current effective state; null for unknown legacy history.</summary>
+	public DateTimeOffset? EffectiveStatusChangedAt { get; init; }
+
 	public int Progress
 	{
 		get
