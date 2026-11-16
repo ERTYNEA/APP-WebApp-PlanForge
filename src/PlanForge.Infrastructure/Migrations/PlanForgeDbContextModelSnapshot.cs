@@ -78,6 +78,123 @@ namespace PlanForge.Infrastructure.Migrations
                     b.ToTable("AccessCredentials");
                 });
 
+            modelBuilder.Entity("PlanForge.Domain.Accounts.AvatarAdmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Accepted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("AgentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAtUtc");
+
+                    b.ToTable("AvatarAdmissions");
+                });
+
+            modelBuilder.Entity("PlanForge.Domain.Accounts.AvatarOptimizationJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AgentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("AvailableAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("Fence")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("Generation")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsAgent")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ReaderUntilUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RetainedBytes")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<long>("Sequence")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("WorkerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status", "Sequence");
+
+                    b.HasIndex("OwnerUserId", "TargetId", "IsAgent")
+                        .IsUnique()
+                        .HasFilter("[IsCurrent] = 1");
+
+                    b.ToTable("AvatarOptimizationJobs");
+                });
+
+            modelBuilder.Entity("PlanForge.Domain.Accounts.AvatarQueueState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<long>("Fence")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid?>("LeaseOwner")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("LeaseUntilUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("NextSequence")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AvatarQueueStates");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Fence = 0L,
+                            NextSequence = 0L
+                        });
+                });
+
             modelBuilder.Entity("PlanForge.Domain.Accounts.UserAccount", b =>
                 {
                     b.Property<Guid>("Id")
@@ -90,6 +207,12 @@ namespace PlanForge.Infrastructure.Migrations
                     b.Property<string>("AvatarContentType")
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
+
+                    b.Property<Guid>("AvatarGeneration")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("AvatarTemporary")
+                        .HasColumnType("bit");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
@@ -148,6 +271,12 @@ namespace PlanForge.Infrastructure.Migrations
                     b.Property<string>("AvatarContentType")
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
+
+                    b.Property<Guid>("AvatarGeneration")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("AvatarTemporary")
+                        .HasColumnType("bit");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
@@ -447,6 +576,15 @@ namespace PlanForge.Infrastructure.Migrations
                         .HasForeignKey("OwnerUserId", "AgentId")
                         .HasPrincipalKey("OwnerUserId", "Id")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("PlanForge.Domain.Accounts.AvatarOptimizationJob", b =>
+                {
+                    b.HasOne("PlanForge.Domain.Accounts.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("PlanForge.Domain.Agents.Agent", b =>

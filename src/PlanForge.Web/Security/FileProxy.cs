@@ -23,12 +23,29 @@ public static class FileProxy
 			return;
 		}
 		using HttpClient client = clients.CreateClient("PlanForgeApi");
+		bool avatar = path.EndsWith("/avatar", StringComparison.Ordinal);
+		string version = context.Request.Query["v"].ToString();
+		if (avatar && Guid.TryParse(version, out _))
+			path += "?v=" + Uri.EscapeDataString(version);
 		using var request = new HttpRequestMessage(HttpMethod.Get, path);
 		request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 		try
 		{
 			using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
 			await ApiTransport.EnsureSuccessAsync(response, context.RequestAborted);
+			if (avatar)
+			{
+				context.Response.Headers.CacheControl = "no-store";
+				if (response.Headers.ETag is not null)
+					context.Response.Headers.ETag = response.Headers.ETag.ToString();
+			}
+			if (path.EndsWith("/export", StringComparison.Ordinal) && response.Headers.TryGetValues("X-PlanForge-Change-Id", out var values))
+			{
+				string[] receipts = values.Take(2).ToArray();
+				string? receipt = receipts.Length == 1 ? receipts[0] : null;
+				if (long.TryParse(receipt, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out long eventId) && eventId > 0)
+					context.Response.Headers["X-PlanForge-Change-Id"] = receipt;
+			}
 			context.Response.ContentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
 			if (response.Content.Headers.ContentDisposition is not null)
 				context.Response.Headers.ContentDisposition = response.Content.Headers.ContentDisposition.ToString();

@@ -8,7 +8,7 @@ using PlanForge.Application.Accounts;
 using PlanForge.Infrastructure.Accounts;
 using PlanForge.Infrastructure.Database;
 
-public sealed class AccountHttpFixture : IAsyncDisposable
+public sealed class AccountHttpFixture : IDbContextFactory<PlanForgeDbContext>, IAsyncDisposable
 {
 	private readonly SqliteConnection connection = new("Data Source=:memory:");
 
@@ -24,6 +24,9 @@ public sealed class AccountHttpFixture : IAsyncDisposable
 
 	public PlanForgeDbContext Database { get; }
 	public AccountFunctions Functions { get; }
+	public AvatarService Avatars => new(new EfAvatarStore(this, TimeProvider.System), Signals, new SkiaAvatarImageValidator());
+	public TestAvatarSignal Signals { get; } = new();
+	public PlanForgeDbContext CreateDbContext() => new(new DbContextOptionsBuilder<PlanForgeDbContext>().UseSqlite(connection).Options);
 	public HttpEndpointRunner Runner { get; }
 	public AccountService Service { get; }
 

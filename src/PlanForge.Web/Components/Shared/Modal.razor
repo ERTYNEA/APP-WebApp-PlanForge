@@ -1,14 +1,32 @@
 @inject Microsoft.JSInterop.IJSRuntime JavaScript
-<dialog @ref="dialog" class="modal" aria-label="@T[Title]" @oncancel="OnCancelAsync">
-	<div class="modal-heading"><h2>@T[Title]</h2><button type="button" class="quiet" @onclick="Close" aria-label="@T["Close dialog"]">×</button></div>
+@inject PlanForge.Web.State.NotificationState Notifications
+@implements IDisposable
+<dialog @ref="dialog" class="modal" aria-label="@T[Title]" @oncancel="OnCancelAsync" @oncancel:preventDefault="CloseDisabled">
+	<div class="modal-heading"><h2>@T[Title]</h2><button type="button" class="quiet" @onclick="OnCloseAsync" disabled="@CloseDisabled" aria-label="@T["Close dialog"]">×</button></div>
 	<CascadingValue Name="ModalError" Value="Error">@ChildContent</CascadingValue>
+	<NotificationRegion Host="notificationHost" />
 </dialog>
 @code {
 	[Parameter] public string Title { get; set; } = "";
 	[Parameter] public string? Error { get; set; }
 	[Parameter] public EventCallback Close { get; set; }
+	[Parameter] public bool CloseDisabled { get; set; }
 	[Parameter] public RenderFragment? ChildContent { get; set; }
+	[Parameter] public string? InitialFocusSelector { get; set; }
 	private ElementReference dialog;
-	protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender) await JavaScript.InvokeVoidAsync("planForge.openDialog",dialog); }
-	private Task OnCancelAsync(EventArgs args) => Close.InvokeAsync();
+	private Guid notificationHost;
+	protected override void OnInitialized() => notificationHost = Notifications.RegisterModal();
+	public void Dispose() => Notifications.UnregisterModal(notificationHost);
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (!firstRender)
+			return;
+		if (InitialFocusSelector is null)
+			await JavaScript.InvokeVoidAsync("planForge.openDialog", dialog);
+		else
+			await JavaScript.InvokeVoidAsync("planForge.openDialog", dialog, InitialFocusSelector);
+	}
+	private Task OnCancelAsync(EventArgs args) => OnCloseAsync();
+
+	private Task OnCloseAsync() => CloseDisabled ? Task.CompletedTask : Close.InvokeAsync();
 }

@@ -1,9 +1,9 @@
-<Modal Title="@Title" Error="@Error" Close="Close">
+<Modal Title="@Title" Error="@Error" Close="OnCloseAsync" CloseDisabled="@Busy" InitialFocusSelector="#confirm-cancel">
 	<p class="user-text">@T[Description]</p>
 	<p class="warning">@T["This action is irreversible from PlanForge."]</p>
-	<label class="check-label"><input id="confirm-intent" type="checkbox" @bind="confirmed" /> @T["I understand and confirm this action."]</label>
+	<label class="check-label"><input id="confirm-intent" type="checkbox" @bind="confirmed" disabled="@Busy" /> @T["I understand and confirm this action."]</label>
 	<FormError />
-	<div class="form-actions"><button type="button" class="quiet" @onclick="Close" disabled="@Busy">@T["Cancel"]</button><button id="confirm-delete" class="danger" @onclick="Confirm" disabled="@(!confirmed || Busy)">@T[ConfirmLabel ?? Title]</button></div>
+	<div class="form-actions"><button id="confirm-delete" type="button" class="danger" @onclick="OnConfirmAsync" disabled="@(!confirmed || Busy)">@T[ConfirmLabel ?? Title]</button><button id="confirm-cancel" type="button" class="quiet" @onclick="OnCloseAsync" disabled="@Busy">@T["Cancel"]</button></div>
 </Modal>
 @code {
 	[Parameter] public string? ConfirmLabel { get; set; }
@@ -14,4 +14,8 @@
 	[Parameter] public EventCallback Close { get; set; }
 	[Parameter] public EventCallback Confirm { get; set; }
 	private bool confirmed;
+
+	private Task OnCloseAsync() => Busy ? Task.CompletedTask : Close.InvokeAsync();
+
+	private Task OnConfirmAsync() => confirmed && !Busy ? Confirm.InvokeAsync() : Task.CompletedTask;
 }

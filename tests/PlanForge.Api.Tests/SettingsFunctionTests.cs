@@ -21,7 +21,7 @@ public sealed class SettingsFunctionTests
 		string body = await new StreamReader(response.Body).ReadToEndAsync();
 		Assert.Contains("PlanningOnly", body);
 		Assert.Contains("DirectToMain", body);
-		Assert.Contains("262144", body);
+		Assert.Contains("4194304", body);
 		Assert.DoesNotContain("Password", body, StringComparison.OrdinalIgnoreCase);
 		Assert.DoesNotContain("ConnectionString", body, StringComparison.OrdinalIgnoreCase);
 	}

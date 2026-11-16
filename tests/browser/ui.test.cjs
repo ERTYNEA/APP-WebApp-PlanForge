@@ -6,6 +6,19 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, '../../src/PlanForge.Web/wwwroot/ui.js'), 'utf8');
 
+test('cached avatar visibility function reads the current document state after tab activation', () => {
+	const document = { visibilityState: 'hidden' };
+	const context = { window: {}, document };
+	vm.runInNewContext(source, context);
+	const cached = context.window.planForge.isDocumentVisible;
+	assert.equal(typeof cached, 'function');
+	assert.equal(cached(), false);
+	document.visibilityState = 'visible';
+	assert.equal(cached(), true);
+	document.visibilityState = 'hidden';
+	assert.equal(cached(), false);
+});
+
 for (const openerSurvives of [true, false]) {
 	test(`removed modal restores keyboard focus (opener survives: ${openerSurvives})`, () => {
 		let callback, disconnected = false, focused;
@@ -316,6 +329,21 @@ test('download rejects a login redirect instead of downloading HTML as a success
 	assert.equal(result.status, 401);
 	assert.equal(clicked, false);
 });
+
+for (const [kind, background, border, color] of [
+	['success', 'var(--pf-success-bg)', 'var(--pf-success-border)', 'var(--pf-emerald)'],
+	['neutral', 'var(--pf-selection)', 'var(--pf-primary)', 'var(--pf-primary-hover)'],
+	['danger', 'var(--pf-danger-bg)', 'var(--pf-danger-border)', 'var(--pf-red)']
+]) {
+	test(`typed toast ${kind} uses approved colors with shared geometry`, () => {
+		const variant = declarations(`.toast-${kind}`);
+		assert.equal(variant.background, background);
+		assert.equal(variant['border-color'], border);
+		assert.equal(variant.color, color);
+		assert.equal(variant.padding, undefined);
+		assert.equal(declarations('.toast').display, 'flex');
+	});
+}
 
 for (const reducedMotion of [false, true]) {
 	test(`current work only scrolls offscreen content, reduced motion ${reducedMotion}`, () => {

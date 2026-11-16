@@ -45,11 +45,11 @@ public sealed class ProjectArchiveExporter(ProjectService projects, LibraryServi
 			}
 			if ((await projects.GetAsync(actor, projectId, cancellationToken)).Revision != project.Revision)
 				throw new PlanForgeException(409, "The project changed during export. Reload and export the current revision.");
-			await store.RecordEventAsync(actor.UserId, projectId, project.Revision, actor.AgentId ?? actor.UserId, actor.IsHuman ? "Human" : "Agent", actor.IsHuman ? "Project exported successfully" : "Project exported successfully by agent", cancellationToken, actor.AgentNameSnapshot);
+			long changeId = await store.RecordEventAsync(actor.UserId, projectId, project.Revision, actor.AgentId ?? actor.UserId, actor.IsHuman ? "Human" : "Agent", actor.IsHuman ? "Project exported successfully" : "Project exported successfully by agent", cancellationToken, actor.AgentNameSnapshot);
 			string name = new string(project.Name.Select(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' ? character : '-').Take(60).ToArray()).Trim('-');
 			if (name.Length == 0)
 				name = "project";
-			return new DownloadFile(output.ToArray(), "application/zip", $"PlanForge-Project-{name}-{projectId.ToString("N")[..8]}.zip");
+			return new DownloadFile(output.ToArray(), "application/zip", $"PlanForge-Project-{name}-{projectId.ToString("N")[..8]}.zip") { ProjectChangeId = changeId };
 		}
 		finally
 		{

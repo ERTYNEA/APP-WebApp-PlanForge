@@ -31,16 +31,20 @@ public partial class ProjectDetail : ApiPage
 	{
 		DownloadResult result = await JavaScript.InvokeAsync<DownloadResult>("planForge.download", Token, $"/files/{kind}/{Id}");
 		if (!result.Success) throw new ApiException(result.Status, "The export was not downloaded. Reload before retrying.");
+		if (long.TryParse(result.ChangeId, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out long eventId) && eventId > 0)
+			cursor.AcknowledgeEvent(eventId);
 	}, "Project exported successfully");
 	private Task OnImportAsync() => ExecuteAsync(async () =>
 	{
 		if (importFile is null) return;
 		byte[] bytes = await ReadFileAsync(importFile, 1024 * 1024, Token);
 		project = await Api.SendAsync<ProjectSnapshot>(HttpMethod.Post, $"projects/{Id}/work-plan/import", bytes: bytes, contentType: "text/csv", headers: new Dictionary<string, string> { ["X-PlanForge-Replace"] = replacePlan ? "true" : "false" }, cancellationToken: Token);
+		cursor.AcknowledgeMutation(project.Revision);
 		completedItemId = null; selectionEpoch++;
-		resources = await Api.GetAsync<List<ResourceProfile>>($"projects/{Id}/resources", Token);
 		showImport = false; importFile = null; replacePlan = false;
-	}, "CSV imported successfully");
+		Notify("CSV imported successfully");
+		await RefreshConfirmedAsync(async () => resources = await Api.GetAsync<List<ResourceProfile>>($"projects/{Id}/resources", Token));
+	});
 	private string projectName = "", projectDescription = "", projectStatus = "Pending", projectWorkflow = "PlanningOnly";
 	[SupplyParameterFromQuery(Name = "settings")] public bool Settings { get; set; }
 	[SupplyParameterFromQuery(Name = "step")] public string? StepQuery { get; set; }
@@ -49,13 +53,15 @@ public partial class ProjectDetail : ApiPage
 	private Task OnSaveSettingsAsync() => ExecuteAsync(async () =>
 	{
 		project = await Api.SendAsync<ProjectSnapshot>(HttpMethod.Put, $"projects/{Id}", project! with { Name = projectName, Description = projectDescription, Status = projectStatus, Workflow = projectWorkflow }, cancellationToken: Token);
+		cursor.AcknowledgeMutation(project!.Revision);
 		showSettings = false;
 	}, "Project updated");
 
 	private string? deletePath, deleteTitle, deleteDescription;
+	private string deleteMessage = "Project deleted";
 	private bool deleteProject;
-	private void OnDeleteItem(PlanItem item) => PrepareDelete($"projects/{Id}/{PlanLabels.RouteKind(item.Kind)}/{item.Id}", T["Delete {0}", T[item.Kind.ToLowerInvariant()]].Value, T["Remove '{0}' and its descendants. Library files survive.", item.Title].Value, false);
-	private void OnDeleteProject() => PrepareDelete($"projects/{Id}", "Delete project", T["Permanently delete '{0}' and all {1} plan records. Library files survive.", project!.Name, project.Items.Count].Value, true);
+	private void OnDeleteItem(PlanItem item) { deleteMessage = item.Kind + " deleted"; PrepareDelete($"projects/{Id}/{PlanLabels.RouteKind(item.Kind)}/{item.Id}", T["Delete {0}", T[item.Kind.ToLowerInvariant()]].Value, T["Remove '{0}' and its descendants. Library files survive.", item.Title].Value, false); }
+	private void OnDeleteProject() { deleteMessage = "Project deleted"; PrepareDelete($"projects/{Id}", "Delete project", T["Permanently delete '{0}' and all {1} plan records. Library files survive.", project!.Name, project.Items.Count].Value, true); }
 	private void OnCleanCompleted() => PrepareDelete($"projects/{Id}/completed-phases/clean", "Clean completed phases", T["Remove only fully completed phases ({0} currently marked complete). Pending, blocked and active work is retained. Library files survive.", project!.Items.Count(item => item.Kind == "Phase" && item.Status == "Completed")].Value, false);
 	private void PrepareDelete(string path, string title, string description, bool wholeProject) { ClearFeedback(); deletePath = path; deleteTitle = title; deleteDescription = description; deleteProject = wholeProject; showSettings = false; }
 	private Task OnConfirmDeleteAsync() => ExecuteAsync(async () =>
@@ -66,13 +72,19 @@ public partial class ProjectDetail : ApiPage
 		{
 			await Api.SendAsync<object>(HttpMethod.Delete, deletePath, confirmation, cancellationToken: Token);
 			deletePath = null;
+			Notify("Project deleted", NotificationKind.Danger);
 			Navigation.NavigateTo("/projects");
 			return;
 		}
-		else project = await Api.SendAsync<ProjectSnapshot>(deletePath.EndsWith("/clean", StringComparison.Ordinal) ? HttpMethod.Post : HttpMethod.Delete, deletePath, confirmation, cancellationToken: Token);
+		bool cleaning = deletePath.EndsWith("/clean", StringComparison.Ordinal);
+		int before = project.Items.Count;
+		project = await Api.SendAsync<ProjectSnapshot>(cleaning ? HttpMethod.Post : HttpMethod.Delete, deletePath, confirmation, cancellationToken: Token);
+		cursor.AcknowledgeMutation(project.Revision);
 		deletePath = null;
-		resources = await Api.GetAsync<List<ResourceProfile>>($"projects/{Id}/resources", Token);
-	}, "Project updated");
+		Notify(cleaning ? before == project.Items.Count ? "No completed phases were removed" : "Completed phases removed" : deleteMessage,
+			cleaning && before == project.Items.Count ? NotificationKind.Neutral : NotificationKind.Danger);
+		await RefreshConfirmedAsync(async () => resources = await Api.GetAsync<List<ResourceProfile>>($"projects/{Id}/resources", Token));
+	});
 
 	[Parameter] public Guid Id { get; set; }
 
@@ -80,7 +92,7 @@ public partial class ProjectDetail : ApiPage
 	private PlanItem? resourceItem;
 	private void OnProjectResources() { resourceItem = null; showSettings = false; showResources = true; }
 	private void OnNodeResources(Guid nodeId) { resourceItem = project!.Items.SingleOrDefault(item => item.Id == nodeId); showResources = true; }
-	private Task OnResourcesChangedAsync() => ExecuteAsync(LoadAsync);
+	private Task OnResourcesChangedAsync() => LoadAsync();
 	private ProjectChangeCursor cursor = new();
 	private Guid loadedProject;
 	private IReadOnlyList<ProjectChangeInfo> activity = [];
@@ -95,7 +107,7 @@ public partial class ProjectDetail : ApiPage
 
 	private async Task ObserveAsync(ProjectChangePage page)
 	{
-		foreach (string message in cursor.Observe(page)) Notify(message);
+		foreach (ProjectChangeInfo message in cursor.ObserveEvents(page)) Notify(message);
 		if (page.Changes.Count > 0) activity = page.Changes.OrderByDescending(change => change.Id).Take(8).ToList();
 		await Task.CompletedTask;
 	}
@@ -155,6 +167,7 @@ public partial class ProjectDetail : ApiPage
 		string path = $"projects/{Id}/{PlanLabels.RouteKind(itemKind)}" + (editingId.HasValue ? $"/{editingId}" : "");
 		project = await Api.SendAsync<ProjectSnapshot>(editingId.HasValue ? HttpMethod.Put : HttpMethod.Post, path, command, cancellationToken: Token);
 		if (completing && project.Items.Any(item => item.Id == editingId && item.Status == "Completed")) { completedItemId = editingId; selectionEpoch++; }
+		cursor.AcknowledgeMutation(project.Revision);
 		showItem = false;
 	}, "Project updated");
 }

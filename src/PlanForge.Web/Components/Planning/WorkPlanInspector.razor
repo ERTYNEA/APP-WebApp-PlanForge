@@ -27,7 +27,7 @@
 		{
 			@if (Snapshot.GetEffectiveAgentId(Item.Id) is Guid agentId)
 			{
-				<p class="agent-tag">@if (Agents.FirstOrDefault(agent => agent.Id == agentId)?.HasAvatar == true) { <img src="@($"/files/agent-avatars/{agentId}")" alt="" /> } @AgentName(agentId)</p>
+				<p class="agent-tag"><AvatarImage ApiPath="@($"agents/{agentId}/avatar")" ImageUrl="@($"/files/agent-avatars/{agentId}")" Name="@AgentName(agentId)" InitialHasAvatar="@(Agents.FirstOrDefault(agent => agent.Id == agentId)?.HasAvatar ?? false)" InitialVersion="@(Agents.FirstOrDefault(agent => agent.Id == agentId)?.AvatarVersion ?? Guid.Empty)" ImageOnly="true" /> @AgentName(agentId)</p>
 			}
 			else { <p class="muted small">@T["Agent assignment"]: @T[Item.AssignmentMode]</p> }
 			@if (Item.Kind == "Step")
@@ -46,9 +46,9 @@
 		}
 		else
 		{
+			<button type="button" class="danger" @onclick="() => Delete.InvokeAsync(Item)" disabled="@Disabled">@T["Delete {0}",T[Item.Kind.ToLowerInvariant()]]</button>
 			<button type="button" class="quiet" @onclick="() => Edit.InvokeAsync(Item)" disabled="@Disabled" aria-label='@T["Edit {0} {1}",T[Item.Kind.ToLowerInvariant()],Item.Title]'>@T["Edit {0}",T[Item.Kind.ToLowerInvariant()]]</button>
 			@if (Item.Kind is "Phase" or "Subphase") { <button type="button" class="quiet" @onclick='() => Add.InvokeAsync((Item.Kind == "Phase" ? "Subphase" : "Step", Item.Id))' disabled="@Disabled">+ @T[Item.Kind == "Phase" ? "Add subphase" : "Add step"]</button> }
-			<button type="button" class="danger" @onclick="() => Delete.InvokeAsync(Item)" disabled="@Disabled">@T["Delete {0}",T[Item.Kind.ToLowerInvariant()]]</button>
 		}
 	</div>
 	<section class="inspector-resources" aria-label='@T[(Item?.Kind ?? "Project") + " resources"]'>
@@ -70,7 +70,7 @@
 				<div class="decision-heading"><strong class="user-text">@decision.Title</strong><span class="badge @PlanLabels.StatusClass(decision.Status)">@T[decision.Status]</span></div>
 				@if (decision.Description.Length > 0) { <p class="user-text decision-description">@decision.Description</p> }
 				@if (decision.Resolution.Length > 0) { <p class="decision-resolution user-text"><span class="section-label">@T["Resolution"]</span><br />@decision.Resolution</p> }
-				<div class="toolbar"><button type="button" class="quiet compact" @onclick="() => Edit.InvokeAsync(decision)" disabled="@Disabled" aria-label='@T["Edit {0} {1}",T["decision"],decision.Title]'>@T["Edit decision"]</button><button type="button" class="danger compact" @onclick="() => Delete.InvokeAsync(decision)" disabled="@Disabled">@T["Delete decision"]</button></div>
+				<div class="toolbar"><button type="button" class="danger compact" @onclick="() => Delete.InvokeAsync(decision)" disabled="@Disabled">@T["Delete decision"]</button><button type="button" class="quiet compact" @onclick="() => Edit.InvokeAsync(decision)" disabled="@Disabled" aria-label='@T["Edit {0} {1}",T["decision"],decision.Title]'>@T["Edit decision"]</button></div>
 			</div>
 		}
 	</section>

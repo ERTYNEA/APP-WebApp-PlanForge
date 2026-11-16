@@ -3,11 +3,12 @@ namespace PlanForge.Api.Health;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
+using PlanForge.Api.Avatars;
 using PlanForge.Api.Http;
 using PlanForge.Infrastructure.Database;
 using System.Diagnostics;
 
-public sealed class HealthFunctions(PlanForgeDbContext database, HttpEndpointRunner endpointRunner)
+public sealed class HealthFunctions(PlanForgeDbContext database, HttpEndpointRunner endpointRunner, IAvatarQueueReadiness queueReadiness)
 {
 	private static readonly DateTimeOffset processStartedAtUtc = ReadProcessStart();
 
@@ -19,6 +20,8 @@ public sealed class HealthFunctions(PlanForgeDbContext database, HttpEndpointRun
 	public Task<HttpResponseData> ReadyAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "v1/ready")] HttpRequestData request)
 		=> endpointRunner.ExecuteAsync(request, async () =>
 		{
+			if (!queueReadiness.IsReady)
+				throw new PlanForge.Application.Common.PlanForgeException(503, "Avatar storage is not ready. Try again shortly.");
 			try
 			{
 				await database.Users.AnyAsync(request.FunctionContext.CancellationToken);

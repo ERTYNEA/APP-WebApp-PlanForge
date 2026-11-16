@@ -34,7 +34,7 @@ public sealed class WorkPlanFocusTests
 		using var context = new ComponentTestContext(_ => throw new InvalidOperationException("No API call expected."));
 		var component = context.Render<WorkPlanTree>(parameters => parameters
 			.Add(tree => tree.Snapshot, snapshot)
-			.Add(tree => tree.Agents, new[] { new PlanForge.Contracts.Agents.AgentProfile(agent, "Agent", "", true, true) }));
+			.Add(tree => tree.Agents, new[] { new PlanForge.Contracts.Agents.AgentProfile(agent, "Agent", "", true, true, AvatarVersion: Guid.NewGuid()) }));
 		Assert.Equal(snapshot.Id.ToString(), component.Find("#plan-inspector").GetAttribute("data-selected-id"));
 		await component.Find($"button[data-select-id='{phase}']").ClickAsync(new());
 		Assert.Contains($"/files/agent-avatars/{agent}", component.Markup);

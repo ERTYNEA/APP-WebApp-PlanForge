@@ -101,7 +101,7 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 		long latest = records.Count == 0 ? 0 : records[0].Id;
 		bool reset = after > latest || after > 0 && records.Count == 100 && after < records[^1].Id;
 		return new ProjectChangePage(revision.Value, latest, reset, records.Where(change => change.Id > after).OrderBy(change => change.Id)
-			.Select(change => new ProjectChangeInfo(change.Id, change.Revision, change.ActorId, change.ActorKind, change.ActorName ?? ApplicationText.Get(change.ActorKind == "Human" ? "AnonymousHuman" : "AnonymousAgent"), change.Action, new DateTimeOffset(DateTime.SpecifyKind(change.CreatedAt, DateTimeKind.Utc)))).ToList());
+			.Select(change => new ProjectChangeInfo(change.Id, change.Revision, change.ActorId, change.ActorKind, change.ActorName ?? ApplicationText.Get(change.ActorKind == "Human" ? "AnonymousHuman" : "AnonymousAgent"), change.Action, new DateTimeOffset(DateTime.SpecifyKind(change.CreatedAt, DateTimeKind.Utc))) { Operation = ClassifyOperation(change.Action) }).ToList());
 	}
 
 	public Task<bool> IsValidAgentAsync(Guid ownerId, Guid agentId, bool requireActive, CancellationToken cancellationToken)
@@ -188,7 +188,7 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 				database.Entry(item).State = EntityState.Detached;
 		}
 	}
-	public async Task RecordEventAsync(Guid ownerId, Guid projectId, long revision, Guid actorId, string actorKind, string action, CancellationToken cancellationToken, string? actorNameSnapshot = null)
+	public async Task<long> RecordEventAsync(Guid ownerId, Guid projectId, long revision, Guid actorId, string actorKind, string action, CancellationToken cancellationToken, string? actorNameSnapshot = null)
 	{
 		await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
 		if (!await database.Projects.AnyAsync(project => project.Id == projectId && project.OwnerUserId == ownerId, cancellationToken))
@@ -200,7 +200,17 @@ public sealed class EfProjectStore(PlanForgeDbContext database) : IProjectStore
 		await database.ProjectChanges.Where(entry => expired.Contains(entry.Id)).ExecuteDeleteAsync(cancellationToken);
 		await transaction.CommitAsync(cancellationToken);
 		database.Entry(change).State = EntityState.Detached;
+		return change.Id;
 	}
+
+	// These are immutable server-authored event keys, not user text or localized substring heuristics.
+	private static ProjectChangeOperation ClassifyOperation(string action) => action switch
+	{
+		"CSV imported successfully" or "CSV imported successfully by agent" => ProjectChangeOperation.Import,
+		"Project exported successfully" or "Project exported successfully by agent" => ProjectChangeOperation.Export,
+		"Phase deleted" or "Subphase deleted" or "Step deleted" or "Decision deleted" or "Completed phases removed" => ProjectChangeOperation.Destructive,
+		_ => ProjectChangeOperation.Informational
+	};
 
 	private async Task RemoveItemsAsync(Guid ownerId, Guid projectId, List<Guid> retained, CancellationToken cancellationToken)
 	{

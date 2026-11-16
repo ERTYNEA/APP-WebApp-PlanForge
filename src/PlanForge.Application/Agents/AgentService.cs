@@ -97,7 +97,7 @@ public sealed class AgentService(IAgentStore store, ISecretProtector secrets, Ti
 			throw new PlanForgeException(404, "Avatar not found.");
 		AvatarValidator.Validate(agent.AvatarBytes, agent.AvatarContentType);
 		string extension = agent.AvatarContentType == "image/jpeg" ? "jpg" : agent.AvatarContentType == "image/webp" ? "webp" : "png";
-		return new DownloadFile(agent.AvatarBytes, agent.AvatarContentType, "agent-avatar." + extension, true);
+		return new DownloadFile(agent.AvatarBytes, agent.AvatarContentType, "agent-avatar." + extension, true, "\"" + agent.AvatarGeneration.ToString("N") + "\"");
 	}
 
 	private async Task<AgentTokenGrant> PrepareTokenAsync(AuthenticatedActor actor, CreateAgentTokenRequest request, CancellationToken cancellationToken)
@@ -125,7 +125,7 @@ public sealed class AgentService(IAgentStore store, ISecretProtector secrets, Ti
 			throw new PlanForgeException(403, "Only a human account session may manage agents and tokens.");
 	}
 
-	private static AgentProfile ToProfile(Agent agent) => new(agent.Id, agent.Name, agent.Description, agent.IsActive, agent.AvatarBytes is not null);
+	private static AgentProfile ToProfile(Agent agent) => new(agent.Id, agent.Name, agent.Description, agent.IsActive, agent.AvatarBytes is not null, agent.AvatarGeneration);
 	private static AgentTokenProfile ToTokenProfile(AccessCredential credential) => new(credential.Id, credential.Name, credential.AgentId, credential.CreatedAt, credential.ExpiresAt, credential.RevokedAt, credential.LastUsedAt);
 	private static void ValidateAgent(AgentRequest request)
 	{

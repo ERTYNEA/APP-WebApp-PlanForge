@@ -1,6 +1,8 @@
 namespace PlanForge.Web.Tests;
 
 using Bunit;
+using Microsoft.Extensions.DependencyInjection;
+using PlanForge.Web.State;
 using PlanForge.Contracts.Agents;
 using PlanForge.Web.Components.Shared;
 
@@ -134,6 +136,7 @@ public sealed class AgentTokenPanelTests
 		await page.Find("#confirm-delete").ClickAsync(new());
 
 		Assert.True(cleaned);
+		Assert.Equal(NotificationKind.Danger, Assert.Single(context.Services.GetRequiredService<NotificationState>().Items).Kind);
 		Assert.Equal("/api/v1/agent-tokens/history/clean", path);
 		using var payload = System.Text.Json.JsonDocument.Parse(body!);
 		Assert.True(payload.RootElement.GetProperty("confirmed").GetBoolean());
@@ -155,6 +158,7 @@ public sealed class AgentTokenPanelTests
 		page.Find("#confirm-intent").Change(true);
 		await page.Find("#confirm-delete").ClickAsync(new());
 		Assert.Equal($"/api/v1/agent-tokens/{id}", path);
+		Assert.Equal(NotificationKind.Danger, Assert.Single(context.Services.GetRequiredService<NotificationState>().Items).Kind);
 	}
 
 	[Theory]
@@ -174,6 +178,10 @@ public sealed class AgentTokenPanelTests
 		Assert.Equal(renew ? $"/api/v1/agent-tokens/{id}/renew" : "/api/v1/agent-tokens", path);
 		Assert.Contains(secret, page.Markup);
 		Assert.Contains("shown only once", page.Markup);
+		var toast = Assert.Single(context.Services.GetRequiredService<NotificationState>().Items);
+		Assert.Equal(NotificationKind.Success, toast.Kind);
+		Assert.Equal(renew ? "Token renewed" : "Token created", toast.Message);
+		Assert.DoesNotContain(secret, toast.Message);
 		await page.Find("#dismiss-token").ClickAsync(new());
 		Assert.DoesNotContain(secret, page.Markup);
 	}

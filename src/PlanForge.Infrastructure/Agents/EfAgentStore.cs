@@ -24,6 +24,17 @@ public sealed class EfAgentStore(PlanForgeDbContext database) : IAgentStore
 	public async Task DeleteAsync(Guid ownerId, Guid agentId, CancellationToken cancellationToken)
 	{
 		await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
+		// Use the same queue-before-target lock order as avatar admission and publication.
+		await database.AvatarQueueStates.Where(state => state.Id == 1).ExecuteUpdateAsync(setters => setters.SetProperty(state => state.NextSequence, state => state.NextSequence), cancellationToken);
+		var avatarJob = await database.AvatarOptimizationJobs.SingleOrDefaultAsync(job => job.OwnerUserId == ownerId && job.AgentId == agentId && job.IsCurrent, cancellationToken);
+		if (avatarJob is not null)
+		{
+			bool reading = avatarJob.Status == AvatarJobStatus.Processing;
+			avatarJob.RetainedBytes = reading ? await database.Agents.Where(agent => agent.OwnerUserId == ownerId && agent.Id == agentId).Select(agent => agent.AvatarBytes).SingleOrDefaultAsync(cancellationToken) : null;
+			avatarJob.Status = reading ? AvatarJobStatus.Cancelling : AvatarJobStatus.Cancelled;
+			avatarJob.IsCurrent = false;
+			await database.SaveChangesAsync(cancellationToken);
+		}
 		int locked = await database.Agents.Where(agent => agent.OwnerUserId == ownerId && agent.Id == agentId)
 			.ExecuteUpdateAsync(setters => setters.SetProperty(agent => agent.IsActive, false), cancellationToken);
 		if (locked != 1)
@@ -53,7 +64,7 @@ public sealed class EfAgentStore(PlanForgeDbContext database) : IAgentStore
 		=> database.AccessCredentials.SingleOrDefaultAsync(token => token.OwnerUserId == ownerId && token.Id == tokenId && token.Kind == CredentialKind.AgentToken, cancellationToken);
 	public async Task<IReadOnlyList<Agent>> ListAsync(Guid ownerId, CancellationToken cancellationToken)
 		=> await database.Agents.AsNoTracking().Where(agent => agent.OwnerUserId == ownerId).OrderBy(agent => agent.Name)
-			.Select(agent => new Agent { Id = agent.Id, OwnerUserId = agent.OwnerUserId, Name = agent.Name, Description = agent.Description, IsActive = agent.IsActive, CreatedAt = agent.CreatedAt, AvatarBytes = agent.AvatarBytes == null ? null : Array.Empty<byte>() }).ToListAsync(cancellationToken);
+			.Select(agent => new Agent { Id = agent.Id, OwnerUserId = agent.OwnerUserId, Name = agent.Name, Description = agent.Description, IsActive = agent.IsActive, CreatedAt = agent.CreatedAt, AvatarBytes = agent.AvatarBytes == null ? null : Array.Empty<byte>(), AvatarGeneration = agent.AvatarGeneration }).ToListAsync(cancellationToken);
 	public async Task<IReadOnlyList<AccessCredential>> ListTokensAsync(Guid ownerId, CancellationToken cancellationToken)
 		=> await database.AccessCredentials.AsNoTracking().Where(token => token.OwnerUserId == ownerId && token.Kind == CredentialKind.AgentToken)
 			.Select(token => new AccessCredential { Id = token.Id, OwnerUserId = token.OwnerUserId, Kind = token.Kind, Name = token.Name, AgentId = token.AgentId, CreatedAt = token.CreatedAt, ExpiresAt = token.ExpiresAt, RevokedAt = token.RevokedAt, LastUsedAt = token.LastUsedAt }).ToListAsync(cancellationToken);

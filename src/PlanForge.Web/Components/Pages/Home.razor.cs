@@ -56,7 +56,7 @@ public partial class Home : ApiPage
 			else if (cursor.After != project.LatestChangeId)
 			{
 				ProjectChangePage changes = await Api.GetAsync<ProjectChangePage>($"projects/{project.Id}/changes?after={cursor.After}", Token);
-				foreach (string message in cursor.Observe(changes)) Notify(message);
+				foreach (ProjectChangeInfo message in cursor.ObserveEvents(changes)) Notify(message);
 			}
 		}
 		projects = loaded;
@@ -66,6 +66,7 @@ public partial class Home : ApiPage
 	private Task OnCreateAsync() => ExecuteAsync(async () =>
 	{
 		ProjectSnapshot project = await Api.SendAsync<ProjectSnapshot>(HttpMethod.Post, "projects", new CreateProjectRequest(name, description, workflow), cancellationToken: Token);
+		Notify("Project created");
 		showCreate = false; Navigation.NavigateTo($"/projects/{project.Id}");
 	});
 	private Task OnNextAsync() => ExecuteAsync(async () => { recentSkip += 25; await LoadAsync(); });

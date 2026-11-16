@@ -86,6 +86,7 @@ public sealed class EfAccountStore(PlanForgeDbContext database) : IAccountStore
 			PasswordHash = user.PasswordHash,
 			SecurityVersion = user.SecurityVersion,
 			AvatarBytes = user.AvatarBytes == null ? null : Array.Empty<byte>(),
-			AvatarContentType = user.AvatarContentType
+			AvatarContentType = user.AvatarContentType,
+			AvatarGeneration = user.AvatarGeneration
 		});
 }

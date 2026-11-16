@@ -69,6 +69,9 @@ public sealed class PlanEditorTests
 		project = await editor.DeleteItemAsync(actor, project.Id, "Phase", phase, new(project.Revision, true));
 		Assert.Empty(project.Items);
 		Assert.Empty(fixture.Database.WorkItems);
+		var change = Assert.Single((await projects.GetChangesAsync(actor, project.Id, 0)).Changes, value => value.Revision == project.Revision);
+		Assert.Equal(ProjectChangeOperation.Destructive, change.Operation);
+		Assert.Equal("Phase deleted", change.Action);
 	}
 
 	[Fact]

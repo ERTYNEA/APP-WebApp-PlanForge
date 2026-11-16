@@ -1,5 +1,6 @@
 @inherits ApiPage
-<Feedback Error="@(showCreate || showCleanup || revokeId.HasValue || renewId.HasValue ? null : Error)" Toasts="Toasts" />
+@using PlanForge.Web.State
+<Feedback Error="@(showCreate || showCleanup || revokeId.HasValue || renewId.HasValue ? null : Error)" />
 <div class="section-heading"><div><h2>@T["Personal API tokens"]</h2><p class="muted small">@T["30-day credentials, scoped to your account. Renewal immediately invalidates the old token."]</p></div><button class="primary" @onclick="OnOpenCreate" disabled="@Busy">@T["+ Create token"]</button></div>
 @if(tokens is null) { <p role="status">@T["Loading token metadata…"]</p> }
 else if(tokens.Count==0) { <p class="empty-state">@T["No agent tokens. Create one when you are ready to connect an external agent."]</p> }
@@ -42,6 +43,7 @@ else
 	<Modal Title="Save your new token" Close="OnDismiss"><p class="warning">@T["This secret is shown only once. Copy it to a private credential store before closing. Never commit it or paste it into public logs."]</p><label>@T["New API token"]<textarea class="mono token-secret" readonly rows="4" spellcheck="false" autocomplete="off">@grant.Token</textarea></label><p class="muted small">@T["Expires {0}", grant.Credential.ExpiresAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm 'UTC'")]</p><FormError Conflict="Conflict" /><div class="form-actions"><button id="dismiss-token" class="primary" @onclick="OnDismiss">@T["I saved it — close"]</button></div></Modal>
 }
 @code {
+	protected override bool HasOpenOperation => showCreate || showCleanup || revokeId.HasValue || renewId.HasValue || grant is not null;
 	[Parameter] public IReadOnlyList<AgentProfile> Agents { get; set; }=[];
 	public Task RefreshAsync() => ExecuteAsync(LoadAsync);
 	private List<AgentTokenProfile>? tokens;
@@ -53,15 +55,23 @@ else
 	private bool showCreate,showCleanup;
 	private Guid? revokeId, renewId;
 	private void OnOpenCreate() { ClearFeedback(); renewId=null; showCreate=true; }
-	private Task OnCleanupAsync() => ExecuteAsync(async () => { await Api.SendAsync<object>(HttpMethod.Post,"agent-tokens/history/clean",new CleanAgentTokensRequest(true),cancellationToken:Token); showCleanup=false; await LoadAsync(); },"Revoked and expired tokens deleted");
-	private Task OnRevokeAsync() => ExecuteAsync(async () => { if(!revokeId.HasValue) return; await Api.SendAsync<object>(HttpMethod.Delete,$"agent-tokens/{revokeId}",cancellationToken:Token); revokeId=null; await LoadAsync(); },"Token revoked");
+	private sealed record TokenCleanupResult(int DeletedCount);
+	private Task OnCleanupAsync() => ExecuteAsync(async () =>
+	{
+		TokenCleanupResult result = await Api.SendAsync<TokenCleanupResult>(HttpMethod.Post, "agent-tokens/history/clean", new CleanAgentTokensRequest(true), cancellationToken: Token)
+			?? throw new PlanForge.Web.Api.ApiException(502, UiText.Get("The service returned an empty response."));
+		showCleanup = false;
+		Notify(result.DeletedCount > 0 ? "Revoked and expired tokens deleted" : "No revoked or expired tokens were removed", result.DeletedCount > 0 ? NotificationKind.Danger : NotificationKind.Neutral);
+		await RefreshConfirmedAsync(LoadAsync);
+	});
+	private Task OnRevokeAsync() => ExecuteAsync(async () => { if(!revokeId.HasValue) return; await Api.SendAsync<object>(HttpMethod.Delete,$"agent-tokens/{revokeId}",cancellationToken:Token); revokeId=null; Notify("Token revoked", NotificationKind.Danger); await RefreshConfirmedAsync(LoadAsync); });
 	protected override Task OnInitializedAsync() => ExecuteAsync(LoadAsync);
 	private async Task LoadAsync() { tokens=(await Api.GetAsync<List<AgentTokenProfile>>("agent-tokens",Token)).OrderByDescending(token=>token.CreatedAt).ToList(); historyPage=Math.Min(historyPage,Math.Max(0,(History.Count-1)/10)); validPage=Math.Min(validPage,Math.Max(0,(ValidTokens.Count-1)/25)); }
-	private Task OnCreateAsync() => ExecuteAsync(async () => { grant=await Api.SendAsync<AgentTokenGrant>(HttpMethod.Post,"agent-tokens",new CreateAgentTokenRequest(name,Guid.TryParse(agent,out Guid id) ? id : null),cancellationToken:Token); showCreate=false; name=""; agent=""; await LoadAsync(); });
+	private Task OnCreateAsync() => ExecuteAsync(async () => { grant=await Api.SendAsync<AgentTokenGrant>(HttpMethod.Post,"agent-tokens",new CreateAgentTokenRequest(name,Guid.TryParse(agent,out Guid id) ? id : null),cancellationToken:Token); showCreate=false; name=""; agent=""; Notify("Token created"); await RefreshConfirmedAsync(LoadAsync); });
 	private void OnDismiss() => grant=null;
 	private Task OnRenewAsync(Guid id)
 	{
 		renewId=id;
-		return ExecuteAsync(async () => { grant=await Api.SendAsync<AgentTokenGrant>(HttpMethod.Post,$"agent-tokens/{id}/renew",cancellationToken:Token); await LoadAsync(); renewId=null; });
+		return ExecuteAsync(async () => { grant=await Api.SendAsync<AgentTokenGrant>(HttpMethod.Post,$"agent-tokens/{id}/renew",cancellationToken:Token); Notify("Token renewed"); await RefreshConfirmedAsync(LoadAsync); renewId=null; });
 	}
 }

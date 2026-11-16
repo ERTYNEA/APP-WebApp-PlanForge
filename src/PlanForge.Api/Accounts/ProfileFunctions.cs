@@ -6,7 +6,7 @@ using PlanForge.Api.Http;
 using PlanForge.Application.Accounts;
 using PlanForge.Contracts.Accounts;
 
-public sealed class ProfileFunctions(AccountService accounts, AccountManagementService management, HttpEndpointRunner runner)
+public sealed class ProfileFunctions(AccountService accounts, AccountManagementService management, HttpEndpointRunner runner, AvatarService avatars)
 {
 	[Function("UserAvatar")]
 	public Task<HttpResponseData> AvatarAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", "put", "delete", Route = "v1/users/me/avatar")] HttpRequestData request)
@@ -18,7 +18,8 @@ public sealed class ProfileFunctions(AccountService accounts, AccountManagementS
 				return await management.GetAvatarAsync(actor, request.FunctionContext.CancellationToken);
 			byte[]? bytes = request.Method == "DELETE" ? null : await runner.ReadBytesAsync(request, AvatarValidator.MaximumBytes);
 			string type = request.Headers.TryGetValues("Content-Type", out IEnumerable<string>? values) ? values.First().Split(';')[0].Trim() : string.Empty;
-			return await management.SetAvatarAsync(actor, bytes, type, request.FunctionContext.CancellationToken);
+			await avatars.SetAsync(actor, null, bytes, type, request.FunctionContext.CancellationToken);
+			return await accounts.GetProfileAsync(actor, request.FunctionContext.CancellationToken);
 		});
 
 	[Function("ChangePassword")]

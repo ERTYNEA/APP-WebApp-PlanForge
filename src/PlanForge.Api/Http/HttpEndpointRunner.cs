@@ -70,6 +70,10 @@ public sealed class HttpEndpointRunner(ILogger<HttpEndpointRunner>? logger = nul
 			response.Headers.Add("Retry-After", "60");
 		if (result is DownloadFile file)
 		{
+			if (file.ETag is not null)
+				response.Headers.Add("ETag", file.ETag);
+			if (file.ProjectChangeId is > 0)
+				response.Headers.Add("X-PlanForge-Change-Id", file.ProjectChangeId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
 			response.Headers.Add("Content-Disposition", (file.Inline ? "inline" : "attachment") + "; filename*=UTF-8''" + Uri.EscapeDataString(file.FileName));
 			await response.Body.WriteAsync(file.Content, request.FunctionContext.CancellationToken);
 		}

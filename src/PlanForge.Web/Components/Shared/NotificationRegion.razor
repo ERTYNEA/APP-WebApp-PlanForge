@@ -1,0 +1,21 @@
+@implements IDisposable
+@inject PlanForge.Web.State.NotificationState Notifications
+@if (Notifications.ActiveHost == Host)
+{
+	<ToastHost Items="Notifications.Items" Announcement="@announcement" AnnouncementVersion="announcementVersion" />
+}
+@code {
+	[Parameter] public Guid? Host { get; set; }
+	private string announcement = "";
+	private long announcementVersion;
+	protected override void OnInitialized() => Notifications.Changed += OnChanged;
+	protected override void OnParametersSet() => ReadAnnouncement();
+	protected override void OnAfterRender(bool firstRender)
+	{
+		if (Notifications.ActiveHost == Host)
+			Notifications.AcknowledgeAnnouncement(announcementVersion);
+	}
+	private void ReadAnnouncement() => (announcementVersion, announcement) = Notifications.ReadAnnouncement(Host);
+	private void OnChanged() => _ = InvokeAsync(() => { ReadAnnouncement(); StateHasChanged(); });
+	public void Dispose() => Notifications.Changed -= OnChanged;
+}

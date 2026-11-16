@@ -12,6 +12,7 @@ using PlanForge.Infrastructure.Planning;
 using System.IO.Compression;
 using System.Net;
 
+[Collection("Project archive budget")]
 public sealed class ProjectExportFunctionTests
 {
 	[Fact]

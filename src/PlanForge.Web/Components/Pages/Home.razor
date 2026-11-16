@@ -3,7 +3,7 @@
 @inherits ApiPage
 <PageTitle>@T[IsManagement ? "Projects" : "Home"] · PlanForge</PageTitle>
 <div class="page-heading"><div><div class="eyebrow">@T["YOUR WORKSPACE"]</div><h1>@T[IsManagement ? "Projects" : "Work in focus"]<span class="accent">.</span></h1><p class="muted">@T[IsManagement ? "Manage project settings, execution modes and linked resources." : "A clear view of what matters now, and what comes next."]</p></div><button class="primary" @onclick="OnOpenCreate" disabled="@Busy">+ @T["New project"]</button></div>
-<Feedback Error="@(showCreate ? null : Error)" Conflict="Conflict" Toasts="Toasts" />
+<Feedback Error="@(showCreate ? null : Error)" Conflict="Conflict" />
 @if (IsManagement)
 {
 	<div class="filter-bar"><input aria-label="@T["Search projects"]" placeholder="@T["Search projects…"]" @bind="search" @bind:event="oninput" /><select aria-label="@T["Filter projects by status"]" @bind="status"><option value="">@T["All statuses"]</option><option value="Pending">@T["Pending"]</option><option value="InProgress">@T["InProgress"]</option><option value="Blocked">@T["Blocked"]</option><option value="Completed">@T["Completed"]</option></select><select aria-label="@T["Sort projects"]" @bind="sort"><option value="updated">@T["Recently updated"]</option><option value="progress">@T["Progress"]</option><option value="name">@T["Name"]</option></select><button class="quiet" @onclick="() => ExecuteAsync(LoadAsync)" disabled="@Busy">@T["↻ Refresh"]</button></div>

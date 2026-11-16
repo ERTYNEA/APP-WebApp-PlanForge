@@ -9,6 +9,9 @@ using PlanForge.Infrastructure.Library;
 
 public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> options) : DbContext(options)
 {
+	public DbSet<AvatarAdmission> AvatarAdmissions => Set<AvatarAdmission>();
+	public DbSet<AvatarOptimizationJob> AvatarOptimizationJobs => Set<AvatarOptimizationJob>();
+	public DbSet<AvatarQueueState> AvatarQueueStates => Set<AvatarQueueState>();
 	public DbSet<AccessCredential> AccessCredentials => Set<AccessCredential>();
 	public DbSet<Agent> Agents => Set<Agent>();
 	public DbSet<Resource> Resources => Set<Resource>();
@@ -22,6 +25,14 @@ public sealed class PlanForgeDbContext(DbContextOptions<PlanForgeDbContext> opti
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
 		LibraryModelConfiguration.Configure(modelBuilder);
+		modelBuilder.Entity<AvatarQueueState>().HasData(new AvatarQueueState());
+		modelBuilder.Entity<AvatarOptimizationJob>(entity =>
+		{
+			entity.HasIndex(job => new { job.OwnerUserId, job.TargetId, job.IsAgent }).IsUnique().HasFilter("[IsCurrent] = 1");
+			entity.HasIndex(job => new { job.Status, job.Sequence });
+			entity.HasOne<UserAccount>().WithMany().HasForeignKey(job => job.OwnerUserId).OnDelete(DeleteBehavior.Restrict);
+		});
+		modelBuilder.Entity<AvatarAdmission>().HasIndex(admission => admission.ExpiresAtUtc);
 		modelBuilder.Entity<Agent>(entity =>
 		{
 			entity.HasKey(agent => agent.Id);

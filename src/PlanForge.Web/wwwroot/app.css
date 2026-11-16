@@ -190,6 +190,7 @@ progress::-moz-progress-bar { background: var(--pf-primary); border-radius: 8px;
 .current-work small { font-size: 10px; color: var(--pf-muted); overflow-wrap: anywhere; }
 .agent-tag { display: inline-flex; align-items: center; gap: 5px; color: var(--pf-muted); font-size: 11px; white-space: nowrap; }
 .agent-tag img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.agent-tag .avatar { width: 20px; height: 20px; border: 0; border-radius: 50%; background: transparent; }
 .card-footer { border-top: 1px solid var(--pf-border); display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 16px; margin-top: auto; font-size: 11px; color: var(--pf-muted); }
 .project-card .card-footer { margin-top: 20px; }
 .badge { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--pf-border); border-radius: 5px; padding: 3px 7px; font-size: 10px; font-weight: 650; white-space: nowrap; }
@@ -280,7 +281,12 @@ progress::-moz-progress-bar { background: var(--pf-primary); border-radius: 8px;
 .form-error { margin: 16px 0 0; }
 .notice.warning { border-color: var(--pf-warning-border); background: var(--pf-warning-bg); color: var(--pf-amber); }
 .toast-stack { position: fixed; right: 24px; bottom: 24px; width: min(380px, calc(100vw - 32px)); display: grid; gap: 8px; z-index: 80; pointer-events: none; }
-.toast { background: var(--pf-success-bg); color: var(--pf-emerald); border: 1px solid var(--pf-success-border); border-radius: 9px; padding: 13px 18px; box-shadow: 0 6px 24px #0007; font-size: 12px; animation: appear 250ms ease-out; }
+.toast { background: var(--pf-success-bg); color: var(--pf-emerald); border: 1px solid var(--pf-success-border); border-radius: 9px; padding: 13px 18px; box-shadow: 0 6px 24px #0007; font-size: 12px; display: flex; align-items: center; gap: 10px; animation: appear 250ms ease-out; }
+.toast-announcer { position: fixed; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.toast svg { width: 22px; height: 22px; flex: 0 0 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.toast-success { background: var(--pf-success-bg); border-color: var(--pf-success-border); color: var(--pf-emerald); }
+.toast-neutral { background: var(--pf-selection); border-color: var(--pf-primary); color: var(--pf-primary-hover); }
+.toast-danger { background: var(--pf-danger-bg); border-color: var(--pf-danger-border); color: var(--pf-red); }
 @keyframes appear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 .usage-strip { display: flex; gap: 18px; align-items: center; border-bottom: 1px solid var(--pf-border); margin-bottom: 20px; padding-bottom: 16px; font-size: 11px; color: var(--pf-muted); }
 .usage-strip progress { flex: 1; }

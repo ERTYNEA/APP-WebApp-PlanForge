@@ -1,0 +1,37 @@
+@using PlanForge.Web.State
+<div class="toast-stack">
+	@foreach (ToastNotification toast in Items)
+	{
+		<div class="toast toast-@toast.Kind.ToString().ToLowerInvariant()" @key="toast">
+			<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" data-icon="@Icon(toast.Kind)">
+				<circle cx="12" cy="12" r="9" />
+				@if (toast.Kind == NotificationKind.Success)
+				{
+					<path d="m8 12 3 3 5-6" />
+				}
+				else if (toast.Kind == NotificationKind.Danger)
+				{
+					<path d="m9 9 6 6m0-6-6 6" />
+				}
+				else
+				{
+					<path d="M12 11v6m0-10v1" />
+				}
+			</svg>
+			<span>@toast.Message</span>
+		</div>
+	}
+</div>
+<div class="toast-announcer" role="status" aria-atomic="true"><span @key="AnnouncementVersion">@Announcement</span></div>
+@code {
+	[Parameter] public string Announcement { get; set; } = "";
+	[Parameter] public long AnnouncementVersion { get; set; }
+	[Parameter] public IEnumerable<ToastNotification> Items { get; set; } = [];
+
+	private static string Icon(NotificationKind kind) => kind switch
+	{
+		NotificationKind.Success => "check",
+		NotificationKind.Danger => "circle-x",
+		_ => "info"
+	};
+}

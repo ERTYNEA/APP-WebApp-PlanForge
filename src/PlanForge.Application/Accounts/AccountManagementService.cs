@@ -29,7 +29,7 @@ public sealed class AccountManagementService(IAccountStore store, ISecretProtect
 		if (user.AvatarBytes is null || user.AvatarContentType is null)
 			throw new PlanForgeException(404, "Avatar not found.");
 		AvatarValidator.Validate(user.AvatarBytes, user.AvatarContentType);
-		return new DownloadFile(user.AvatarBytes, user.AvatarContentType, "avatar." + Extension(user.AvatarContentType), true);
+		return new DownloadFile(user.AvatarBytes, user.AvatarContentType, "avatar." + Extension(user.AvatarContentType), true, "\"" + user.AvatarGeneration.ToString("N") + "\"");
 	}
 
 	public async Task<UserProfile> SetAvatarAsync(AuthenticatedActor actor, byte[]? content, string? contentType, CancellationToken cancellationToken = default)
@@ -66,5 +66,5 @@ public sealed class AccountManagementService(IAccountStore store, ISecretProtect
 		if (!actor.IsHuman)
 			throw new PlanForgeException(403, "This operation requires a human account session.");
 	}
-	private static UserProfile ToProfile(UserAccount user) => new(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null, user.Language);
+	private static UserProfile ToProfile(UserAccount user) => new(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null, user.Language, user.AvatarGeneration);
 }

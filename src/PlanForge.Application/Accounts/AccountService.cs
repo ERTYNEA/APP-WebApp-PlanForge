@@ -33,7 +33,7 @@ public sealed class AccountService(IAccountStore accountStore, ISecretProtector 
 		UserAccount? user = await accountStore.FindUserAsync(actor.UserId, cancellationToken);
 		if (user is null || !user.IsActive)
 			throw new PlanForgeException(401, "The account is unavailable.");
-		return new UserProfile(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null, user.Language);
+		return new UserProfile(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null, user.Language, user.AvatarGeneration);
 	}
 
 	public async Task<AccessGrant> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -90,6 +90,6 @@ public sealed class AccountService(IAccountStore accountStore, ISecretProtector 
 		};
 		await accountStore.AddCredentialAsync(credential, cancellationToken);
 		await accountStore.SaveAsync(cancellationToken);
-		return new AccessGrant(token, credential.ExpiresAt, new UserProfile(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null, user.Language));
+		return new AccessGrant(token, credential.ExpiresAt, new UserProfile(user.Id, user.Email, user.DisplayName, user.CreatedAt, user.AvatarBytes is not null, user.Language, user.AvatarGeneration));
 	}
 }

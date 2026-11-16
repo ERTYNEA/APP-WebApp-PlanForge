@@ -107,4 +107,13 @@
   <data name="Blocked is calculated from pending decisions. Choose Pending, InProgress or Completed for a step." xml:space="preserve"><value>Blocked is calculated from pending decisions. Choose Pending, InProgress or Completed for a step.</value></data>
   <data name="Choose exactly one project, phase, subphase or step link." xml:space="preserve"><value>Choose exactly one project, phase, subphase or step link.</value></data>
   <data name="Choose at most one structural resource target." xml:space="preserve"><value>Choose at most one structural resource target.</value></data>
+	<data name="Animated avatar images are not supported." xml:space="preserve"><value>Animated avatar images are not supported.</value></data>
+	<data name="Avatar acceptance expired. Please upload again." xml:space="preserve"><value>Avatar acceptance expired. Please upload again.</value></data>
+	<data name="Avatar dimensions must not exceed 8192 per axis or 16 megapixels." xml:space="preserve"><value>Avatar dimensions must not exceed 8192 per axis or 16 megapixels.</value></data>
+	<data name="Avatar owner not found." xml:space="preserve"><value>Avatar owner not found.</value></data>
+	<data name="Avatar storage is not ready. Try again shortly." xml:space="preserve"><value>Avatar storage is not ready. Try again shortly.</value></data>
+	<data name="Avatar removal is still being confirmed. Please try again shortly." xml:space="preserve"><value>Avatar removal is still being confirmed. Please try again shortly.</value></data>
+	<data name="The avatar exceeds the 4 MiB limit." xml:space="preserve"><value>The avatar exceeds the 4 MiB limit.</value></data>
+	<data name="Unable to upload avatar right now. Please try again in a few minutes." xml:space="preserve"><value>Unable to upload avatar right now. Please try again in a few minutes.</value></data>
+	<data name="Choose a complete, valid PNG, JPEG or WebP avatar image matching its MIME type." xml:space="preserve"><value>Choose a complete, valid PNG, JPEG or WebP avatar image matching its MIME type.</value></data>
 </root>

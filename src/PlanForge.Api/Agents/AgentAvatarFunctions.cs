@@ -7,7 +7,7 @@ using PlanForge.Application.Accounts;
 using PlanForge.Application.Agents;
 using PlanForge.Application.Common;
 
-public sealed class AgentAvatarFunctions(AgentService agents, AccountService accounts, HttpEndpointRunner runner)
+public sealed class AgentAvatarFunctions(AgentService agents, AccountService accounts, HttpEndpointRunner runner, AvatarService avatars)
 {
 	[Function("AgentAvatar")]
 	public Task<HttpResponseData> AvatarAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", "put", "delete", Route = "v1/agents/{agentId:guid}/avatar")] HttpRequestData request, Guid agentId)
@@ -21,6 +21,7 @@ public sealed class AgentAvatarFunctions(AgentService agents, AccountService acc
 				throw new PlanForgeException(404, "Agent not found.");
 			byte[]? bytes = request.Method == "DELETE" ? null : await runner.ReadBytesAsync(request, AvatarValidator.MaximumBytes);
 			string type = request.Headers.TryGetValues("Content-Type", out IEnumerable<string>? values) ? values.First().Split(';')[0].Trim() : string.Empty;
-			return await agents.SetAvatarAsync(actor, agentId, bytes, type, request.FunctionContext.CancellationToken);
+			await avatars.SetAsync(actor, agentId, bytes, type, request.FunctionContext.CancellationToken);
+			return (await agents.ListAsync(actor, request.FunctionContext.CancellationToken)).Single(agent => agent.Id == agentId);
 		});
 }

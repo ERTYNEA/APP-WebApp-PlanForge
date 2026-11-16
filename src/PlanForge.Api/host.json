@@ -11,6 +11,14 @@
   "extensions": {
     "http": {
       "routePrefix": "api"
+    },
+    "queues": {
+      "batchSize": 1,
+      "newBatchThreshold": 0,
+      "maxPollingInterval": "00:00:02",
+      "visibilityTimeout": "00:00:30",
+      "maxDequeueCount": 2147483647,
+      "messageEncoding": "base64"
     }
   }
 }

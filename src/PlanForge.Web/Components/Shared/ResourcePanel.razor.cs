@@ -4,10 +4,12 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using PlanForge.Contracts.Library;
 using PlanForge.Contracts.Planning;
+using PlanForge.Web.State;
 using System.Text.Json;
 
 public partial class ResourcePanel : ApiPage
 {
+	protected override bool HasOpenOperation => managed is not null || showAttach || showUpload || deleteTitle is not null;
 	private string assignment = "all", search = "";
 	private bool listView;
 	private List<ResourceProfile>? resources;
@@ -31,21 +33,27 @@ public partial class ResourcePanel : ApiPage
 	}
 	private Task OnConfirmDeleteAsync() => ExecuteAsync(async () =>
 	{
-		if (deleteResource is not null) await Api.SendAsync<object>(HttpMethod.Delete, $"resources/{deleteResource.Id}", new ConfirmedRevisionRequest(deleteResource.Revision, true), cancellationToken: Token);
+		if (deleteResource is not null)
+		{
+			await Api.SendAsync<object>(HttpMethod.Delete, $"resources/{deleteResource.Id}", new ConfirmedRevisionRequest(deleteResource.Revision, true), cancellationToken: Token);
+			Notify("Resource deleted", NotificationKind.Danger);
+		}
 		else
 		{
 			JsonElement result = await Api.SendAsync<JsonElement>(HttpMethod.Post, "resources/orphans/clean", new CleanOrphansRequest(true, orphanIds), cancellationToken: Token);
-			Notify(T["Deleted {0} orphan resources; skipped {1}.", result.GetProperty("deletedCount").GetInt32(), result.GetProperty("skippedCount").GetInt32()].Value);
+			int deleted = result.GetProperty("deletedCount").GetInt32();
+			Notify(T["Deleted {0} orphan resources; skipped {1}.", deleted, result.GetProperty("skippedCount").GetInt32()].Value,
+				deleted == 0 ? NotificationKind.Neutral : NotificationKind.Danger);
 		}
 		deleteTitle = null; deleteResource = null; skip = 0;
-		await LoadAsync(); await Changed.InvokeAsync();
-	}, "Resource cleanup completed");
+		await RefreshConfirmedAsync(async () => { await LoadAsync(); await Changed.InvokeAsync(); });
+	});
 	private string resourceTitle = "", resourceOperation = "";
-	private Task ExecuteResourceAsync(string operation, Func<Task> action, string? message = null) { resourceOperation = operation; return ExecuteAsync(action, message); }
+	private Task ExecuteResourceAsync(string operation, Func<Task> action, string? message = null, NotificationKind kind = NotificationKind.Success) { resourceOperation = operation; return ExecuteAsync(action, message, kind); }
 	private List<ProjectSummary> projectOptions = [];
 	private List<PlanItem> phaseOptions = [];
 	private string linkProject = "", linkPhase = "";
-	private Task OnManageAsync(ResourceProfile resource) => ExecuteAsync(async () =>
+	private Task OnManageAsync(ResourceProfile resource) => ExecuteResourceAsync("manage", async () =>
 	{
 		managed = resource; resourceTitle = resource.Title; linkProject = ""; linkPhase = ""; phaseOptions = [];
 		projectOptions = [];
@@ -68,14 +76,16 @@ public partial class ResourcePanel : ApiPage
 	{
 		if (managed is null) return;
 		managed = await Api.SendAsync<ResourceProfile>(HttpMethod.Post, $"resources/{managed.Id}/links", new ResourceLinkRequest(managed.Revision, attach, projectId, phaseId, subphaseId, stepId), cancellationToken: Token);
-		await LoadAsync(); await Changed.InvokeAsync();
-	}, "Resource links updated");
+		Notify(attach ? "Resource links updated" : "Resource unlinked", attach ? NotificationKind.Success : NotificationKind.Danger);
+		await RefreshConfirmedAsync(async () => { await LoadAsync(); await Changed.InvokeAsync(); });
+	});
 	private Task OnSaveTitleAsync() => ExecuteResourceAsync("title", async () =>
 	{
 		if (managed is null) return;
 		managed = await Api.SendAsync<ResourceProfile>(HttpMethod.Put, $"resources/{managed.Id}", new ResourceMetadataRequest(managed.Revision, resourceTitle), cancellationToken: Token);
-		await LoadAsync(); await Changed.InvokeAsync();
-	}, "Resource updated");
+		Notify("Resource updated");
+		await RefreshConfirmedAsync(async () => { await LoadAsync(); await Changed.InvokeAsync(); });
+	});
 	private bool showUpload, showAttach;
 	private List<ResourceProfile> candidates = [];
 	private string selectedResource = "";
@@ -89,10 +99,13 @@ public partial class ResourcePanel : ApiPage
 	private Task OnChooseExistingAsync() => ExecuteAsync(async () => { candidates = await GetAllResourcesAsync(); selectedResource = ""; showAttach = true; });
 	private Task OnAttachExistingAsync() => ExecuteAsync(async () =>
 	{
-		ResourceProfile resource = candidates.Single(item => item.Id.ToString() == selectedResource);
+		ResourceProfile? resource = candidates.SingleOrDefault(item => item.Id.ToString() == selectedResource);
+		if (resource is null) return;
 		await Api.SendAsync<ResourceProfile>(HttpMethod.Post, $"resources/{resource.Id}/links", new ResourceLinkRequest(resource.Revision, true, NodeId.HasValue ? null : ProjectId, PhaseId, SubphaseId, StepId), cancellationToken: Token);
-		showAttach = false; await LoadAsync(); await Changed.InvokeAsync();
-	}, "Resource attached");
+		showAttach = false;
+		Notify("Resource attached");
+		await RefreshConfirmedAsync(async () => { await LoadAsync(); await Changed.InvokeAsync(); });
+	});
 	private IBrowserFile? uploadFile;
 	private string uploadTitle = "";
 	private void OnFileSelected(InputFileChangeEventArgs args) { uploadFile = args.File; uploadTitle = uploadFile.Name; }
@@ -105,8 +118,9 @@ public partial class ResourcePanel : ApiPage
 		else if (ProjectId.HasValue) headers["X-Project-Id"] = ProjectId.ToString()!;
 		await Api.SendAsync<ResourceProfile>(HttpMethod.Post, "resources", bytes: bytes, contentType: string.IsNullOrWhiteSpace(uploadFile.ContentType) ? "application/octet-stream" : uploadFile.ContentType, headers: headers, cancellationToken: Token);
 		showUpload = false; uploadFile = null; uploadTitle = "";
-		await LoadAsync(); await Changed.InvokeAsync();
-	}, "Resource uploaded successfully");
+		Notify("Resource uploaded successfully");
+		await RefreshConfirmedAsync(async () => { await LoadAsync(); await Changed.InvokeAsync(); });
+	});
 	[Parameter] public Guid? ProjectId { get; set; }
 	[Parameter] public Guid? PhaseId { get; set; }
 	[Parameter] public Guid? SubphaseId { get; set; }

@@ -1,6 +1,8 @@
 namespace PlanForge.Web.Tests;
 
 using Bunit;
+using Microsoft.Extensions.DependencyInjection;
+using PlanForge.Web.State;
 using PlanForge.Contracts.Agents;
 using PlanForge.Web.Components.Pages;
 using System.Net.Http.Json;
@@ -28,6 +30,7 @@ public sealed class AgentPageTests
 		page.Find("#confirm-intent").Change(true);
 		await page.Find("#confirm-delete").ClickAsync(new());
 		Assert.Equal($"/api/v1/agents/{id}", deleted);
+		Assert.Equal(NotificationKind.Danger, Assert.Single(context.Services.GetRequiredService<NotificationState>().Items).Kind);
 	}
 
 	[Fact]
@@ -42,7 +45,7 @@ public sealed class AgentPageTests
 		{
 			string path = request.RequestUri!.AbsolutePath;
 			if (request.Method == HttpMethod.Post) { calls.Add("create"); created = true; return ComponentTestContext.Json(new AgentProfile(id, "Test avatar", "", true, false)); }
-			if (request.Method == HttpMethod.Put) { calls.Add(path); uploaded = await request.Content!.ReadAsByteArrayAsync(); return new HttpResponseMessage(System.Net.HttpStatusCode.NoContent); }
+			if (request.Method == HttpMethod.Put) { calls.Add(path); uploaded = await request.Content!.ReadAsByteArrayAsync(); return AvatarTestResponses.Json(new PlanForge.Contracts.Accounts.AvatarState(true, Guid.NewGuid())); }
 			return ComponentTestContext.Json(path.EndsWith("/agent-tokens", StringComparison.Ordinal) ? (object)Array.Empty<AgentTokenProfile>() : created ? new[] { new AgentProfile(id, "Test avatar", "", true, uploaded is not null) } : Array.Empty<AgentProfile>());
 		});
 		var page = context.Render<Agents>();
@@ -73,7 +76,7 @@ public sealed class AgentPageTests
 			{
 				if (fail && networkFailure) throw new HttpRequestException("Controlled test failure");
 				if (fail) return Task.FromResult(ComponentTestContext.Json(new { detail = "Avatar rejected." }, System.Net.HttpStatusCode.BadRequest));
-				uploaded = true; return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.NoContent));
+				uploaded = true; return Task.FromResult(AvatarTestResponses.Json(new PlanForge.Contracts.Accounts.AvatarState(true, Guid.NewGuid())));
 			}
 			return Task.FromResult(ComponentTestContext.Json(request.RequestUri!.AbsolutePath.EndsWith("/agent-tokens", StringComparison.Ordinal) ? (object)Array.Empty<AgentTokenProfile>() : created > 0 ? new[] { new AgentProfile(id, "Partial agent", "", true, uploaded) } : Array.Empty<AgentProfile>()));
 		});

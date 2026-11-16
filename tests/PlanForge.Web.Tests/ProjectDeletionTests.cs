@@ -1,6 +1,8 @@
 namespace PlanForge.Web.Tests;
 
 using Bunit;
+using Microsoft.Extensions.DependencyInjection;
+using PlanForge.Web.State;
 using PlanForge.Contracts.Planning;
 using PlanForge.Web.Components.Pages;
 using System.Text.Json;
@@ -27,6 +29,9 @@ public sealed class ProjectDeletionTests
 		var body = JsonSerializer.Deserialize<ConfirmedRevisionRequest>(command.Body!, new JsonSerializerOptions(JsonSerializerDefaults.Web));
 		Assert.True(body!.Confirmed);
 		if (operation == "project") Assert.Equal(0, fixture.ReadsAfterProjectDelete);
+		ToastNotification toast = Assert.Single(fixture.Context.Services.GetRequiredService<NotificationState>().Items);
+		Assert.Equal(operation == "completed" ? NotificationKind.Neutral : NotificationKind.Danger, toast.Kind);
+		Assert.DoesNotContain("Project updated", toast.Message);
 		Assert.Equal(5, body.Revision);
 		Assert.Equal(operation == "completed" ? "POST" : "DELETE", command.Method);
 		Assert.EndsWith(operation == "item" ? $"/steps/{fixture.Project.Items.Single(item => item.Kind == "Step").Id}" : operation == "project" ? $"/projects/{fixture.Project.Id}" : "/completed-phases/clean", command.Path);

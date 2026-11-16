@@ -2,15 +2,16 @@ namespace PlanForge.Application.Accounts;
 
 using PlanForge.Application.Common;
 
+/// <summary>Legacy signature checks and shared limits. New uploads also require <see cref="IAvatarImageValidator"/>.</summary>
 public static class AvatarValidator
 {
-	public const int MaximumBytes = 256 * 1024;
+	public const int MaximumBytes = 4 * 1024 * 1024;
 	public static void Validate(byte[] content, string contentType)
 	{
 		if (content is null || content.Length == 0)
 			throw new PlanForgeException(400, "Choose a PNG, JPEG or WebP avatar image.");
 		if (content.Length > MaximumBytes)
-			throw new PlanForgeException(413, "The avatar exceeds the 256 KiB limit.");
+			throw new PlanForgeException(413, "The avatar exceeds the 4 MiB limit.");
 		bool valid = contentType?.ToLowerInvariant() switch
 		{
 			"image/png" => content.AsSpan().StartsWith(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }),

@@ -1,0 +1,14 @@
+<span class="avatar @Class" aria-label="@Name" style="@(ImageOnly && displayedUrl is null ? "display:none" : null)">
+	@if (displayedUrl is string shown)
+	{
+		<img src="@shown" alt="" @onerror="() => OnDisplayFailed(shown)" />
+	}
+	else if (!ImageOnly)
+	{
+		@(string.IsNullOrEmpty(Name) ? "" : System.Globalization.StringInfo.GetNextTextElement(Name))
+	}
+	@if (pendingUrl is string candidate)
+	{
+		<img @key="candidate" src="@candidate" alt="" hidden aria-hidden="true" @onload="() => OnLoaded(candidate)" @onerror="() => OnFailed(candidate)" />
+	}
+</span>

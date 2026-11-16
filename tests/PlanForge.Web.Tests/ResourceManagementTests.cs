@@ -1,6 +1,8 @@
 namespace PlanForge.Web.Tests;
 
 using Bunit;
+using Microsoft.Extensions.DependencyInjection;
+using PlanForge.Web.State;
 using PlanForge.Contracts.Library;
 using PlanForge.Web.Components.Shared;
 using System.Text.Json;
@@ -28,6 +30,9 @@ public sealed class ResourceManagementTests
 		else Assert.Equal(2, json.RootElement.GetProperty("revision").GetInt64());
 		Assert.Equal(cleanup ? "POST" : "DELETE", command.Method);
 		Assert.Empty(page.FindAll("dialog"));
+		var toast = Assert.Single(fixture.Context.Services.GetRequiredService<NotificationState>().Items);
+		Assert.Equal(NotificationKind.Danger, toast.Kind);
+		Assert.Contains(cleanup ? "Deleted 1 orphan resources" : "Resource deleted", toast.Message);
 	}
 
 	[Theory]
@@ -54,6 +59,9 @@ public sealed class ResourceManagementTests
 		Assert.Equal(phaseOnly ? null : fixture.ProjectId, link.ProjectId);
 		Assert.Equal(phaseOnly ? fixture.PhaseId : null, link.PhaseId);
 		Assert.Equal(2, link.Revision);
+		var toast = Assert.Single(fixture.Context.Services.GetRequiredService<NotificationState>().Items);
+		Assert.Equal(detach ? NotificationKind.Danger : NotificationKind.Success, toast.Kind);
+		Assert.Equal(detach ? "Resource unlinked" : "Resource links updated", toast.Message);
 	}
 
 	[Theory]

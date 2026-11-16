@@ -19,8 +19,8 @@ public sealed class AgentAvatarFunctionTests
 		var agents = new AgentService(new EfAgentStore(fixture.Database), new SecretProtector(), TimeProvider.System);
 		var agent = await agents.CreateAsync(actor, new("Image agent"));
 		var agentToken = await agents.CreateTokenAsync(actor, new("Agent token", agent.Id));
-		var functions = new AgentAvatarFunctions(agents, fixture.Service, fixture.Runner);
-		byte[] image = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=");
+		var functions = new AgentAvatarFunctions(agents, fixture.Service, fixture.Runner, fixture.Avatars);
+		byte[] image = AvatarHttpImage.Create();
 		HttpTestRequest Upload(string token)
 		{
 			var request = new HttpTestRequest(method: "PUT", bytes: image);
@@ -33,6 +33,7 @@ public sealed class AgentAvatarFunctionTests
 		Assert.Equal(HttpStatusCode.OK, (await functions.AvatarAsync(Upload(a.Token), agent.Id)).StatusCode);
 		var get = new HttpTestRequest(method: "GET");
 		get.Headers.Add("Authorization", "Bearer " + a.Token);
+		fixture.Database.ChangeTracker.Clear();
 		var response = await functions.AvatarAsync(get, agent.Id);
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 		Assert.Equal(image, ((MemoryStream)response.Body).ToArray());
@@ -43,6 +44,7 @@ public sealed class AgentAvatarFunctionTests
 		var delete = new HttpTestRequest(method: "DELETE");
 		delete.Headers.Add("Authorization", "Bearer " + a.Token);
 		Assert.Equal(HttpStatusCode.OK, (await functions.AvatarAsync(delete, agent.Id)).StatusCode);
+		fixture.Database.ChangeTracker.Clear();
 		Assert.Equal(HttpStatusCode.NotFound, (await functions.AvatarAsync(get, agent.Id)).StatusCode);
 	}
 }

@@ -13,7 +13,8 @@ public sealed class EffectiveStatusMigrationTests
 	{
 		using var database = new PlanForgeDbContext(new DbContextOptionsBuilder<PlanForgeDbContext>().UseSqlServer("Server=unused.invalid;Database=isolated-provider-script;Integrated Security=true;Encrypt=true").Options);
 		var assembly = database.GetService<IMigrationsAssembly>();
-		var migrationType = assembly.Migrations.Last().Value;
+		var entry = Assert.Single(assembly.Migrations, item => item.Key.EndsWith("EffectiveStatusDates", StringComparison.Ordinal));
+		var migrationType = entry.Value;
 		Assert.EndsWith("EffectiveStatusDates", migrationType.Name);
 		var migration = assembly.CreateMigration(migrationType, database.Database.ProviderName!);
 		Assert.Equal(2, migration.UpOperations.Count);
@@ -27,7 +28,7 @@ public sealed class EffectiveStatusMigrationTests
 			Assert.Equal("datetimeoffset", addition.ColumnType);
 		});
 		Assert.Throws<NotSupportedException>(() => migration.DownOperations);
-		string script = database.GetService<IMigrator>().GenerateScript(assembly.Migrations.Keys.Reverse().Skip(1).First(), assembly.Migrations.Last().Key);
+		string script = database.GetService<IMigrator>().GenerateScript(assembly.Migrations.Keys.TakeWhile(key => key != entry.Key).Last(), entry.Key);
 		Assert.Contains("ALTER TABLE [Projects] ADD [EffectiveStatusChangedAt] datetimeoffset NULL", script);
 		Assert.Contains("ALTER TABLE [WorkItems] ADD [EffectiveStatusChangedAt] datetimeoffset NULL", script);
 		Assert.DoesNotContain("UPDATE ", script);

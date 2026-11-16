@@ -1,4 +1,5 @@
 window.planForge = {
+	isDocumentVisible: () => document.visibilityState === "visible",
 	formatStatusDate: iso => {
 		const date = new Date(iso);
 		const day = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(date);
@@ -33,10 +34,11 @@ window.planForge = {
 		}
 		return valid;
 	},
-	openDialog: element => {
+	openDialog: (element, initialFocusSelector) => {
 		if (element.open) return;
 		const opener = document.activeElement;
 		element.showModal();
+		if (initialFocusSelector) element.querySelector(initialFocusSelector)?.focus({ preventScroll: true });
 		// Blazor removes conditional dialogs instead of calling close(); restore focus after that DOM change.
 		const observer = new MutationObserver(() => {
 			if (element.isConnected) return;
@@ -67,7 +69,7 @@ window.planForge = {
 		const objectUrl = URL.createObjectURL(blob);
 		anchor.href = objectUrl; anchor.download = name; anchor.click();
 		setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-		return { success: true, status: response.status };
+		return { success: true, status: response.status, changeId: response.headers.get("X-PlanForge-Change-Id") };
 	}
 };
 // Delegation survives enhanced navigation and obeys script-src 'self'; native required validation runs first.

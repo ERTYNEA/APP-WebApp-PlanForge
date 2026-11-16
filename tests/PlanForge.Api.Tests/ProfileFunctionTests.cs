@@ -13,8 +13,8 @@ public sealed class ProfileFunctionTests
 	{
 		await using var fixture = new AccountHttpFixture();
 		var grant = await fixture.Service.RegisterAsync(new RegisterRequest("a@example.test", "CorrectPassword123!", "test"));
-		var functions = new ProfileFunctions(fixture.Service, new AccountManagementService(new EfAccountStore(fixture.Database), new SecretProtector(), TimeProvider.System), fixture.Runner);
-		byte[] image = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=");
+		var functions = new ProfileFunctions(fixture.Service, new AccountManagementService(new EfAccountStore(fixture.Database), new SecretProtector(), TimeProvider.System), fixture.Runner, fixture.Avatars);
+		byte[] image = AvatarHttpImage.Create();
 		HttpTestRequest Upload(byte[] bytes)
 		{
 			var request = new HttpTestRequest(method: "PUT", bytes: bytes);
@@ -24,6 +24,7 @@ public sealed class ProfileFunctionTests
 		}
 		Assert.Equal(HttpStatusCode.RequestEntityTooLarge, (await functions.AvatarAsync(Upload(new byte[AvatarValidator.MaximumBytes + 1]))).StatusCode);
 		Assert.Equal(HttpStatusCode.OK, (await functions.AvatarAsync(Upload(image))).StatusCode);
+		fixture.Database.ChangeTracker.Clear();
 		var response = await functions.AvatarAsync(Request(grant.Token, method: "GET"));
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 		Assert.Equal(image, ((MemoryStream)response.Body).ToArray());
@@ -37,7 +38,7 @@ public sealed class ProfileFunctionTests
 	{
 		await using var fixture = new AccountHttpFixture();
 		var grant = await fixture.Service.RegisterAsync(new RegisterRequest("a@example.test", "CorrectPassword123!", "test"));
-		var functions = new ProfileFunctions(fixture.Service, new AccountManagementService(new EfAccountStore(fixture.Database), new SecretProtector(), TimeProvider.System), fixture.Runner);
+		var functions = new ProfileFunctions(fixture.Service, new AccountManagementService(new EfAccountStore(fixture.Database), new SecretProtector(), TimeProvider.System), fixture.Runner, fixture.Avatars);
 		Assert.Equal(HttpStatusCode.OK, (await functions.ProfileAsync(Request(grant.Token, """{"displayName":"Changed"}""", "PUT"))).StatusCode);
 		var avatar = Request(grant.Token, "not an image", "PUT");
 		avatar.Headers.Add("Content-Type", "image/png");
@@ -55,7 +56,7 @@ public sealed class ProfileFunctionTests
 	{
 		await using var fixture = new AccountHttpFixture();
 		var grant = await fixture.Service.RegisterAsync(new("language@example.test", "CorrectPassword123!", "test"));
-		var functions = new ProfileFunctions(fixture.Service, new AccountManagementService(new EfAccountStore(fixture.Database), new SecretProtector(), TimeProvider.System), fixture.Runner);
+		var functions = new ProfileFunctions(fixture.Service, new AccountManagementService(new EfAccountStore(fixture.Database), new SecretProtector(), TimeProvider.System), fixture.Runner, fixture.Avatars);
 		var initial = await functions.ProfileAsync(Request(grant.Token, method: "GET"));
 		initial.Body.Position = 0;
 		using var first = await System.Text.Json.JsonDocument.ParseAsync(initial.Body);
@@ -80,7 +81,7 @@ public sealed class ProfileFunctionTests
 	{
 		await using var fixture = new AccountHttpFixture();
 		var grant = await fixture.Service.RegisterAsync(new("invalid-language@example.test", "CorrectPassword123!", "Original"));
-		var functions = new ProfileFunctions(fixture.Service, new AccountManagementService(new EfAccountStore(fixture.Database), new SecretProtector(), TimeProvider.System), fixture.Runner);
+		var functions = new ProfileFunctions(fixture.Service, new AccountManagementService(new EfAccountStore(fixture.Database), new SecretProtector(), TimeProvider.System), fixture.Runner, fixture.Avatars);
 		string body = System.Text.Json.JsonSerializer.Serialize(new { displayName = "Must not change", language });
 
 		Assert.Equal(HttpStatusCode.BadRequest, (await functions.ProfileAsync(Request(grant.Token, body, "PUT"))).StatusCode);

@@ -26,7 +26,15 @@ public sealed class ApiTransport(IHttpClientFactory clients)
 		await EnsureSuccessAsync(response, cancellationToken);
 		if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
 			return default!;
-		return await response.Content.ReadFromJsonAsync<T>(cancellationToken) ?? throw new ApiException(502, "The service returned an empty response.");
+		try
+		{
+			return await response.Content.ReadFromJsonAsync<T>(cancellationToken) ?? throw new ApiException(502, "The service returned an empty response.");
+		}
+		catch (JsonException)
+		{
+			string? correlation = response.Headers.TryGetValues("X-Correlation-ID", out var values) ? values.FirstOrDefault() : null;
+			throw new ApiException(502, "The service returned an invalid response. Reload to check its result before retrying.", correlation);
+		}
 	}
 
 	public static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken = default)

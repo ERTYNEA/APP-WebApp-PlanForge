@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+<NotificationRegion />
 <a class="skip-link" href="#main-content">@T["Skip to main content"]</a>
 <div class="app-shell">
 	<aside class="sidebar @(menuOpen ? "is-open" : "")" aria-label="@T["Main navigation"]" @onkeydown="OnMenuKeyDown">
@@ -12,7 +13,7 @@
 			<NavLink href="/agents">◇ <span>@T["Agents"]</span></NavLink>
 		</nav>
 		<div class="sidebar-bottom">
-			<AuthorizeView><Authorized Context="auth"><NavLink class="account-link" href="/settings" Match="NavLinkMatch.All" aria-label='@T["Account settings"]'><span class="avatar">@auth.User.Identity?.Name?[..1]</span><span class="account-copy">@auth.User.Identity?.Name<small>@T["Personal workspace"]</small></span><span class="account-gear" aria-hidden="true">⚙</span></NavLink></Authorized></AuthorizeView>
+			<AuthorizeView><Authorized Context="auth"><NavLink class="account-link" href="/settings" Match="NavLinkMatch.All" aria-label='@T["Account settings"]'><AvatarImage ApiPath="users/me/avatar" ImageUrl="@($"/files/user-avatar/{auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value}")" Name="@(auth.User.Identity?.Name ?? "")" /><span class="account-copy">@auth.User.Identity?.Name<small>@T["Personal workspace"]</small></span><span class="account-gear" aria-hidden="true">⚙</span></NavLink></Authorized></AuthorizeView>
 			<form method="post" action="/account/logout" data-enhance="false"><AntiforgeryToken /><button class="quiet full">@T["Sign out"]</button></form>
 			<span class="version mono" title="@ProductVersion.Informational">v@(ProductVersion.Informational.Split('+')[0])</span>
 		</div>
@@ -24,4 +25,5 @@
 		<div id="blazor-error-ui" role="alert">@T["The connection was interrupted."] <a href="" class="reload">@T["Reload"]</a><button class="dismiss" aria-label="@T["Dismiss"]">×</button></div>
 	</div>
 </div>
-@code { private bool menuOpen; private void OnMenuKeyDown(KeyboardEventArgs args) { if(args.Key=="Escape") menuOpen=false; } }
+@code {
+	private bool menuOpen; private void OnMenuKeyDown(KeyboardEventArgs args) { if(args.Key=="Escape") menuOpen=false; } }

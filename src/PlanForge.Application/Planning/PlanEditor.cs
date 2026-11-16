@@ -12,13 +12,13 @@ public sealed class PlanEditor(ProjectService projects)
 		ProjectSnapshot snapshot = await projects.GetAsync(actor, projectId, cancellationToken);
 		if (!snapshot.Items.Any(item => item.Id == itemId && item.Kind == kind))
 			throw new PlanForgeException(404, "Plan record not found.");
-		return await RemoveAsync(actor, snapshot, [itemId], command, cancellationToken);
+		return await RemoveAsync(actor, snapshot, [itemId], command, cancellationToken, kind + " deleted");
 	}
 	public async Task<ProjectSnapshot> CleanCompletedAsync(AuthenticatedActor actor, Guid projectId, ConfirmedRevisionRequest command, CancellationToken cancellationToken = default)
 	{
 		ProjectSnapshot snapshot = await projects.GetAsync(actor, projectId, cancellationToken);
 		snapshot = PlanProgress.Recalculate(snapshot);
-		return await RemoveAsync(actor, snapshot, snapshot.Items.Where(item => item.Kind == "Phase" && item.Status == "Completed").Select(item => item.Id).ToHashSet(), command, cancellationToken);
+		return await RemoveAsync(actor, snapshot, snapshot.Items.Where(item => item.Kind == "Phase" && item.Status == "Completed").Select(item => item.Id).ToHashSet(), command, cancellationToken, "Completed phases removed");
 	}
 
 	public async Task<ProjectSnapshot> SaveItemAsync(AuthenticatedActor actor, Guid projectId, string kind, Guid? itemId, PlanItemCommand command, CancellationToken cancellationToken = default)
@@ -45,7 +45,7 @@ public sealed class PlanEditor(ProjectService projects)
 		}
 		return await projects.SaveAsync(actor, projectId, snapshot with { Items = items }, false, cancellationToken);
 	}
-	private async Task<ProjectSnapshot> RemoveAsync(AuthenticatedActor actor, ProjectSnapshot snapshot, HashSet<Guid> removed, ConfirmedRevisionRequest command, CancellationToken cancellationToken)
+	private async Task<ProjectSnapshot> RemoveAsync(AuthenticatedActor actor, ProjectSnapshot snapshot, HashSet<Guid> removed, ConfirmedRevisionRequest command, CancellationToken cancellationToken, string action)
 	{
 		if (!command.Confirmed)
 			throw new PlanForgeException(400, "Confirm permanent deletion of the selected work and its descendants.");
@@ -58,6 +58,6 @@ public sealed class PlanEditor(ProjectService projects)
 			foreach (PlanItem item in snapshot.Items.Where(item => item.ParentId.HasValue && removed.Contains(item.ParentId.Value)))
 				removed.Add(item.Id);
 		} while (previousCount != removed.Count);
-		return await projects.SaveAsync(actor, snapshot.Id, snapshot with { Items = snapshot.Items.Where(item => !removed.Contains(item.Id)).ToList() }, true, cancellationToken);
+		return await projects.SaveAsync(actor, snapshot.Id, snapshot with { Items = snapshot.Items.Where(item => !removed.Contains(item.Id)).ToList() }, true, cancellationToken, removed.Count == 0 ? "No completed phases were removed" : action);
 	}
 }

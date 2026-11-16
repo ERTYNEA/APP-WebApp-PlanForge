@@ -16,7 +16,7 @@ public sealed class WorkPlanFunctions(WorkPlanExchange exchange, ProjectService 
 		{
 			AuthenticatedActor actor = await RequestActorReader.ReadAsync(request, accounts);
 			runner.AcquireBudget("exchange:" + actor.UserId, 60, TimeSpan.FromMinutes(1));
-			return new DownloadFile(await exchange.ExportAsync(actor, projectId, request.FunctionContext.CancellationToken), "text/csv; charset=utf-8", "work-plan.csv");
+			return await exchange.ExportWithReceiptAsync(actor, projectId, request.FunctionContext.CancellationToken);
 		});
 
 	[Function("ImportWorkPlan")]

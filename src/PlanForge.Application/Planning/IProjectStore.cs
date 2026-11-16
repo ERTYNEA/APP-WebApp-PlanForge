@@ -8,7 +8,7 @@ public interface IProjectStore
 	Task<WorkspaceDashboard> GetDashboardAsync(Guid ownerId, CancellationToken cancellationToken);
 	Task<ProjectSummaryPage> ListSummariesAsync(Guid ownerId, int skip, int take, CancellationToken cancellationToken);
 	Task<ProjectChangePage?> GetChangesAsync(Guid ownerId, Guid projectId, long after, CancellationToken cancellationToken);
-	Task RecordEventAsync(Guid ownerId, Guid projectId, long revision, Guid actorId, string actorKind, string action, CancellationToken cancellationToken, string? actorNameSnapshot = null);
+	Task<long> RecordEventAsync(Guid ownerId, Guid projectId, long revision, Guid actorId, string actorKind, string action, CancellationToken cancellationToken, string? actorNameSnapshot = null);
 	Task<bool> IsValidAgentAsync(Guid ownerId, Guid agentId, bool requireActive, CancellationToken cancellationToken);
 	Task CreateAsync(Project project, CancellationToken cancellationToken);
 	Task<ProjectAggregate?> GetAsync(Guid ownerId, Guid projectId, CancellationToken cancellationToken);

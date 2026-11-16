@@ -84,6 +84,7 @@
 	<data name="Avatar (PNG, JPEG or WebP, maximum 256 KiB)" xml:space="preserve">
 		<value>Avatar (PNG, JPEG or WebP, maximum 256 KiB)</value>
 	</data>
+	<data name="Avatar (PNG, JPEG or WebP, maximum 4 MiB)" xml:space="preserve"><value>Avatar (PNG, JPEG or WebP, maximum 4 MiB)</value></data>
 	<data name="Blocked" xml:space="preserve">
 		<value>Blocked</value>
 	</data>
@@ -806,4 +807,29 @@
   <data name="Since {0}" xml:space="preserve"><value>Since {0}</value></data>
   <data name="Status date unavailable" xml:space="preserve"><value>Status date unavailable</value></data>
   <data name="{0} of {1} steps completed" xml:space="preserve"><value>{0} of {1} steps completed</value></data>
+	<data name="Project deleted" xml:space="preserve"><value>Project deleted</value></data>
+	<data name="Project created" xml:space="preserve"><value>Project created</value></data>
+	<data name="Phase deleted" xml:space="preserve"><value>Phase deleted</value></data>
+	<data name="Subphase deleted" xml:space="preserve"><value>Subphase deleted</value></data>
+	<data name="Step deleted" xml:space="preserve"><value>Step deleted</value></data>
+	<data name="Decision deleted" xml:space="preserve"><value>Decision deleted</value></data>
+	<data name="Completed phases removed" xml:space="preserve"><value>Completed phases removed</value></data>
+	<data name="No completed phases were removed" xml:space="preserve"><value>No completed phases were removed</value></data>
+	<data name="Your changes were confirmed, but the view could not be refreshed. Reload to see the latest data." xml:space="preserve"><value>Your changes were confirmed, but the view could not be refreshed. Reload to see the latest data.</value></data>
+	<data name="Resource deleted" xml:space="preserve"><value>Resource deleted</value></data>
+	<data name="Resource unlinked" xml:space="preserve"><value>Resource unlinked</value></data>
+	<data name="Token created" xml:space="preserve"><value>Token created</value></data>
+	<data name="Token renewed" xml:space="preserve"><value>Token renewed</value></data>
+	<data name="Confirm deletion" xml:space="preserve"><value>Confirm deletion</value></data>
+	<data name="{0} — {1}" xml:space="preserve"><value>{0} — {1}</value></data>
+	<data name="Animated avatar images are not supported." xml:space="preserve"><value>Animated avatar images are not supported.</value></data>
+	<data name="Avatar acceptance expired. Please upload again." xml:space="preserve"><value>Avatar acceptance expired. Please upload again.</value></data>
+	<data name="Avatar dimensions must not exceed 8192 per axis or 16 megapixels." xml:space="preserve"><value>Avatar dimensions must not exceed 8192 per axis or 16 megapixels.</value></data>
+	<data name="Avatar owner not found." xml:space="preserve"><value>Avatar owner not found.</value></data>
+	<data name="Avatar removal is still being confirmed. Please try again shortly." xml:space="preserve"><value>Avatar removal is still being confirmed. Please try again shortly.</value></data>
+	<data name="The avatar exceeds the 4 MiB limit." xml:space="preserve"><value>The avatar exceeds the 4 MiB limit.</value></data>
+	<data name="Unable to upload avatar right now. Please try again in a few minutes." xml:space="preserve"><value>Unable to upload avatar right now. Please try again in a few minutes.</value></data>
+	<data name="Choose a complete, valid PNG, JPEG or WebP avatar image matching its MIME type." xml:space="preserve"><value>Choose a complete, valid PNG, JPEG or WebP avatar image matching its MIME type.</value></data>
+  <data name="The service returned an invalid response. Reload to check its result before retrying." xml:space="preserve"><value>The service returned an invalid response. Reload to check its result before retrying.</value></data>
+	<data name="No revoked or expired tokens were removed" xml:space="preserve"><value>No revoked or expired tokens were removed</value></data>
 </root>
