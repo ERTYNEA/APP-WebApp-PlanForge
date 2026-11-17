@@ -69,6 +69,34 @@ Registration retains `Use 12–128 characters.` under Password and adds exactly 
 
 The right inspector places the unchanged effective-state badge beside a small decorative clock and `Since {browser-local date and time}` for Project, Phase, Subphase and Step. The row flex-wraps without adding dates to tree rows. A `time` element exposes the full ISO UTC instant, with visible local text rather than a tooltip-only value. Unknown legacy history displays `Status date unavailable`; workflow captions and `Recorded` completion evidence are not substitutes for this date. Long descriptions, actions, breadcrumbs, resources and decisions remain intact. No animation or palette change is introduced.
 
+## v0.6.0 typed notifications and destructive controls
+
+One shared toast family uses the same bottom-right placement, geometry, typography, padding, radius and stacking. Kinds are explicit in Web state, not inferred from message text:
+
+| Kind | Background | Border | Accent | Decorative icon |
+|---|---|---|---|---|
+| Success | `#183329` | `#5DAD88` | `#75EFBE` | Circle with check |
+| Neutral | `#34312B` | `#D1BC9A` | `#E1CCAA` | Circle with information mark |
+| Danger | `#4C222E` | `#C87584` | `#FFABB5` | Circle with X, never a trash can |
+
+Confirmed creation/save/upload/import/export uses Success. Delete, Remove, Unlink, Revoke and cleanup that actually deletes records use Danger, as do ownerless global operation failures. Informative remote project changes and zero-deletion cleanup results use Neutral; available destructive event metadata selects Danger and import/export selects Success. These are operation semantics, not a language-dependent keyword classifier. A known committed operation keeps its result if a follow-up refresh fails, accompanied by a truthful contextual refresh warning rather than a false failed-write claim. Field/modal errors stay beside their owner without a duplicate background toast; periodic read failures do not repeatedly announce operations.
+
+Circuit-scoped state survives ordinary page navigation and is isolated between sessions. The deduplicated stack displays at most four notifications, each lasting six seconds. Layout and topmost modal hand off a single active host and a single `role="status"` atomic announcer without replaying announcements; individual toast visuals have no second live role and icons are aria-hidden. Text and icons accompany color, and reduced-motion overrides remain in force. This is implemented/tested accessible behavior, not independent screen-reader certification.
+
+The existing `danger` button family is the destructive standard; legitimate compact sizing remains. Within a mixed action group the DOM and visual order is destructive left, ordinary right: Remove before Upload, Revoke before Renew, Delete before Edit/Add, Delete decision before Edit decision, and final confirmation before Cancel. Unlink uses `danger compact`; orphan cleanup precedes ordinary filter/view actions in its shared toolbar. Existing standalone danger zones and destruction-only groups are not rearranged unnecessarily. Clear filters, dismissal and navigation are not data deletion. Confirmation initially focuses Cancel, uses explicit button types and requires intent; Enter must not implicitly confirm destruction. Busy/disabled guards, ownership checks and existing confirmations remain mandatory.
+
+## v0.6.0 human and agent avatars
+
+Settings/Profile and Edit agent share `AvatarEditor`: a native PNG/JPEG/WebP file selector with `maximum 4 MiB`, optional current image, left `danger` Remove avatar and right unchanged `quiet` Upload avatar. The right-aligned action group retains that order on narrow layouts. Remove exists only with a current avatar; it adds no extra confirmation modal. Busy state disables the child controls and parent agent Save/Delete so overlapping writes cannot race through the form. Removing an avatar does not delete its user or agent.
+
+New agent has the optional selector only, without independent Upload/Remove buttons. Save first persists the agent, then accepts its selected image through the avatar endpoint. If image acceptance fails after the agent saves, retain that same saved agent/editor with an explicit recoverable error; never imply rollback or create another agent on retry. Confirmed image acceptance produces one `Avatar updated` Success toast, not an additional generic agent-success toast for the same combined outcome.
+
+Accepted originals are backend-persistent and visible immediately in the profile/editor, personal sidebar and agent list/editor surfaces that display avatars. Initials remain the no-image fallback; the release does not introduce portraits into unrelated initial-only surfaces. One green `Avatar updated` follows confirmed upload; one red `Avatar removed` follows confirmed removal and hides Remove. Validation/quota errors remain contextual and red, with no success announcement. The owner-wide temporary-original budget is 40 MiB across the human and all agents, separate from Library.
+
+Visible avatar components check owning-profile metadata every two seconds while the document is visible, stop on disposal and use generation-versioned authenticated image URLs. A new image is preloaded before replacing the displayed one; transient reads retain the last confirmed image. Silent optimization changes the original to proportional WebP within 512×512 without F5, an optimization spinner, queue terminology or a second toast. A definitive third conversion failure silently returns the current generation to initials; neither failure nor replacement restores an old photo. No photo history/undo is offered, and no deletion claim extends to Azure-managed backups.
+
+Real local browser checks cover ordinary forms, optional-image recovery, original persistence after fresh sign-in, silent sidebar/list/editor refresh, active replacement/removal, three-attempt failure, mobile controls, keyboard confirmation and reduced motion. Focused deployed checks cover controlled human and existing-agent upload/silent conversion/removal with no late toast or image-error event. These scopes do not imply physical-phone, literal browser-toolbar zoom or independent accessibility certification; see [acceptance](acceptance.md).
+
 ## Plan explorer and distinct Home
 
 Plan rows are compact true Phase→Subphase→Step hierarchy, with equal 24px expanders/leaf reservation, full title available despite ellipsis, light guides and existing text/color badges right-aligned. Hover and selection use the sidebar language; selection and keyboard focus remain distinct. Nested lists and buttons expose aria-expanded/controls and current selection without claiming an incomplete ARIA tree pattern. Decisions/resources/editors belong in the inspector or contextual dialogs, never nested card forms.

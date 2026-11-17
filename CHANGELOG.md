@@ -2,6 +2,27 @@
 
 All published release notes are retained here, newest first. The root README introduces only the latest stable release. Historical entries describe their original verification scope, not the current test counts.
 
+## [0.6.0] — 2026-11-17
+
+### Added
+
+- NOTIF-01: a circuit-scoped, navigation-safe family of typed Success, Neutral and Danger notifications. Check, information and circle-X icons accompany the exact green, brand-yellow and red variants. The shared host preserves six-second expiry, four-toast stacking, deduplication, reduced motion and a single announcement region. The complete Web operation inventory covers successful writes, destructive outcomes, partial/zero-result cleanup, actual remote actors and inline validation without classifying translated text.
+- AVATAR-01: validated PNG/JPEG/WebP uploads up to 4 MiB for human profiles and agents, with a shared transactional 40 MiB temporary-original quota per human owner. Accepted originals are immediately persistent and visible; the existing Azure Functions storage queue wakes a SQL-backed global FIFO worker. Optimized, orientation-corrected WebP images fit within 512×512 without unnecessary enlargement. Profile, sidebar and existing agent images refresh silently through opaque versions, ETags and preload-before-swap.
+
+### Changed
+
+- DANGER-01: existing `danger` controls are consistently placed before normal partners, including avatar removal, token revocation, inspector actions and final confirmations. Cancel receives safe initial confirmation focus; destructive actions are not implicit Enter submissions. Upload and other ordinary button styles are preserved.
+- Avatar replacement/cancellation is generation- and fence-safe: pending replacement keeps its FIFO turn, active replacement invalidates the old reader and enters at the tail, and superseded photos are not restored. A monitored SQL session lock and bounded owned conversion process complement transactional leases. Three failed processing attempts remove the current original and restore initials; deferred retries and cleanup remain durably recoverable without another upload. Successful optimization atomically replaces the authoritative SQL BLOB instead of preserving an original-image history.
+- New-agent optional-image failure keeps the already saved identity recoverable rather than creating duplicates. Confirmed writes retain truthful success/deletion feedback when a follow-up read fails, while relevant dialog/field errors remain visible. Library limits, work-plan state/workflow rules and the public CSV schema are unchanged.
+
+### Publication and verification
+
+Functional source `eb3f3c4ff60f351a7b063d6a88da318a2835b2b4` was published on 2026-11-16 through run 43915950644: Tests → eleventh additive SQL migration `20261115161339_DurableAvatars` → API → Web. One Web preflight read timeout occurred before its first publication; a single failed-job retry completed Web without changing source, workflows, secrets or Azure configuration. The formal release and final documentation follow on 2026-11-17; their repository ref is intentionally distinct from the live functional payload SHA.
+
+Verification includes 764 passing .NET tests (10 Domain / 364 Infrastructure / 79 API / 311 Web), 33 Node tests and 14 pipeline tests; real isolated Blazor/HTTP-handler browser flows; native image, concurrent relational quota/FIFO, rollback, cancellation, three-attempt and crash-boundary checks; and a genuine local Functions host with Azurite-delivered queue/outage recovery. Focused public HTTPS browser/API acceptance observed human and existing QA-agent originals become WebP silently, replacement/removal, mobile destructive ordering, owner denial and retained-cookie continuity. Only operation-owned avatars and exact temporary sessions were retired; existing QA identities, four agents, Projects and Library were preserved.
+
+No isolated live SQL Server test environment or multi-instance Azure scale certification was available. Generated SQL Server/model/bundle checks, SQLite transaction tests, real Actions migration and public SQL-backed behavior are separate evidence. Public image replacement plus tested deployed transactions establish the cleanup path, not an independently measured production SQL original-byte/job count. No production SQL connection, cloud administration, private photograph, full Azure stop/start, physical-device/independent accessibility or PITR-restoration claim is made. See the technical acceptance documentation for the precise limits.
+
 ## [0.5.0] — 2026-11-14
 
 ### Added

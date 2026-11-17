@@ -2,7 +2,7 @@
 
 <img src="src/PlanForge.Web/wwwroot/favicon.svg" alt="PlanForge symbol" width="64" height="64" />
 
-Version **0.5.0** · MIT licensed
+Version **0.6.0** · MIT licensed
 
 ## About PlanForge
 
@@ -78,12 +78,13 @@ Recent activity is bounded project-change history, not a complete perpetual audi
 
 Licensed under [MIT](LICENSE).
 
-## What's New — v0.5.0
+## What's New — v0.6.0
 
-- **Clear confirmation guidance (REG-02):** `Enter the same password again.` now appears beneath Confirm password with the same spacing as the existing `Use 12–128 characters.` help. Accessible mismatch feedback, native constraints and Login are preserved; no second password reaches the API.
-- **A complete workspace overview (HOME-01):** four responsive Projects, Phases, Subphases and Steps cards show totals and all four effective-state counts, including zeros. Overall progress occupies its own full-width band; Next in focus, Recently updated and the Projects catalog keep their existing behavior.
-- **Know when the current state began (PLAN-04):** the inspector shows a persistent, server-assigned effective-state entry date beside each Project/Phase/Subphase/Step badge, formatted in your browser's local timezone. Real state changes update it; unrelated edits and unchanged CSV imports do not. Historical dates remain honestly unavailable rather than inferred.
+- **Consistent feedback everywhere (NOTIF-01):** one navigation-safe toast family distinguishes green Success, brand-yellow Neutral and red Danger with check, information and circle-X icons. Destructive outcomes, remote actors, partial cleanup and contextual errors now keep their real meaning, without duplicate announcements or lost navigation feedback.
+- **Predictable destructive controls (DANGER-01):** the existing danger style and destructive-left/normal-right order are consistent across avatar, token, resource, inspector and confirmation actions. Cancel receives safe initial confirmation focus; ordinary Upload and Save styles remain unchanged.
+- **Original now, optimized silently (AVATAR-01):** human and agent avatars accept validated PNG/JPEG/WebP up to 4 MiB. Accepted originals appear persistently at once, then refresh silently to proportional WebP within 512×512. Upload confirms once; optimization adds no toast, spinner or manual-refresh requirement. Optional-image failure preserves an already saved new agent for recovery without duplicates.
+- **Reliable replacement and cleanup:** the existing Functions storage queue awakens a SQL-backed global FIFO worker with fenced generations, bounded cancellation and three processing attempts. Pending replacement keeps its turn; active replacement moves to the tail. Old photos are not restored, and a shared 40 MiB temporary-original budget covers each human and all their agents independently of Library quotas.
 
-Published on 2026-11-14 and verified with 506 passing .NET tests, 23 Node tests, 14 pipeline tests, real isolated local Blazor QA and focused public HTTPS browser/API checks after ordered Actions publication. The tenth additive migration preserves legacy data and unknown dates. No isolated live SQL Server test environment was available; see the acceptance documentation for the precise provider, migration, accessibility and runtime verification limits. Temporary QA servers and sessions were closed selectively; no product screenshots are included.
+Release dated 2026-11-17; functional API/Web publication was verified on 2026-11-16 through ordered Tests → eleventh additive SQL migration → API → Web. Verification includes 764 passing .NET tests, 33 Node tests, 14 pipeline tests, real isolated local Blazor QA, a genuine local Functions-host/Azurite recovery probe and focused public human/agent browser/API acceptance. Temporary fixtures, sessions and QA processes were retired selectively. No isolated live SQL Server, Azure-scale or independent accessibility certification is claimed; see the acceptance documentation for precise cleanup, provider and runtime evidence limits. No product screenshots are included.
 
 [Full changelog](./CHANGELOG.md)
