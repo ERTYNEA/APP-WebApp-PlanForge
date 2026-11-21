@@ -15,7 +15,7 @@ Functional Blazor Interactive Server dark developer control panel, not a static 
 | Selection | `--pf-selection` | `#34312B` |
 | Main text | `--pf-text` | `#E7E8E4` |
 
-Raised surfaces (`#272C2E`), input backgrounds (`#15191B`) and decorative borders (`#3C4143`) stay near-neutral. Muted text uses `#ADB3B5`; control boundaries use `#878C8F`. Decorative separators are not substitutes for control boundaries. Green success/active (`#75EFBE`), amber pending/warning (`#FFD080`) and red error/destructive (`#FFABB5`) retain dedicated semantic backgrounds and borders. Selection also uses a visible primary border, not background color alone. `--pf-primary` replaces the old color-specific `--pf-cyan` name.
+Raised surfaces (`#272C2E`), input backgrounds (`#15191B`) and decorative borders (`#3C4143`) stay near-neutral. Muted text uses `#ADB3B5`; control boundaries use `#878C8F`. Decorative separators are not substitutes for control boundaries. Work-state badges use amber Pending, blue In progress, red Blocked and green Completed/Decided, with the exact v0.7.0 table below. Other success/warning/error semantics retain their existing tokens; agent activity, Library assignment and toast kinds are not work-progress states. Selection also uses a visible primary border, not background color alone. `--pf-primary` replaces the old color-specific `--pf-cyan` name.
 
 Node regression tests resolve the actual CSS tokens and check text at 4.5:1 or better and control/focus contrast at 3:1 or better. Measured panel contrast: main text 13.18:1, muted text 7.64:1, primary links 8.79:1, input boundary 4.77:1 and focus 10.37:1. Primary-button text is 10.01:1 (hover 11.82:1); placeholder/select-arrow contrast against the input background is 8.34:1. Across background, panel, raised, input and selected surfaces, the lowest tested normal-text ratio is 6.11:1 and the lowest control-boundary ratio is 3.81:1. Disabled controls remain visually distinct; reduced-motion overrides remain in place.
 
@@ -103,4 +103,54 @@ Plan rows are compact true Phase→Subphase→Step hierarchy, with equal 24px ex
 
 Desktop structure/inspector columns adapt around 35/65. One natural page scroll is mandatory: neither pane has fixed-height scrolling. Inspector sticky behavior is enabled only on wide viewports when its measured height fits; narrow/short/reflow equivalents stack in normal flow, with no Back to structure action. A single full escaped Description preserves paragraphs and expands in ordinary page flow; no Full description disclosure or duplicate header paragraph remains. Compact three-row editing textareas are intentionally separate from full read-only inspector text. Manual selection/expansion survives ordinary polling. Initial/restored/deep-link selection, successful CSV reset and selected-Step completion follow the policies in architecture/API; smooth scrolling respects reduced motion.
 
-Home has four equal-height category cards: Projects, Phases, Subphases and Steps. Each shows its total above a neutral divider and exactly four always-visible rows in this order: Pending, In progress, Blocked, Completed. Text accompanies decorative state dots; aligned counts use tabular numerals and zeros do not disappear. A container-query layout uses one column below 480px available width, two from 480px and four from 960px. The existing weighted Overall progress definition now occupies a full-width band below the cards, with its single progress bar and `{completed} of {total} steps completed`; no per-category charts are added. At most three eligible focus rows mix Pending/InProgress by immutable age, with actual hierarchy labels and Step links. All recently updated projects are reachable in 25-row pages. Projects remains the full catalog; All projects links target `/projects`. Real Chromium verification included desktop, 390px mobile and 720/360px short reflow-equivalent layouts, keyboard focus, long Unicode titles and 108 hierarchy rows; reflow equivalents are not a claim of literal zoom gestures or independent screen-reader certification. No product screenshots are included in README.
+Home has four equal-height category cards: Projects, Phases, Subphases and Steps. Each shows its total above a neutral divider and exactly four always-visible rows in this order: Pending, In progress, Blocked, Completed. Text accompanies decorative state dots; aligned counts use tabular numerals and zeros do not disappear. A container-query layout uses one column below 480px available width, two from 480px and four from 960px. The full-width Overall progress band below the cards now presents the four compact effective-state category compositions defined below. It does not average level percentages or change the existing API/business progress calculation. At most three eligible focus rows mix Pending/InProgress by immutable age, with actual hierarchy labels and Step links. All recently updated projects are reachable in 25-row pages. Projects remains the full catalog; All projects links target `/projects`. Real Chromium verification included desktop, 390px mobile and 720/360px short reflow-equivalent layouts, keyboard focus, long Unicode titles and 108 hierarchy rows; reflow equivalents are not a claim of literal zoom gestures or independent screen-reader certification. No product screenshots are included in README.
+
+## v0.7.0 compact semantic hierarchy
+
+### Creation and file-selection feedback
+
+Home has no heading-level New project action and adds no substitute creation button. `/projects` retains its heading action, creation modal and empty-state Create your first project action. Metrics and the two-endpoint dashboard/summary loading pattern are unchanged.
+
+CSV, Library and the shared Settings/Agents avatar editor clear only the previous unconfirmed upload/import attempt's error when another file is selected. Selection is not validation or success. Existing confirmed-refresh warnings, avatar-removal errors and unrelated agent-identity save errors survive selection. CSV/Library opening and closure reset the selected browser file and replacement/title state; no invisible old file can be submitted. Selectors and ordinary cancel actions disable during submission, and callbacks also guard Busy. The request snapshots its selected file/options before awaiting reads. Retired CSV requests cannot replace a new route or publish obsolete errors through the toast host.
+
+A saved new agent whose optional avatar failed keeps its actual saved ID. Reselection clears only that avatar failure and retains a separate saved-identity notice; retry never creates another agent. Starting another identity save transfers error ownership away from the previous avatar attempt. Avatar MIME/size policy, the asynchronous backend queue, current-photo lifecycle and Library capabilities are unchanged.
+
+### Exact state palette
+
+`PlanLabels.StatusClass` keeps its existing mapping: Pending→warning, InProgress→active, Blocked→error, Completed/Decided→success. Only the work-state active badge changes from green to blue. Metric-card numbers and text remain neutral; only their decorative dots take these text colors.
+
+| Effective state | Text / metric dot | Badge background | Badge border / bar segment |
+|---|---|---|---|
+| Pending | `#FFD080` | `#372B16` | `#BD944E` |
+| In progress | `#9BCBFF` | `#1A2F42` | `#6590B8` |
+| Blocked | `#FFABB5` | `#3C1F2A` | `#C87584` |
+| Completed / Decided | `#75EFBE` | `#183329` | `#5DAD88` |
+
+The general brand, danger controls, Success/Neutral/Danger notifications, agent Active/Inactive and Library Assigned/Orphan badges retain their previous semantics and styling. Text labels accompany every color.
+
+### Shared dynamic `StatusProgress`
+
+Home's Overall progress has four equal columns: Projects, Phases, Subphases, Steps. Project detail first shows its real project badge and workflow, then a neutral divider and exactly three columns: Phases, Subphases, Steps. Each column has a left title, right `completed/total · N%`, an 8px continuous rounded composition bar and two legend rows: Pending | In progress, then Blocked | Completed. Counts stay neutral white; legend labels use the state text colors. There is no nested decorative panel or additional Projects column in project detail. Catalog project cards keep their original step-progress bar.
+
+Home uses the existing four `WorkspaceDashboard.StatusCounts` values, without extra API calls or tree reads. Detail counts exact structural Kind and EffectiveStatus across the complete snapshot, independently of expansion; Decisions never enter the denominators. Integer percentages round to the nearest whole number with midpoint away from zero: 10/28→36%, 12/32→38%. Zero totals show `0/0 · 0%`, four zeros and a neutral empty bar. Ordered integer flex weights make positive segments sum to the full available width without locale-dependent decimal CSS or visible gaps. Accessible category labels, the explicit ratio and named/count legends supplement the composition's `role="img"` summary.
+
+These are completed proportions within each level, not a new claim of project completion. The existing decision/blocking and 99%-cap business rules are unchanged: a root Decision can leave the project Blocked while all Steps, and even all three level proportions, read 100%.
+
+The progress surfaces are inline-size containers: Home changes 1→2→4 columns at 440/880px available content width; detail changes 1→2→3 at 440/680px. Columns use `min-width:0`; labels wrap rather than silently disappearing. The metric cards retain their separate 480/960px 1→2→4 breakpoints. At 960px measured panel width, actual Home/detail heights are approximately 151/155px versus the approved 150/157px reference compositions. Desktop, 390px and 320px viewports retain all information without horizontal overflow. Reflow and reduced-motion checks do not imply physical-phone, literal browser-toolbar zoom or independent accessibility certification.
+
+### Frozen inline icon geometry
+
+`AppIcon` emits the approved SVG nodes and attributes literally, with `currentColor`, decorative `aria-hidden="true"` and `focusable="false"`. Eighteen variants cover:
+
+| Location | Geometry / represented size |
+|---|---|
+| Sidebar Home / Projects / Library / Agents | house / folder-kanban / library / bot, each 14px |
+| Project card / tree root / empty Projects | folder-kanban, 20 / 16 / 36px |
+| Library resource card | file-text, 20px |
+| Phase / Subphase / Step | stacked pages / one page / task list, 16px |
+| Known status date | clock-3, 14px |
+| Expand all / Collapse all | chevrons-up-down outward / chevrons-down-up inward, 16px |
+| Refresh or Reload / Download | refresh-cw / download, 16px |
+| Collapsed / expanded tree branch | chevron-right / chevron-down, 18px |
+
+The card icon boxes remain 35×35px, expanders 24×30px and node-kind reservation 16px. Inline icons inherit active/hover text color; no external-image currentColor assumption, icon dependency or runtime fetching is introduced. The Unicode profile `⚙` remains the same glyph at 20px, line-height 1, with a true 16px reserved flex width and no larger account-link/avatar geometry; `min-width:0` prevents intrinsic glyph expansion. Long-name checks cover 236/204/240px sidebars. The official favicon/logo, toast/alert artwork, native input controls, mobile menu, modal close and conventional navigation arrows are unchanged. See [third-party notices](../THIRD-PARTY-NOTICES.md).

@@ -2,6 +2,23 @@
 
 All published release notes are retained here, newest first. The root README introduces only the latest stable release. Historical entries describe their original verification scope, not the current test counts.
 
+## [0.7.0] — 2026-11-21
+
+### Changed
+
+- UX-01: Home no longer displays the heading-level New project action. Projects retains both its normal creation modal and the empty-state first-project action; dashboard data and focus behavior are unchanged.
+- UX-02: selecting a new CSV, Library file or shared profile/agent avatar clears only the failed attempt's feedback, without prematurely validating or announcing success. Fresh CSV/Library dialogs discard old files and replacement/title state; Busy controls and snapshotted inputs protect submissions. Saved-agent avatar recovery retains the same identity, and chained identity-save or retired-route errors keep their correct ownership.
+- UX-03/04: exact amber Pending, blue In progress, red Blocked and green Completed/Decided badges and metric dots accompany compact four-level Home and three-level project-detail state compositions. Continuous 8px bars, visible zero counts, two-row legends and responsive columns use existing effective-state data; per-level rounded completion ratios do not alter project/decision blocking or the 99%-cap rule. Catalog cards keep their existing step progress.
+- UX-05: eighteen frozen inline SVG variants replace the approved navigation, project/resource, hierarchy, status-date, expand/collapse, refresh and download glyphs without resizing their reserved boxes. The existing Unicode profile gear becomes 20px within its true 16px reservation. The official logo, toast artwork and native controls are unchanged; third-party notices retain upstream attribution.
+
+### Publication and verification
+
+Functional source `06567851a46f01da123ab75f6d0b0cf97656d323` was published on 2026-11-21 through successful run `44883142545`, without reruns. The unchanged detector selected Tests → SQL reconciliation → API → Web because the sole central assembly version feeds both consumers. The database remained at its existing eleven migrations with an explicit no-op bundle run; no backend algorithm, public contract, migration, authentication, workflow, secret or infrastructure setting changed. Both public components report 0.7.0 plus that exact functional SHA. The final documentation/tag ref is intentionally separate from the deployed binaries.
+
+Verification includes 791 passing .NET tests (10 Domain / 364 Infrastructure / 79 API / 338 Web), 29 required UI Node tests plus six supplemental Node cases (35 locally), 14 pipeline cases, genuine RED→GREEN and independent review of chained feedback/late-request errors. Real isolated Blazor/handler-adapter browser QA covers file rejection/reselection/reopen/retry, same-agent recovery, native Busy and Tab/Enter behavior, mixed/zero/long hierarchies, approved 960px panel density and 390/320px no-overflow layouts. Actual HTTPS/browser reads verify deployed UX and retained-session continuity across observed process replacement with unchanged controlled metadata.
+
+Only exact local fixtures and newly issued local/public human sessions were retired; no production business fixture or photo was mutated. QA servers/pages closed and unrelated services were preserved. SQLite/browser adapters and a local avatar wake receipt stub are not a new live SQL Server, genuine Functions-host, queue-conversion, cloud-scale, physical-device or independent accessibility certification. See the acceptance/design/deployment documentation for evidence boundaries and recorded harness incidents.
+
 ## [0.6.0] — 2026-11-17
 
 ### Added

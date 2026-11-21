@@ -2,7 +2,7 @@
 
 <img src="src/PlanForge.Web/wwwroot/favicon.svg" alt="PlanForge symbol" width="64" height="64" />
 
-Version **0.6.0** · MIT licensed
+Version **0.7.0** · MIT licensed
 
 ## About PlanForge
 
@@ -76,15 +76,15 @@ Read the [architecture](docs/architecture.md), [REST API](docs/api.md), [CSV con
 
 Recent activity is bounded project-change history, not a complete perpetual audit system. Rate limits are per worker rather than distributed anti-DDoS protection. Selected contrast and responsive checks do not constitute independent WCAG certification. Cloud point-in-time recovery is an owner-operated disaster-recovery procedure, not an application undo button. Password-recovery email, Spanish translation and autonomous agent execution are not included.
 
-Licensed under [MIT](LICENSE).
+Licensed under [MIT](LICENSE); see [third-party notices](THIRD-PARTY-NOTICES.md) for embedded icon attribution.
 
-## What's New — v0.6.0
+## What's New — v0.7.0
 
-- **Consistent feedback everywhere (NOTIF-01):** one navigation-safe toast family distinguishes green Success, brand-yellow Neutral and red Danger with check, information and circle-X icons. Destructive outcomes, remote actors, partial cleanup and contextual errors now keep their real meaning, without duplicate announcements or lost navigation feedback.
-- **Predictable destructive controls (DANGER-01):** the existing danger style and destructive-left/normal-right order are consistent across avatar, token, resource, inspector and confirmation actions. Cancel receives safe initial confirmation focus; ordinary Upload and Save styles remain unchanged.
-- **Original now, optimized silently (AVATAR-01):** human and agent avatars accept validated PNG/JPEG/WebP up to 4 MiB. Accepted originals appear persistently at once, then refresh silently to proportional WebP within 512×512. Upload confirms once; optimization adds no toast, spinner or manual-refresh requirement. Optional-image failure preserves an already saved new agent for recovery without duplicates.
-- **Reliable replacement and cleanup:** the existing Functions storage queue awakens a SQL-backed global FIFO worker with fenced generations, bounded cancellation and three processing attempts. Pending replacement keeps its turn; active replacement moves to the tail. Old photos are not restored, and a shared 40 MiB temporary-original budget covers each human and all their agents independently of Library quotas.
+- **A quieter Home:** project creation stays in Projects, including its first-project empty state. Home keeps the workspace metrics, next work and recent projects without a duplicate creation action.
+- **Fresh file selections, truthful feedback:** another CSV, Library file or profile/agent avatar clears only the previous failed attempt. Reopened dialogs discard invisible old selections, Busy guards protect submissions, and a saved agent's avatar retry keeps the same identity without false success or stale-route errors.
+- **Compact, honest hierarchy progress:** Home shows Projects, Phases, Subphases and Steps; project detail shows its real state/workflow followed by Phases, Subphases and Steps. Thin four-state bars, visible zero counts, paired legends and exact amber/blue/red/green semantics adapt to available width. Level ratios do not redefine project completion or hide pending Decisions.
+- **Consistent inline symbols:** eighteen approved SVG variants replace the specified interface glyphs at their exact sizes. The same profile gear is larger without a larger row, while the official PlanForge logo, native controls and notification artwork remain unchanged.
 
-Release dated 2026-11-17; functional API/Web publication was verified on 2026-11-16 through ordered Tests → eleventh additive SQL migration → API → Web. Verification includes 764 passing .NET tests, 33 Node tests, 14 pipeline tests, real isolated local Blazor QA, a genuine local Functions-host/Azurite recovery probe and focused public human/agent browser/API acceptance. Temporary fixtures, sessions and QA processes were retired selectively. No isolated live SQL Server, Azure-scale or independent accessibility certification is claimed; see the acceptance documentation for precise cleanup, provider and runtime evidence limits. No product screenshots are included.
+Published and verified on 2026-11-21 through run 44883142545. Web and API serve 0.7.0 from functional source `06567851a46f01da123ab75f6d0b0cf97656d323`; the central version bump used the existing ordered pipeline, and SQL reconciliation applied no new migration. Verification includes 791 .NET tests, 29 required UI Node tests plus six supplemental cases, 14 pipeline tests, independent review, actual isolated desktop/mobile Blazor QA and focused public HTTPS/browser reads with retained-session continuity. Only task-owned local fixtures and new temporary sessions were retired. No production business data/photo mutation, new infrastructure or independent accessibility certification is claimed; see [acceptance and limits](docs/acceptance.md).
 
 [Full changelog](./CHANGELOG.md)
