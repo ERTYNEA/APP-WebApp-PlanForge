@@ -75,7 +75,7 @@ public sealed class TreeV04Tests
 		Assert.Equal(scrolls, context.JSInterop.Invocations.Count(call => call.Identifier == "planForge.revealCurrentWork"));
 		Assert.All(tree.FindAll("button[aria-expanded]"), button => Assert.Equal("false", button.GetAttribute("aria-expanded")));
 		Assert.DoesNotContain("Add phase", tree.Find(".work-plan-heading").TextContent);
-		Assert.Equal(new[] { "⇊ Expand all", "⇈ Collapse all", "↻ Reload" }, tree.FindAll(".work-plan-heading button").Select(button => button.TextContent.Trim()));
+		Assert.Equal(new[] { "Expand all", "Collapse all", "Reload" }, tree.FindAll(".work-plan-heading button").Select(button => button.TextContent.Trim()));
 	}
 
 	[Fact]

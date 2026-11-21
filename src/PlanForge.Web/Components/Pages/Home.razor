@@ -2,11 +2,11 @@
 @attribute [Authorize]
 @inherits ApiPage
 <PageTitle>@T[IsManagement ? "Projects" : "Home"] · PlanForge</PageTitle>
-<div class="page-heading"><div><div class="eyebrow">@T["YOUR WORKSPACE"]</div><h1>@T[IsManagement ? "Projects" : "Work in focus"]<span class="accent">.</span></h1><p class="muted">@T[IsManagement ? "Manage project settings, execution modes and linked resources." : "A clear view of what matters now, and what comes next."]</p></div><button class="primary" @onclick="OnOpenCreate" disabled="@Busy">+ @T["New project"]</button></div>
+<div class="page-heading"><div><div class="eyebrow">@T["YOUR WORKSPACE"]</div><h1>@T[IsManagement ? "Projects" : "Work in focus"]<span class="accent">.</span></h1><p class="muted">@T[IsManagement ? "Manage project settings, execution modes and linked resources." : "A clear view of what matters now, and what comes next."]</p></div>@if (IsManagement) { <button class="primary" @onclick="OnOpenCreate" disabled="@Busy">+ @T["New project"]</button> }</div>
 <Feedback Error="@(showCreate ? null : Error)" Conflict="Conflict" />
 @if (IsManagement)
 {
-	<div class="filter-bar"><input aria-label="@T["Search projects"]" placeholder="@T["Search projects…"]" @bind="search" @bind:event="oninput" /><select aria-label="@T["Filter projects by status"]" @bind="status"><option value="">@T["All statuses"]</option><option value="Pending">@T["Pending"]</option><option value="InProgress">@T["InProgress"]</option><option value="Blocked">@T["Blocked"]</option><option value="Completed">@T["Completed"]</option></select><select aria-label="@T["Sort projects"]" @bind="sort"><option value="updated">@T["Recently updated"]</option><option value="progress">@T["Progress"]</option><option value="name">@T["Name"]</option></select><button class="quiet" @onclick="() => ExecuteAsync(LoadAsync)" disabled="@Busy">@T["↻ Refresh"]</button></div>
+	<div class="filter-bar"><input aria-label="@T["Search projects"]" placeholder="@T["Search projects…"]" @bind="search" @bind:event="oninput" /><select aria-label="@T["Filter projects by status"]" @bind="status"><option value="">@T["All statuses"]</option><option value="Pending">@T["Pending"]</option><option value="InProgress">@T["InProgress"]</option><option value="Blocked">@T["Blocked"]</option><option value="Completed">@T["Completed"]</option></select><select aria-label="@T["Sort projects"]" @bind="sort"><option value="updated">@T["Recently updated"]</option><option value="progress">@T["Progress"]</option><option value="name">@T["Name"]</option></select><button class="quiet" @onclick="() => ExecuteAsync(LoadAsync)" disabled="@Busy"><AppIcon Name="refresh-cw-16" /> @T["Refresh"]</button></div>
 }
 @if (projects is null) { <p class="loading" role="status">@T["Loading your workspace…"]</p> }
 else if (!IsManagement && dashboard is not null)
@@ -27,12 +27,16 @@ else if (!IsManagement && dashboard is not null)
 			}
 		</div>
 		<section id="overall-progress" class="panel workspace-progress" aria-labelledby="overall-progress-title">
-			<div class="progress-caption"><h2 id="overall-progress-title">@T["Overall progress"]</h2><strong>@dashboard.Progress%</strong></div>
-			<progress value="@dashboard.Progress" max="100" aria-label='@T["Overall progress"]'></progress>
-			<p class="muted small">@T["{0} of {1} steps completed",dashboard.CompletedSteps,dashboard.TotalSteps]</p>
+			<h2 id="overall-progress-title">@T["Overall progress"]</h2>
+			<div class="hierarchy-progress workspace-hierarchy">
+				<StatusProgress Title="Projects" Counts="dashboard.Projects" />
+				<StatusProgress Title="Phases" Counts="dashboard.Phases" />
+				<StatusProgress Title="Subphases" Counts="dashboard.Subphases" />
+				<StatusProgress Title="Steps" Counts="dashboard.Steps" />
+			</div>
 		</section>
 	</div>
-	<section id="next-in-focus"><div class="section-heading"><h2>@T["NEXT IN FOCUS"]</h2><button class="quiet" @onclick="() => ExecuteAsync(LoadAsync)" disabled="@Busy">@T["↻ Refresh"]</button></div>
+	<section id="next-in-focus"><div class="section-heading"><h2>@T["NEXT IN FOCUS"]</h2><button class="quiet" @onclick="() => ExecuteAsync(LoadAsync)" disabled="@Busy"><AppIcon Name="refresh-cw-16" /> @T["Refresh"]</button></div>
 		@if (dashboard.NextSteps.Count == 0) { <p class="muted">@T["No pending or in-progress steps. Open a project to review its plan."]</p> }
 		else
 		{
@@ -50,12 +54,12 @@ else if (!IsManagement && dashboard is not null)
 }
 else if (projects.Count == 0)
 {
-	<section class="empty-state"><span class="empty-icon">▦</span><h2>@T["No projects yet"]</h2><p class="muted">@T["Start with a project. Build a plan. Keep the next step clear."]</p><button class="primary" @onclick="OnOpenCreate">@T["Create your first project →"]</button></section>
+	<section class="empty-state"><span class="empty-icon"><AppIcon Name="folder-kanban-36" /></span><h2>@T["No projects yet"]</h2><p class="muted">@T["Start with a project. Build a plan. Keep the next step clear."]</p><button class="primary" @onclick="OnOpenCreate">@T["Create your first project →"]</button></section>
 }
 else
 {
 	<div class="section-heading"><span>@T[Filtered.Count() == 1 ? "{0} project" : "{0} projects",Filtered.Count()]</span><span class="muted small">@T["Updates automatically every 10 seconds"]</span></div>
-	<div class="project-grid">@foreach (ProjectSummary project in Filtered) { <article class="project-card" @key="project.Id"><div class="card-top"><span class="project-icon">▦</span><span class="badge @PlanLabels.StatusClass(project.Status)">@T[project.Status]</span></div><h2>@project.Name</h2><p class="project-description">@project.Description</p><div class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</div><div class="progress-caption"><span>@T["{0} / {1} steps",project.CompletedSteps,project.StepCount]</span><strong>@project.Progress%</strong></div><progress value="@project.Progress" max="100" aria-label='@T["Project progress"]'></progress><div class="card-footer"><small>@project.UpdatedAt.ToLocalTime().ToString("MMM d, HH:mm")</small><a href="@($"/projects/{project.Id}")">@T["Open project"] →</a></div></article> }</div>
+	<div class="project-grid">@foreach (ProjectSummary project in Filtered) { <article class="project-card" @key="project.Id"><div class="card-top"><span class="project-icon"><AppIcon Name="folder-kanban-20" /></span><span class="badge @PlanLabels.StatusClass(project.Status)">@T[project.Status]</span></div><h2>@project.Name</h2><p class="project-description">@project.Description</p><div class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</div><div class="progress-caption"><span>@T["{0} / {1} steps",project.CompletedSteps,project.StepCount]</span><strong>@project.Progress%</strong></div><progress value="@project.Progress" max="100" aria-label='@T["Project progress"]'></progress><div class="card-footer"><small>@project.UpdatedAt.ToLocalTime().ToString("MMM d, HH:mm")</small><a href="@($"/projects/{project.Id}")">@T["Open project"] →</a></div></article> }</div>
 	@if (!Filtered.Any()) { <p class="empty-state">@T["No projects match these filters."]</p> }
 }
 @if (showCreate)

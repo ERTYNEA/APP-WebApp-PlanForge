@@ -7,10 +7,10 @@
 		<a class="brand" href="/"><img class="brand-mark" src="favicon.svg" alt="" /> PlanForge</a>
 		<div class="sidebar-label">@T["Workspace"]</div>
 		<nav @onclick="() => menuOpen=false">
-			<NavLink href="/" Match="NavLinkMatch.All">◈ <span>@T["Home"]</span></NavLink>
-			<NavLink href="/projects">▦ <span>@T["Projects"]</span></NavLink>
-			<NavLink href="/library">▤ <span>@T["Library"]</span></NavLink>
-			<NavLink href="/agents">◇ <span>@T["Agents"]</span></NavLink>
+			<NavLink href="/" Match="NavLinkMatch.All"><AppIcon Name="house-14" /> <span>@T["Home"]</span></NavLink>
+			<NavLink href="/projects"><AppIcon Name="folder-kanban-14" /> <span>@T["Projects"]</span></NavLink>
+			<NavLink href="/library"><AppIcon Name="library-14" /> <span>@T["Library"]</span></NavLink>
+			<NavLink href="/agents"><AppIcon Name="bot-14" /> <span>@T["Agents"]</span></NavLink>
 		</nav>
 		<div class="sidebar-bottom">
 			<AuthorizeView><Authorized Context="auth"><NavLink class="account-link" href="/settings" Match="NavLinkMatch.All" aria-label='@T["Account settings"]'><AvatarImage ApiPath="users/me/avatar" ImageUrl="@($"/files/user-avatar/{auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value}")" Name="@(auth.User.Identity?.Name ?? "")" /><span class="account-copy">@auth.User.Identity?.Name<small>@T["Personal workspace"]</small></span><span class="account-gear" aria-hidden="true">⚙</span></NavLink></Authorized></AuthorizeView>

@@ -64,6 +64,51 @@ public sealed class AvatarAgentSaveTests
 		Assert.Equal("Avatar updated", Assert.Single(context.Services.GetRequiredService<NotificationState>().Items).Message);
 	}
 
+	[Fact]
+	public async Task SaveAgent_AfterAvatarFailureReselectionPreservesLaterIdentityFailureAndSavedIdAsync()
+	{
+		Guid id = Guid.NewGuid();
+		int creates = 0, uploads = 0;
+		var identityPaths = new List<string>();
+		using var context = new ComponentTestContext(request =>
+		{
+			string path = request.RequestUri!.AbsolutePath;
+			if (request.Method == HttpMethod.Post)
+			{
+				creates++;
+				return Task.FromResult(ComponentTestContext.Json(new AgentProfile(id, "New", "", true, false)));
+			}
+			if (request.Method == HttpMethod.Put && path.EndsWith("/avatar", StringComparison.Ordinal))
+			{
+				uploads++;
+				Assert.EndsWith($"/agents/{id}/avatar", path);
+				return Task.FromResult(ComponentTestContext.Json(new { detail = "Avatar rejected" }, HttpStatusCode.BadRequest));
+			}
+			if (request.Method == HttpMethod.Put)
+			{
+				identityPaths.Add(path);
+				return Task.FromResult(ComponentTestContext.Json(new { detail = "Identity rejected after avatar failure" }, HttpStatusCode.BadRequest));
+			}
+			return Task.FromResult(ComponentTestContext.Json(path.EndsWith("/agent-tokens", StringComparison.Ordinal) ? (object)Array.Empty<AgentTokenProfile>() : Array.Empty<AgentProfile>()));
+		});
+		var page = context.Render<Agents>();
+		await page.FindAll("button").Single(button => button.TextContent == "+ New agent").ClickAsync(new());
+		page.Find("#agent-name").Change("New");
+		page.FindComponent<InputFile>().UploadFiles(InputFileContent.CreateFromBinary(new byte[] { 1 }, "first.png", contentType: "image/png"));
+		await page.Find("#agent-form").SubmitAsync();
+		Assert.Contains("The agent was saved, but its avatar upload was not confirmed.", page.Find("dialog").TextContent);
+		await page.Find("#agent-form").SubmitAsync();
+		Assert.Contains("Identity rejected after avatar failure", page.Find("dialog").TextContent);
+		page.FindComponent<InputFile>().UploadFiles(InputFileContent.CreateFromBinary(new byte[] { 2 }, "next.png", contentType: "image/png"));
+		Assert.Contains("Identity rejected after avatar failure", page.Find("dialog").TextContent);
+		Assert.Equal(1, creates);
+		Assert.Equal(1, uploads);
+		Assert.EndsWith($"/agents/{id}", Assert.Single(identityPaths));
+		Assert.Equal($"agents/{id}/avatar", page.FindComponent<PlanForge.Web.Components.Shared.AvatarEditor>().Instance.ApiPath);
+		Assert.Contains(id.ToString()[..8], Assert.Single(page.FindAll(".agent-card")).TextContent);
+		Assert.Empty(context.Services.GetRequiredService<NotificationState>().Items);
+	}
+
 	[Theory]
 	[InlineData(false)]
 	[InlineData(true)]
@@ -100,6 +145,10 @@ public sealed class AvatarAgentSaveTests
 		if (failFirst)
 		{
 			Assert.Contains("The agent was saved, but its avatar upload was not confirmed.", page.Markup);
+			Assert.Empty(context.Services.GetRequiredService<NotificationState>().Items);
+			page.FindComponent<InputFile>().UploadFiles(InputFileContent.CreateFromBinary(new byte[] { 2 }, "retry.png", contentType: "image/png"));
+			Assert.DoesNotContain("not confirmed", page.Markup);
+			Assert.Contains("The agent was saved.", page.Markup);
 			Assert.Empty(context.Services.GetRequiredService<NotificationState>().Items);
 			await page.Find("#agent-form").SubmitAsync();
 		}

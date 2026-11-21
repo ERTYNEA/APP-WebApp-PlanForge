@@ -132,6 +132,42 @@ function color(selector, property) {
 	return resolved(declarations(selector)[property]).match(/#[a-f\d]{6}\b/i)?.[0];
 }
 
+test('v07 progress stays compact, continuous and container-responsive without resizing icon boxes', () => {
+	assert.equal(declarations('.panel.workspace-progress').padding, '12px 22px 8px');
+	assert.equal(declarations('.status-composition').height, '8px');
+	assert.equal(declarations('.status-composition').display, 'flex');
+	assert.equal(declarations('.status-segment')['flex-basis'], '0');
+	assert.equal(declarations('.status-breakdown')['grid-template-columns'], 'repeat(2,minmax(0,1fr))');
+	assert.equal(declarations('.account-gear')['font-size'], '20px');
+	assert.equal(declarations('.account-gear').flex, '0 0 16px');
+	assert.equal(declarations('.account-gear')['min-width'], '0');
+	assert.equal(declarations('.account-gear').width, '16px');
+	assert.equal(declarations('.project-icon, .file-icon').width, '35px');
+	assert.equal(declarations('.tree-expander').width, '24px');
+	assert.equal(declarations('.tree-expander').height, '30px');
+	assert.equal(declarations('.node-kind').flex, '0 0 16px');
+	const css = fs.readFileSync(cssPath, 'utf8');
+	assert.match(css, /@container \(min-width: 440px\)/);
+	assert.match(css, /@container \(min-width: 880px\)/);
+	assert.match(css, /@container \(min-width: 680px\)/);
+});
+
+test('v07 semantic work states use the exact frozen palette and only metric dots carry color', () => {
+	for (const [variant, text, background, border] of [
+		['warning', '#FFD080', '#372B16', '#BD944E'],
+		['active', '#9BCBFF', '#1A2F42', '#6590B8'],
+		['error', '#FFABB5', '#3C1F2A', '#C87584'],
+		['success', '#75EFBE', '#183329', '#5DAD88']
+	]) {
+		assert.equal(color(`.badge.${variant}`, 'color'), text);
+		assert.equal(color(`.badge.${variant}`, 'background'), background);
+		assert.equal(color(`.badge.${variant}`, 'border-color'), border);
+		assert.equal(color(`.metric-dot.${variant === 'warning' ? 'pending' : variant}`, 'background'), text);
+	}
+	assert.equal(declarations('.metric-card dt').color, 'var(--pf-muted)');
+	assert.equal(declarations('.metric-card dd,.metric-total').color, undefined);
+});
+
 test('actual control boundaries meet non-text AA contrast against dark panels', () => {
 	const border = color('input, select, textarea', 'border');
 	const surface = declarations(':root')['--pf-surface'];
@@ -161,7 +197,7 @@ test('approved palette is applied through semantic tokens with accessible text a
 		['.primary:hover:not(:disabled)', 'background', '--pf-primary-hover'],
 		['.sidebar nav a.active', 'background', '--pf-selection'],
 		['.plan-row.is-selected', 'background', '--pf-selection'],
-		['.badge.active', 'color', '--pf-emerald']
+		['.badge.active', 'color', '--pf-blue']
 	])
 		assert.equal(declarations(selector)[property], `var(${token})`, `${selector} must consume ${token}`);
 

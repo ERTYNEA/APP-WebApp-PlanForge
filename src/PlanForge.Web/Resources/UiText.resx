@@ -832,4 +832,7 @@
 	<data name="Choose a complete, valid PNG, JPEG or WebP avatar image matching its MIME type." xml:space="preserve"><value>Choose a complete, valid PNG, JPEG or WebP avatar image matching its MIME type.</value></data>
   <data name="The service returned an invalid response. Reload to check its result before retrying." xml:space="preserve"><value>The service returned an invalid response. Reload to check its result before retrying.</value></data>
 	<data name="No revoked or expired tokens were removed" xml:space="preserve"><value>No revoked or expired tokens were removed</value></data>
+  <data name="The agent was saved. You can retry its avatar without creating another agent." xml:space="preserve"><value>The agent was saved. You can retry its avatar without creating another agent.</value></data>
+  <data name="Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Download" xml:space="preserve"><value>Download</value></data>
 </root>

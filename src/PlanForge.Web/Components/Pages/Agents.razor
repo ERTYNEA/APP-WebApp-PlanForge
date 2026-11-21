@@ -16,7 +16,8 @@ else
 @if(showEditor)
 {
 	<Modal Title="@(editingId.HasValue ? "Edit agent" : "New agent")" Error="@(avatarIncomplete ? null : Error)" Close="() => { ClearFeedback(); showEditor=false; }"><form id="agent-form" @onsubmit="OnSaveAsync" @onsubmit:preventDefault><label>@T["Name"]<input id="agent-name" @bind="name" required maxlength="80" /></label><label>@T["Description / role"]<textarea id="agent-description" @bind="description" maxlength="1000" rows="3"></textarea></label><label class="check-label"><input id="agent-active" type="checkbox" aria-describedby="agent-active-help" @bind="active" /> @T["Active (inactive agents cannot authenticate)"]</label><p id="agent-active-help" class="muted small">@T["Deactivating revokes linked tokens. Reactivating requires a new token; unlinked personal tokens are not affected."]</p><FormError Conflict="Conflict" /><div class="form-actions"><button type="button" class="quiet" @onclick="() => { ClearFeedback(); showEditor=false; }">@T["Cancel"]</button><button class="primary" disabled="@(Busy || avatarBusy)">@T["Save agent"]</button></div></form>
-	<AvatarEditor Disabled="@Busy" BusyChanged="busy => avatarBusy = busy" Name="@name" ExternalError="@(avatarIncomplete ? Error : null)" @ref="avatarEditor" Deferred="@(!editingId.HasValue)" ApiPath="@($"agents/{editingId}/avatar")" ImageUrl="@($"/files/agent-avatars/{editingId}")" HasAvatar="@(editingId.HasValue && (avatarStates.GetValueOrDefault(editingId.Value)?.HasAvatar ?? agents?.FirstOrDefault(agent=>agent.Id==editingId)?.HasAvatar ?? false))" Version="@(editingId.HasValue ? avatarStates.GetValueOrDefault(editingId.Value)?.Version ?? agents?.FirstOrDefault(agent => agent.Id == editingId)?.AvatarVersion ?? Guid.Empty : Guid.Empty)" Changed="OnAvatarChangedAsync" />
+	<AvatarEditor Disabled="@Busy" BusyChanged="busy => avatarBusy = busy" Name="@name" ExternalError="@(avatarIncomplete ? Error : null)" SelectionChanged="OnAvatarSelectionChanged" @ref="avatarEditor" Deferred="@(!editingId.HasValue)" ApiPath="@($"agents/{editingId}/avatar")" ImageUrl="@($"/files/agent-avatars/{editingId}")" HasAvatar="@(editingId.HasValue && (avatarStates.GetValueOrDefault(editingId.Value)?.HasAvatar ?? agents?.FirstOrDefault(agent=>agent.Id==editingId)?.HasAvatar ?? false))" Version="@(editingId.HasValue ? avatarStates.GetValueOrDefault(editingId.Value)?.Version ?? agents?.FirstOrDefault(agent => agent.Id == editingId)?.AvatarVersion ?? Guid.Empty : Guid.Empty)" Changed="OnAvatarChangedAsync" />
+	@if (avatarIdentitySaved) { <p class="muted small" id="agent-saved-notice">@T["The agent was saved. You can retry its avatar without creating another agent."]</p> }
 	@if(editingId.HasValue) { <div class="danger-zone"><button type="button" class="danger" @onclick="OnDelete" disabled="@(Busy || avatarBusy)">@T["Delete agent"]</button></div> }
 	</Modal>
 }
@@ -26,7 +27,7 @@ else
 	private readonly Dictionary<Guid, AvatarState> avatarStates = [];
 	private Guid? editingId;
 	private string name="",description="";
-	private bool active=true,showEditor,avatarIncomplete,avatarBusy;
+	private bool active=true,showEditor,avatarIncomplete,avatarBusy,avatarIdentitySaved;
 	private AgentTokenPanel? tokenPanel;
 	private AvatarEditor? avatarEditor;
 	private Guid? deleteId;
@@ -54,10 +55,16 @@ else
 		avatarIncomplete = false;
 		await LoadAsync();
 	}
-	private void OnEdit(AgentProfile? agent) { ClearFeedback(); avatarIncomplete=false; editingId=agent?.Id; name=agent?.Name ?? ""; description=agent?.Description ?? ""; active=agent?.IsActive ?? true; showEditor=true; }
+	private void OnAvatarSelectionChanged()
+	{
+		if (!avatarIncomplete) return;
+		ClearFeedback(); avatarIncomplete = false;
+	}
+	private void OnEdit(AgentProfile? agent) { ClearFeedback(); avatarIdentitySaved=false; avatarIncomplete=false; editingId=agent?.Id; name=agent?.Name ?? ""; description=agent?.Description ?? ""; active=agent?.IsActive ?? true; showEditor=true; }
 	private Task OnSaveAsync() => avatarBusy ? Task.CompletedTask : ExecuteAsync(async () =>
 	{
 		bool uploadingAvatar = avatarEditor is { HasPending: true };
+		avatarIncomplete = false;
 		AgentProfile saved = await Api.SendAsync<AgentProfile>(editingId.HasValue ? HttpMethod.Put : HttpMethod.Post,"agents"+(editingId.HasValue ? $"/{editingId}" : ""),new AgentRequest(name,description,active),cancellationToken:Token);
 		editingId = saved.Id;
 		agents ??= [];
@@ -76,6 +83,7 @@ else
 			catch (Exception exception) when (exception is PlanForge.Web.Api.ApiException or HttpRequestException or IOException or OperationCanceledException)
 			{
 				avatarIncomplete = true;
+				avatarIdentitySaved = true;
 				Error=T["The agent was saved, but its avatar upload was not confirmed."].Value;
 				return;
 			}

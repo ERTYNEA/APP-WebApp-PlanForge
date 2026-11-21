@@ -5,7 +5,7 @@
 	<form @onsubmit="OnUploadAsync" @onsubmit:preventDefault>
 		<label>
 			@T["Avatar (PNG, JPEG or WebP, maximum 4 MiB)"]
-			<InputFile OnChange="args => file = args.File" accept="image/png,image/jpeg,image/webp" disabled="@(Disabled || Busy)" />
+			<InputFile OnChange="OnFileSelectedAsync" accept="image/png,image/jpeg,image/webp" disabled="@(Disabled || Busy)" />
 		</label>
 		<FormError Message="@(Error ?? ExternalError)" UseModalError="false" Conflict="Conflict" />
 		<div class="form-actions">

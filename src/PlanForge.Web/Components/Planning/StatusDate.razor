@@ -1,7 +1,7 @@
 @inject IJSRuntime JavaScript
 @if (Value is DateTimeOffset date)
 {
-	<span class="status-date muted small"><span aria-hidden="true">◷</span> <time datetime="@date.ToUniversalTime().ToString("O")" title="@date.ToUniversalTime().ToString("O")">@T["Since {0}",localDate ?? "…"]</time></span>
+	<span class="status-date muted small"><AppIcon Name="clock-3-14" /> <time datetime="@date.ToUniversalTime().ToString("O")" title="@date.ToUniversalTime().ToString("O")">@T["Since {0}",localDate ?? "…"]</time></span>
 }
 else
 {

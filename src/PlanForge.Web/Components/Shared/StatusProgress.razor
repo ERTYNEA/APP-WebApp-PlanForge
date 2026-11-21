@@ -1,0 +1,24 @@
+@using System.Globalization
+<section class="status-progress" aria-label="@T[Title]">
+	<div class="status-progress-heading"><h3>@T[Title]</h3><strong class="status-ratio">@Counts.Completed/@Counts.Total · @Percentage%</strong></div>
+	<div class="status-composition" role="img" aria-label="@AccessibleSummary">
+		@foreach ((string label, string variant, int count) in States)
+		{
+			<span class="status-segment @variant" data-status="@variant" data-count="@count" style="flex-grow:@count.ToString(CultureInfo.InvariantCulture)" aria-hidden="true"></span>
+		}
+	</div>
+	<dl class="status-breakdown">
+		@foreach ((string label, string variant, int count) in States)
+		{
+			<div><dt class="@variant">@T[label]</dt><dd>@count</dd></div>
+		}
+	</dl>
+</section>
+@code {
+	[Parameter, EditorRequired] public StatusCounts Counts { get; set; } = new(0, 0, 0, 0);
+	[Parameter, EditorRequired] public string Title { get; set; } = "";
+
+	private int Percentage => Counts.Total == 0 ? 0 : (int)Math.Round(Counts.Completed * 100m / Counts.Total, MidpointRounding.AwayFromZero);
+	private (string Label, string Variant, int Count)[] States => [("Pending", "pending", Counts.Pending), ("In progress", "active", Counts.InProgress), ("Blocked", "error", Counts.Blocked), ("Completed", "success", Counts.Completed)];
+	private string AccessibleSummary => $"{T[Title]}: {Counts.Completed}/{Counts.Total} · {Percentage}%. " + string.Join("; ", States.Select(state => $"{T[state.Label]}: {state.Count}"));
+}

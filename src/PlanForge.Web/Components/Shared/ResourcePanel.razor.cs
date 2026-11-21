@@ -108,19 +108,47 @@ public partial class ResourcePanel : ApiPage
 	});
 	private IBrowserFile? uploadFile;
 	private string uploadTitle = "";
-	private void OnFileSelected(InputFileChangeEventArgs args) { uploadFile = args.File; uploadTitle = uploadFile.Name; }
-	private Task OnUploadAsync() => ExecuteAsync(async () =>
+	private bool uploadAttemptFailed;
+	private void OnOpenUpload()
 	{
-		if (uploadFile is null || usage is null) return;
-		byte[] bytes = await ReadFileAsync(uploadFile, usage.MaximumFileBytes, Token);
-		var headers = new Dictionary<string, string> { ["X-File-Name"] = Uri.EscapeDataString(uploadFile.Name), ["X-Resource-Title"] = Uri.EscapeDataString(uploadTitle) };
-		if (NodeId.HasValue) headers["X-" + NodeKind + "-Id"] = NodeId.ToString()!;
-		else if (ProjectId.HasValue) headers["X-Project-Id"] = ProjectId.ToString()!;
-		await Api.SendAsync<ResourceProfile>(HttpMethod.Post, "resources", bytes: bytes, contentType: string.IsNullOrWhiteSpace(uploadFile.ContentType) ? "application/octet-stream" : uploadFile.ContentType, headers: headers, cancellationToken: Token);
-		showUpload = false; uploadFile = null; uploadTitle = "";
-		Notify("Resource uploaded successfully");
-		await RefreshConfirmedAsync(async () => { await LoadAsync(); await Changed.InvokeAsync(); });
-	});
+		if (Busy) return;
+		uploadFile = null; uploadTitle = ""; uploadAttemptFailed = false;
+		ClearFeedback(); showUpload = true;
+	}
+	private void OnCloseUpload()
+	{
+		if (Busy) return;
+		uploadFile = null; uploadTitle = ""; uploadAttemptFailed = false;
+		ClearFeedback(); showUpload = false;
+	}
+	private void OnFileSelected(InputFileChangeEventArgs args)
+	{
+		if (Busy) return;
+		uploadFile = args.File; uploadTitle = uploadFile.Name;
+		if (uploadAttemptFailed) ClearFeedback();
+		uploadAttemptFailed = false;
+	}
+	private async Task OnUploadAsync()
+	{
+		if (Busy || uploadFile is null || usage is null) return;
+		IBrowserFile selectedFile = uploadFile;
+		string title = uploadTitle;
+		bool confirmed = false;
+		await ExecuteAsync(async () =>
+		{
+			byte[] bytes = await ReadFileAsync(selectedFile, usage.MaximumFileBytes, Token);
+			var headers = new Dictionary<string, string> { ["X-File-Name"] = Uri.EscapeDataString(selectedFile.Name), ["X-Resource-Title"] = Uri.EscapeDataString(title) };
+			if (NodeId.HasValue) headers["X-" + NodeKind + "-Id"] = NodeId.ToString()!;
+			else if (ProjectId.HasValue) headers["X-Project-Id"] = ProjectId.ToString()!;
+			await Api.SendAsync<ResourceProfile>(HttpMethod.Post, "resources", bytes: bytes, contentType: string.IsNullOrWhiteSpace(selectedFile.ContentType) ? "application/octet-stream" : selectedFile.ContentType, headers: headers, cancellationToken: Token);
+			confirmed = true;
+			if (Token.IsCancellationRequested) return;
+			showUpload = false; uploadFile = null; uploadTitle = "";
+			Notify("Resource uploaded successfully");
+			await RefreshConfirmedAsync(async () => { await LoadAsync(); await Changed.InvokeAsync(); });
+		});
+		uploadAttemptFailed = !confirmed && Error is not null;
+	}
 	[Parameter] public Guid? ProjectId { get; set; }
 	[Parameter] public Guid? PhaseId { get; set; }
 	[Parameter] public Guid? SubphaseId { get; set; }

@@ -11,7 +11,7 @@ public sealed class PlanFormsV04Tests
 	public async Task NewProject_UsesDescriptionLabelWithoutChangingCompactTextareaAsync()
 	{
 		using var context = new ComponentTestContext(request => Task.FromResult(ComponentTestContext.Json(request.RequestUri!.AbsolutePath.EndsWith("/dashboard", StringComparison.Ordinal) ? (object)new WorkspaceDashboard(0, 0, 0, 0, []) : new ProjectSummaryPage([], 0, 0, 25, false))));
-		var page = context.Render<Home>();
+		var page = context.Render<Projects>();
 		await page.FindAll("button").Single(button => button.TextContent.Contains("New project", StringComparison.Ordinal)).ClickAsync(new());
 		Assert.DoesNotContain(page.FindAll("dialog label"), label => label.TextContent.StartsWith("Purpose", StringComparison.Ordinal));
 		Assert.Contains(page.FindAll("dialog label"), label => label.TextContent.StartsWith("Description", StringComparison.Ordinal));

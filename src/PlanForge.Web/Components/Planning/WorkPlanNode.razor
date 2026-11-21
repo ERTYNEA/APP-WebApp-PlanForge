@@ -2,10 +2,10 @@
 	<div class="node-heading plan-row @(SelectedId == Item.Id ? "is-selected" : "")">
 		@if (Children.Count > 0)
 		{
-			<button type="button" class="tree-expander" @onclick="() => Toggle.InvokeAsync(Item.Id)" aria-expanded="@Expanded.Contains(Item.Id).ToString().ToLowerInvariant()" aria-controls="@($"branch-{Item.Id}")" aria-label='@T["Toggle {0} {1}",T[Item.Kind.ToLowerInvariant()],Item.Title]'>@(Expanded.Contains(Item.Id) ? "⌄" : "›")</button>
+			<button type="button" class="tree-expander" @onclick="() => Toggle.InvokeAsync(Item.Id)" aria-expanded="@Expanded.Contains(Item.Id).ToString().ToLowerInvariant()" aria-controls="@($"branch-{Item.Id}")" aria-label='@T["Toggle {0} {1}",T[Item.Kind.ToLowerInvariant()],Item.Title]'><AppIcon Name='@(Expanded.Contains(Item.Id) ? "chevron-down-18" : "chevron-right-18")' /></button>
 		}
 		else { <span class="tree-expander tree-leaf" aria-hidden="true">−</span> }
-		<button type="button" class="tree-select" data-select-id="@Item.Id" @onclick="() => Select.InvokeAsync(Item.Id)" aria-current="@(SelectedId == Item.Id ? "true" : null)" title="@Item.Title"><span class="node-kind" aria-hidden="true">@(Item.Kind == "Phase" ? "▱" : Item.Kind == "Subphase" ? "◈" : "○")</span><span class="tree-title">@Item.Title</span></button>
+		<button type="button" class="tree-select" data-select-id="@Item.Id" @onclick="() => Select.InvokeAsync(Item.Id)" aria-current="@(SelectedId == Item.Id ? "true" : null)" title="@Item.Title"><span class="node-kind" aria-hidden="true"><AppIcon Name='@(Item.Kind == "Phase" ? "phase-16" : Item.Kind == "Subphase" ? "subphase-16" : "step-16")' /></span><span class="tree-title">@Item.Title</span></button>
 		<span class="badge @PlanLabels.StatusClass(Item.EffectiveStatus)">@T[Item.EffectiveStatus]</span>
 	</div>
 	@if (Children.Count > 0 && Expanded.Contains(Item.Id))

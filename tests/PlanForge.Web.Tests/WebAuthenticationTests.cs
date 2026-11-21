@@ -60,12 +60,13 @@ public sealed class WebAuthenticationTests
 		Assert.DoesNotContain(LoginApiHandler.Token, cookie);
 		string home = await client.GetStringAsync("/");
 		Assert.Contains("No projects yet", home);
-		Assert.Contains("New project", home);
+		Assert.DoesNotContain("New project", home);
+		Assert.Contains("New project", await client.GetStringAsync("/projects"));
 		Assert.DoesNotContain("Search projects", home);
 		Assert.Contains("Search projects", await client.GetStringAsync("/projects"));
 		Assert.DoesNotContain(LoginApiHandler.Token, home);
 		Assert.DoesNotContain("v@ProductVersion", home);
-		Assert.Contains("v0.6.0", home);
+		Assert.Contains("v0.7.0", home);
 	}
 
 	private sealed class LoginApiHandler : HttpMessageHandler
@@ -90,7 +91,7 @@ public sealed class WebAuthenticationTests
 		Assert.Contains("__RequestVerificationToken", html);
 		Assert.Contains("/account/login", html);
 		Assert.Contains("type=\"password\"", html);
-		Assert.Contains("0.6.0", html);
+		Assert.Contains("0.7.0", html);
 	}
 
 	[Fact]

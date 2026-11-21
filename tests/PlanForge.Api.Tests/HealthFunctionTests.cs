@@ -40,7 +40,7 @@ public sealed class HealthFunctionTests
 		using JsonDocument body = await JsonDocument.ParseAsync(response.Body);
 
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-		Assert.StartsWith("0.6.0", body.RootElement.GetProperty("version").GetString());
+		Assert.StartsWith("0.7.0", body.RootElement.GetProperty("version").GetString());
 	}
 
 	[Fact]

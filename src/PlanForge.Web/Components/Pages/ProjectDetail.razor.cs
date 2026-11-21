@@ -34,17 +34,67 @@ public partial class ProjectDetail : ApiPage
 		if (long.TryParse(result.ChangeId, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out long eventId) && eventId > 0)
 			cursor.AcknowledgeEvent(eventId);
 	}, "Project exported successfully");
-	private Task OnImportAsync() => ExecuteAsync(async () =>
+	private bool importAttemptFailed;
+	private void OnOpenImport()
 	{
-		if (importFile is null) return;
-		byte[] bytes = await ReadFileAsync(importFile, 1024 * 1024, Token);
-		project = await Api.SendAsync<ProjectSnapshot>(HttpMethod.Post, $"projects/{Id}/work-plan/import", bytes: bytes, contentType: "text/csv", headers: new Dictionary<string, string> { ["X-PlanForge-Replace"] = replacePlan ? "true" : "false" }, cancellationToken: Token);
-		cursor.AcknowledgeMutation(project.Revision);
-		completedItemId = null; selectionEpoch++;
-		showImport = false; importFile = null; replacePlan = false;
-		Notify("CSV imported successfully");
-		await RefreshConfirmedAsync(async () => resources = await Api.GetAsync<List<ResourceProfile>>($"projects/{Id}/resources", Token));
-	});
+		if (Busy) return;
+		ResetImport(); ClearFeedback(); showImport = true;
+	}
+	private void OnCloseImport()
+	{
+		if (Busy) return;
+		ResetImport(); ClearFeedback(); showImport = false;
+	}
+	private void ResetImport() { importFile = null; replacePlan = false; importAttemptFailed = false; }
+	private void OnImportFileSelected(InputFileChangeEventArgs args)
+	{
+		if (Busy) return;
+		importFile = args.File;
+		if (importAttemptFailed) ClearFeedback();
+		importAttemptFailed = false;
+	}
+	private async Task OnImportAsync()
+	{
+		if (Busy || importFile is null) return;
+		IBrowserFile selectedFile = importFile;
+		bool replace = replacePlan, confirmed = false;
+		Guid projectId = Id;
+		await ExecuteAsync(async () =>
+		{
+			ProjectSnapshot imported;
+			try
+			{
+				byte[] bytes = await ReadFileAsync(selectedFile, 1024 * 1024, Token);
+				imported = await Api.SendAsync<ProjectSnapshot>(HttpMethod.Post, $"projects/{projectId}/work-plan/import", bytes: bytes, contentType: "text/csv", headers: new Dictionary<string, string> { ["X-PlanForge-Replace"] = replace ? "true" : "false" }, cancellationToken: Token);
+			}
+			catch (Exception exception) when ((Id != projectId || Token.IsCancellationRequested) && exception is ApiException or HttpRequestException or IOException or OperationCanceledException)
+			{
+				// Retired CSV feedback must not reach the page wrapper's notifications.
+				return;
+			}
+			confirmed = true;
+			if (Id != projectId || Token.IsCancellationRequested) return;
+			project = imported;
+			cursor.AcknowledgeMutation(project.Revision);
+			completedItemId = null; selectionEpoch++;
+			showImport = false; importFile = null; replacePlan = false;
+			Notify("CSV imported successfully");
+			await RefreshConfirmedAsync(async () => resources = await Api.GetAsync<List<ResourceProfile>>($"projects/{Id}/resources", Token));
+		});
+		if (Id != projectId)
+		{
+			ClearFeedback();
+			if (!Token.IsCancellationRequested) await ExecuteAsync(LoadAsync);
+			return;
+		}
+		importAttemptFailed = !confirmed && Error is not null;
+	}
+	private StatusCounts CountStatuses(string kind)
+	{
+		IEnumerable<PlanItem> items = project!.Items.Where(item => item.Kind == kind);
+		return new(items.Count(item => item.EffectiveStatus == "Pending"), items.Count(item => item.EffectiveStatus == "InProgress"), items.Count(item => item.EffectiveStatus == "Blocked"), items.Count(item => item.EffectiveStatus == "Completed"));
+	}
+
 	private string projectName = "", projectDescription = "", projectStatus = "Pending", projectWorkflow = "PlanningOnly";
 	[SupplyParameterFromQuery(Name = "settings")] public bool Settings { get; set; }
 	[SupplyParameterFromQuery(Name = "step")] public string? StepQuery { get; set; }
@@ -98,7 +148,7 @@ public partial class ProjectDetail : ApiPage
 	private IReadOnlyList<ProjectChangeInfo> activity = [];
 	protected override async Task OnParametersSetAsync()
 	{
-		if (loadedProject != Id) { loadedProject = Id; cursor = new(); project = null; }
+		if (loadedProject != Id) { loadedProject = Id; cursor = new(); project = null; showImport = false; ResetImport(); ClearFeedback(); }
 		await ExecuteAsync(LoadAsync);
 		if (Settings && project is not null) OnSettings();
 		else showSettings = false;

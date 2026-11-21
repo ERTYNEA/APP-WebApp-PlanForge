@@ -14,6 +14,9 @@
 	--pf-primary-hover: #E1CCAA;
 	--pf-selection: #34312B;
 	--pf-focus: var(--pf-primary-hover);
+	--pf-blue: #9BCBFF;
+	--pf-active-bg: #1A2F42;
+	--pf-active-border: #6590B8;
 	--pf-emerald: #75EFBE;
 	--pf-success-bg: #183329;
 	--pf-success-border: #5DAD88;
@@ -112,7 +115,7 @@ small, .small { font-size: 12px; }
 .account-link.active { background: var(--pf-selection); color: var(--pf-primary); border-color: var(--pf-primary); }
 .account-link.active:hover { background: var(--pf-selection); }
 .account-copy { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.account-gear { flex: 0 0 16px; color: var(--pf-muted); text-align: center; }
+.account-gear { flex: 0 0 16px; min-width: 0; width: 16px; color: var(--pf-muted); text-align: center; font-size: 20px; line-height: 1; }
 .account-link small { display: block; color: var(--pf-muted); font-size: 10px; font-weight: 400; }
 .version { display: block; font-size: 10px; color: var(--pf-muted); margin-top: 16px; text-align: center; overflow-wrap: anywhere; }
 .avatar { display: inline-grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; border: 1px solid var(--pf-border); border-radius: 10px; background: var(--pf-surface-raised); color: var(--pf-primary); font-size: 15px; font-weight: 700; overflow: hidden; object-fit: cover; }
@@ -151,11 +154,34 @@ small, .small { font-size: 12px; }
 .metric-card dd { margin: 0; overflow-wrap: anywhere; }
 .metric-card dd,.metric-total { font-variant-numeric: tabular-nums; }
 .metric-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 8px; background: var(--pf-muted); }
-.metric-dot.active { background: var(--pf-emerald); }
+.metric-dot.pending { background: var(--pf-amber); }
+.metric-dot.active { background: var(--pf-blue); }
 .metric-dot.error { background: var(--pf-red); }
 .metric-dot.success { background: var(--pf-emerald); }
-.workspace-progress { margin: 16px 0 0; }
-.workspace-progress p { margin-bottom: 0; }
+.panel.workspace-progress { margin: 16px 0 0; padding: 12px 22px 8px; container-type: inline-size; }
+.workspace-progress > h2 { font-size: 17px; padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--pf-border); }
+.hierarchy-progress { display: grid; grid-template-columns: minmax(0,1fr); gap: 18px 24px; min-width: 0; }
+.status-progress { min-width: 0; }
+.status-progress-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 8px; }
+.status-progress-heading h3 { font-size: 15px; margin: 0; }
+.status-ratio { font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.status-composition { display: flex; height: 8px; overflow: hidden; border-radius: 4px; background: var(--pf-border); margin-top: 5px; }
+.status-segment { flex-basis: 0; min-width: 0; }
+.status-segment.pending { background: var(--pf-warning-border); }
+.status-segment.active { background: var(--pf-active-border); }
+.status-segment.error { background: var(--pf-danger-border); }
+.status-segment.success { background: var(--pf-success-border); }
+.status-breakdown { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 4px 12px; margin: 12px 0 0; font-size: 11.5px; line-height: 1.4; }
+.status-breakdown > div { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; min-width: 0; }
+.status-breakdown dt { min-width: 0; overflow-wrap: anywhere; }
+.status-breakdown dd { margin: 0; color: var(--pf-text); font-weight: 650; font-variant-numeric: tabular-nums; }
+.status-breakdown .pending { color: var(--pf-amber); }
+.status-breakdown .active { color: var(--pf-blue); }
+.status-breakdown .error { color: var(--pf-red); }
+.status-breakdown .success { color: var(--pf-emerald); }
+@container (min-width: 440px) { .workspace-hierarchy, .project-hierarchy { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@container (min-width: 880px) { .workspace-hierarchy { grid-template-columns: repeat(4,minmax(0,1fr)); } }
+@container (min-width: 680px) { .project-hierarchy { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 @container (min-width: 480px) { .workspace-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @container (min-width: 960px) { .workspace-metrics { grid-template-columns: repeat(4,minmax(0,1fr)); } }
 .focus-list,.recent-projects { list-style: none; margin: 0 0 32px; padding: 0; }
@@ -197,15 +223,15 @@ progress::-moz-progress-bar { background: var(--pf-primary); border-radius: 8px;
 .badge.success { color: var(--pf-emerald); background: var(--pf-success-bg); border-color: var(--pf-success-border); }
 .badge.warning { color: var(--pf-amber); background: var(--pf-warning-bg); border-color: var(--pf-warning-border); }
 .badge.error { color: var(--pf-red); background: var(--pf-error-bg); border-color: var(--pf-danger-border); }
-.badge.active { color: var(--pf-emerald); background: var(--pf-success-bg); border-color: var(--pf-success-border); }
+.badge.active { color: var(--pf-blue); background: var(--pf-active-bg); border-color: var(--pf-active-border); }
 .empty-state { border: 1px dashed var(--pf-border); background: var(--pf-input-bg); border-radius: 12px; padding: 52px 24px; text-align: center; margin: 24px 0; }
 .empty-state p { max-width: 540px; margin: 10px auto 24px; font-size: 13px; }
 .empty-icon { display: block; font-size: 36px; color: var(--pf-muted); margin-bottom: 18px; }
 .empty-state h2 { font-size: 22px; }
-.project-overview { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; border: 1px solid var(--pf-border); border-radius: 9px; background: var(--pf-surface); padding: 18px 22px; font-size: 12px; }
+.project-overview { container-type: inline-size; border: 1px solid var(--pf-border); border-radius: 9px; background: var(--pf-surface); padding: 12px 22px; font-size: 12px; }
+.project-status-heading { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--pf-border); }
 .project-overview .workflow-caption { margin: 0; }
-.project-overview .progress-summary { margin-left: auto; }
-.project-overview progress { flex: 0 1 160px; }
+
 .plan-explorer { display: grid; grid-template-columns: minmax(250px, .85fr) minmax(0, 1.55fr); gap: 24px; align-items: start; }
 .work-plan-tree { min-width: 0; }
 .tree-roots, .tree-children { list-style: none; padding: 0; margin: 0; }
@@ -224,7 +250,9 @@ progress::-moz-progress-bar { background: var(--pf-primary); border-radius: 8px;
 .plan-row:has(> button:focus-visible) > button:focus-visible { outline: none; }
 .plan-tree-controls { flex-wrap: wrap; }
 .toolbar-divider { width: 1px; height: 24px; background: var(--pf-border); flex-shrink: 0; }
-.node-kind { flex: 0 0 16px; color: var(--pf-muted); text-align: center; }
+.node-kind { flex: 0 0 16px; color: var(--pf-muted); text-align: center; display: inline-grid; place-items: center; }
+button > svg, a > svg, .status-date > svg { vertical-align: middle; flex-shrink: 0; }
+.empty-icon > svg { vertical-align: middle; }
 .plan-row .badge { font-size: 9px; padding: 2px 5px; }
 .plan-inspector { margin: 0; min-width: 0; }
 .inspector-status { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }

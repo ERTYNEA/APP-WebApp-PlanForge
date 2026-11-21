@@ -48,7 +48,7 @@ public sealed class ContextualFeedbackTests
 				: Array.Empty<PlanForge.Contracts.Agents.AgentProfile>();
 			return Task.FromResult(ComponentTestContext.Json(result));
 		});
-		Type type = operation switch { "agent" => typeof(Agents), "token" => typeof(AgentTokenPanel), "profile" => typeof(Settings), "project" => typeof(Home), _ => typeof(ResourcePanel) };
+		Type type = operation switch { "agent" => typeof(Agents), "token" => typeof(AgentTokenPanel), "profile" => typeof(Settings), "project" => typeof(Projects), _ => typeof(ResourcePanel) };
 		var page = context.Render<Microsoft.AspNetCore.Components.DynamicComponent>(parameters => parameters.Add(component => component.Type, type));
 		if (operation != "profile")
 		{

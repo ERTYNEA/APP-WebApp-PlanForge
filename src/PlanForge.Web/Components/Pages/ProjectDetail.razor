@@ -6,8 +6,16 @@
 else
 {
 	<PageTitle>@project.Name · PlanForge</PageTitle>
-	<div class="page-heading project-heading"><div><a href="/projects">@T["← All projects"]</a><h1>@project.Name<span class="accent">.</span></h1></div><div class="toolbar"><button class="quiet" @onclick="() => { ClearFeedback(); showImport=true; }" disabled="@Busy">@T["Import CSV"]</button><button class="quiet" @onclick='() => OnExportAsync("csv")' disabled="@Busy">@T["Export CSV"]</button><button class="primary" @onclick='() => OnExportAsync("projects")' disabled="@Busy">@T["Export project"]</button><button class="quiet" @onclick="OnSettings" disabled="@Busy">@T["Settings"]</button></div></div>
-	<div class="project-overview"><span class="badge @PlanLabels.StatusClass(project.Status)">@T[project.Status]</span><span class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</span><span class="progress-summary">@T["{0}% complete", project.Progress]</span><progress value="@project.Progress" max="100" aria-label="@T["Project progress"]"></progress></div>
+	<div class="page-heading project-heading"><div><a href="/projects">@T["← All projects"]</a><h1>@project.Name<span class="accent">.</span></h1></div><div class="toolbar"><button class="quiet" @onclick="OnOpenImport" disabled="@Busy">@T["Import CSV"]</button><button class="quiet" @onclick='() => OnExportAsync("csv")' disabled="@Busy">@T["Export CSV"]</button><button class="primary" @onclick='() => OnExportAsync("projects")' disabled="@Busy">@T["Export project"]</button><button class="quiet" @onclick="OnSettings" disabled="@Busy">@T["Settings"]</button></div></div>
+	<div class="project-overview">
+		<div class="project-status-heading"><span class="badge @PlanLabels.StatusClass(project.Status)">@T[project.Status]</span><span class="workflow-caption">@PlanLabels.Workflow(project.Workflow)</span></div>
+		<div class="hierarchy-progress project-hierarchy">
+			@foreach (string kind in new[] { "Phase", "Subphase", "Step" })
+			{
+				<StatusProgress Title="@(kind + "s")" Counts="@CountStatuses(kind)" />
+			}
+		</div>
+	</div>
 	<WorkPlanTree Reload="() => ExecuteAsync(LoadAsync)" Snapshot="project" Agents="agents" Resources="resources" Edit="OnEdit" Add="OnAdd" Delete="OnDeleteItem" AttachResources="OnNodeResources" ProjectSettings="OnSettings" RequestedStepId="RequestedStepId" SelectionEpoch="selectionEpoch" CompletedItemId="completedItemId" Disabled="Busy" />
 }
 @if(showResources)
@@ -16,7 +24,7 @@ else
 }
 @if(showImport)
 {
-	<Modal Title='@T["Import work-plan.csv"]' Error="@Error" Close="() => { ClearFeedback(); showImport=false; }"><form id="import-plan-form" @onsubmit="OnImportAsync" @onsubmit:preventDefault><p>@T["Import a full UTF-8 semicolon snapshot exported from this project. Stable IDs and base revision are validated. A stale plan is never overwritten."]</p><label>@T["CSV file"]<InputFile OnChange="args => importFile=args.File" accept=".csv,text/csv" /></label><label class="check-label"><input id="replace-plan" type="checkbox" @bind="replacePlan" /> @T["Explicitly replace omitted records (removes missing plan items and their links, never Library files)."]</label><FormError Conflict="Conflict" /><div class="form-actions"><button type="button" class="quiet" @onclick="() => { ClearFeedback(); showImport=false; }">@T["Cancel"]</button><button class="primary" disabled="@(Busy || importFile is null)">@T["Import CSV"]</button></div></form></Modal>
+	<Modal Title='@T["Import work-plan.csv"]' Error="@Error" Close="OnCloseImport"><form id="import-plan-form" @onsubmit="OnImportAsync" @onsubmit:preventDefault><p>@T["Import a full UTF-8 semicolon snapshot exported from this project. Stable IDs and base revision are validated. A stale plan is never overwritten."]</p><label>@T["CSV file"]<InputFile OnChange="OnImportFileSelected" disabled="@Busy" accept=".csv,text/csv" /></label><label class="check-label"><input id="replace-plan" type="checkbox" @bind="replacePlan" /> @T["Explicitly replace omitted records (removes missing plan items and their links, never Library files)."]</label><FormError Conflict="Conflict" /><div class="form-actions"><button type="button" class="quiet" @onclick="OnCloseImport" disabled="@Busy">@T["Cancel"]</button><button class="primary" disabled="@(Busy || importFile is null)">@T["Import CSV"]</button></div></form></Modal>
 }
 @if(showSettings)
 {

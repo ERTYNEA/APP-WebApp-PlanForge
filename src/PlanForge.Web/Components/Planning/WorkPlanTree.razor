@@ -1,15 +1,15 @@
 @inject IJSRuntime JavaScript
 @inject PlanForge.Web.State.PlanExplorerState NavigationState
 <div class="section-heading work-plan-heading"><div><h2>@T["Work plan"]</h2><span class="muted small">@T["Phases → Subphases → Steps · Updates automatically"]</span></div><div class="toolbar plan-tree-controls">
-	<button type="button" class="quiet" data-plan-action="expand-all" @onclick="OnExpandAll" disabled="@(Disabled || branches.All(Expanded.Contains))"><span aria-hidden="true">⇊</span> @T["Expand all"]</button>
-	<button type="button" class="quiet" data-plan-action="collapse-all" @onclick="OnCollapseAll" disabled="@(Disabled || !branches.Any(Expanded.Contains))"><span aria-hidden="true">⇈</span> @T["Collapse all"]</button>
-	<span class="toolbar-divider" aria-hidden="true"></span><button type="button" class="quiet" @onclick="Reload" disabled="@Disabled">@T["↻ Reload"]</button>
+	<button type="button" class="quiet" data-plan-action="expand-all" @onclick="OnExpandAll" disabled="@(Disabled || branches.All(Expanded.Contains))"><AppIcon Name="chevrons-up-down-16" /> @T["Expand all"]</button>
+	<button type="button" class="quiet" data-plan-action="collapse-all" @onclick="OnCollapseAll" disabled="@(Disabled || !branches.Any(Expanded.Contains))"><AppIcon Name="chevrons-down-up-16" /> @T["Collapse all"]</button>
+	<span class="toolbar-divider" aria-hidden="true"></span><button type="button" class="quiet" @onclick="Reload" disabled="@Disabled"><AppIcon Name="refresh-cw-16" /> @T["Reload"]</button>
 </div></div>
 <div class="plan-explorer">
 	<nav id="plan-structure" class="work-plan-tree" aria-label="@T["Hierarchical work plan"]">
 		<ul class="tree-roots">
 			<li data-item-id="@Snapshot.Id">
-				<div class="node-heading plan-row @(SelectedId is null ? "is-selected" : "")"><span class="tree-expander tree-leaf" aria-hidden="true">▦</span><button type="button" class="tree-select" @onclick="() => OnManualSelect(null)" aria-current="@(SelectedId is null ? "true" : null)" title="@Snapshot.Name"><span class="tree-title">@Snapshot.Name</span></button><span class="badge @PlanLabels.StatusClass(Snapshot.Status)">@T[Snapshot.Status]</span></div>
+				<div class="node-heading plan-row @(SelectedId is null ? "is-selected" : "")"><span class="tree-expander tree-leaf" aria-hidden="true"><AppIcon Name="folder-kanban-16" /></span><button type="button" class="tree-select" @onclick="() => OnManualSelect(null)" aria-current="@(SelectedId is null ? "true" : null)" title="@Snapshot.Name"><span class="tree-title">@Snapshot.Name</span></button><span class="badge @PlanLabels.StatusClass(Snapshot.Status)">@T[Snapshot.Status]</span></div>
 				<ul class="tree-children">
 					@foreach (PlanItem phase in Snapshot.Items.Where(item => item.Kind == "Phase").OrderBy(item => item.SortOrder).ThenBy(item => item.Id))
 					{

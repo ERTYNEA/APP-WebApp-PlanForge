@@ -8,6 +8,23 @@ using PlanForge.Web.Components.Pages;
 
 public sealed class HomeFocusTests
 {
+	[Theory]
+	[InlineData(false)]
+	[InlineData(true)]
+	public async Task Creation_IsAvailableOnlyOnProjectsAsync(bool management)
+	{
+		using var context = new ComponentTestContext(request => Task.FromResult(ComponentTestContext.Json(
+			request.RequestUri!.AbsolutePath.EndsWith("/dashboard", StringComparison.Ordinal) ? (object)new WorkspaceDashboard(0, 0, 0, 0, []) : new ProjectSummaryPage([], 0, 0, 25, false))));
+		var page = context.Render<Home>(parameters => parameters.Add(component => component.IsManagement, management));
+		Assert.Equal(management ? 1 : 0, page.FindAll(".page-heading button.primary").Count);
+		Assert.Equal(management ? 1 : 0, page.FindAll(".empty-state button.primary").Count);
+		if (management)
+		{
+			await page.Find(".page-heading button.primary").ClickAsync(new());
+			Assert.Contains("Create project", page.Find("dialog").TextContent);
+		}
+	}
+
 	[Fact]
 	public void Projects_CardHasOnlyOneQueryFreeOpenLinkAndPlainTitle()
 	{
@@ -33,7 +50,7 @@ public sealed class HomeFocusTests
 		using var context = new ComponentTestContext(request =>
 		{
 			string path = request.RequestUri!.AbsolutePath; paths.Add(path);
-			object response = path.EndsWith("/dashboard", StringComparison.Ordinal) ? new WorkspaceDashboard(1, 2, 1, 5, [focus])
+			object response = path.EndsWith("/dashboard", StringComparison.Ordinal) ? new WorkspaceDashboard(1, 2, 1, 5, [focus]) { Projects = new(0, 1, 0, 0), Phases = new(1, 2, 1, 1), Subphases = new(0, 0, 1, 0), Steps = new(2, 1, 1, 1) }
 				: path.EndsWith("/summary", StringComparison.Ordinal) ? new ProjectSummaryPage([Summary(projectId)], 1, 0, 25, false)
 				: path.EndsWith("/agents", StringComparison.Ordinal) ? (object)Array.Empty<PlanForge.Contracts.Agents.AgentProfile>()
 				: path.EndsWith("/changes", StringComparison.Ordinal) ? new ProjectChangePage(4, 0, false, [])
@@ -47,9 +64,10 @@ public sealed class HomeFocusTests
 			Assert.Equal(4, card.QuerySelectorAll("dl > div").Length);
 			Assert.Equal(new[] { "Pending", "In progress", "Blocked", "Completed" }, card.QuerySelectorAll("dt").Select(element => element.TextContent.Trim()));
 		}
-		Assert.Contains("20%", page.Find("#overall-progress").TextContent);
-		Assert.Contains("1 of 5 steps completed", page.Find("#overall-progress").TextContent);
-		Assert.Equal("20", page.Find("#overall-progress progress").GetAttribute("value"));
+		Assert.Equal(new[] { "Projects", "Phases", "Subphases", "Steps" }, page.FindAll("#overall-progress .status-progress h3").Select(element => element.TextContent));
+		Assert.Equal(new[] { "0/1 · 0%", "1/5 · 20%", "0/1 · 0%", "1/5 · 20%" }, page.FindAll("#overall-progress .status-ratio").Select(element => element.TextContent));
+		Assert.Equal(16, page.FindAll("#overall-progress .status-segment").Count);
+		Assert.Equal(new[] { "pending", "active", "error", "success" }, page.FindAll("#overall-progress .status-progress").First().QuerySelectorAll(".status-segment").Select(element => element.GetAttribute("data-status")));
 		Assert.Equal($"/projects/{projectId}?step={firstStep}", page.Find("#next-in-focus a").GetAttribute("href"));
 		Assert.Contains("Phase name", page.Find("#next-in-focus").TextContent);
 		Assert.Contains("Subphase name", page.Find("#next-in-focus").TextContent);
@@ -105,8 +123,9 @@ public sealed class HomeFocusTests
 		Assert.Equal(4, page.FindAll("#workspace-metrics > article").Count);
 		Assert.All(page.FindAll("#workspace-metrics dd"), value => Assert.Equal("0", value.TextContent));
 		Assert.Equal(16, page.FindAll("#workspace-metrics dd").Count);
-		Assert.Contains("0 of 0 steps completed", page.Find("#overall-progress").TextContent);
-		Assert.Equal("0", page.Find("#overall-progress progress").GetAttribute("value"));
+		Assert.Equal(4, page.FindAll("#overall-progress .status-progress").Count);
+		Assert.All(page.FindAll("#overall-progress .status-ratio"), element => Assert.Equal("0/0 · 0%", element.TextContent));
+		Assert.All(page.FindAll("#overall-progress .status-segment"), element => Assert.Equal("0", element.GetAttribute("data-count")));
 		Assert.NotNull(page.Find("#next-in-focus"));
 	}
 

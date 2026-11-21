@@ -7,6 +7,21 @@ using System.Net;
 
 public sealed class AvatarEditorTests
 {
+	[Fact]
+	public async Task Reselection_ClearsRejectedUploadWithoutAnnouncingSuccessAsync()
+	{
+		using var context = new ComponentTestContext(_ => Task.FromResult(ComponentTestContext.Json(new { detail = "Rejected upload" }, HttpStatusCode.BadRequest)));
+		var page = context.Render<AvatarEditor>(parameters => parameters.Add(component => component.ApiPath, "users/me/avatar"));
+		page.FindComponent<InputFile>().UploadFiles(InputFileContent.CreateFromText("bad", "bad.png", contentType: "image/png"));
+		await page.Find("form").SubmitAsync();
+		Assert.Contains("Rejected upload", page.Markup);
+		page.FindComponent<InputFile>().UploadFiles(InputFileContent.CreateFromText("new", "new.png", contentType: "image/png"));
+		Assert.DoesNotContain("Rejected upload", page.Markup);
+		Assert.DoesNotContain("Avatar updated", page.Markup);
+		await page.Find("form").SubmitAsync();
+		Assert.Contains("Rejected upload", page.Markup);
+	}
+
 	[Theory]
 	[InlineData(false)]
 	[InlineData(true)]

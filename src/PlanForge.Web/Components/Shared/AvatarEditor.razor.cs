@@ -11,6 +11,7 @@ public partial class AvatarEditor
 	private const int maximumBytes = 4 * 1024 * 1024;
 	private AvatarState current = new(false, Guid.Empty);
 	private IBrowserFile? file;
+	private bool uploadAttemptFailed;
 	private (string Path, bool HasAvatar, Guid Version) previous;
 
 	[Parameter] public string ApiPath { get; set; } = "";
@@ -19,6 +20,7 @@ public partial class AvatarEditor
 	[Parameter] public bool Deferred { get; set; }
 	[Parameter] public bool Disabled { get; set; }
 	[Parameter] public string? ExternalError { get; set; }
+	[Parameter] public EventCallback SelectionChanged { get; set; }
 	[Parameter] public bool HasAvatar { get; set; }
 	public bool HasPending => file is not null;
 	[Parameter] public string ImageUrl { get; set; } = "";
@@ -34,9 +36,12 @@ public partial class AvatarEditor
 		if (file is null)
 			return true;
 		ClearFeedback();
-		byte[] bytes = await ReadFileAsync(file, maximumBytes, Token);
-		AvatarState state = await Api.SendAvatarAsync(HttpMethod.Put, path, bytes: bytes, contentType: file.ContentType, cancellationToken: Token);
+		uploadAttemptFailed = true;
+		IBrowserFile selectedFile = file;
+		byte[] bytes = await ReadFileAsync(selectedFile, maximumBytes, Token);
+		AvatarState state = await Api.SendAvatarAsync(HttpMethod.Put, path, bytes: bytes, contentType: selectedFile.ContentType, cancellationToken: Token);
 		current = state ?? throw new ApiException(502, UiText.Get("The service returned an empty response."));
+		uploadAttemptFailed = false;
 		file = null;
 		Notify("Avatar updated");
 		await RefreshConfirmedAsync(() => Changed.InvokeAsync(current));
@@ -66,11 +71,21 @@ public partial class AvatarEditor
 
 	private Task OnRemoveAsync() => Deferred || Disabled ? Task.CompletedTask : ExecuteMutationAsync(async () =>
 	{
+		uploadAttemptFailed = false;
 		AvatarState state = await Api.SendAvatarAsync(HttpMethod.Delete, ApiPath, cancellationToken: Token);
 		current = state ?? throw new ApiException(502, UiText.Get("The service returned an empty response."));
 		Notify("Avatar removed", NotificationKind.Danger);
 		await RefreshConfirmedAsync(() => Changed.InvokeAsync(current));
 	});
+
+	private async Task OnFileSelectedAsync(InputFileChangeEventArgs args)
+	{
+		if (Busy || Disabled) return;
+		file = args.File;
+		if (uploadAttemptFailed) ClearFeedback();
+		uploadAttemptFailed = false;
+		await SelectionChanged.InvokeAsync();
+	}
 
 	private void OnStateChanged(AvatarState state) => current = state;
 
